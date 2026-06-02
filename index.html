@@ -522,22 +522,44 @@ const STAGES = {
 };
 
 // LOGIN
+const SESSION_KEY = 'crm_session';
+const SESSION_DAYS = 30;
+
+function saveSession(user) {
+  const session = { user, expires: Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000 };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    if (Date.now() > session.expires) { localStorage.removeItem(SESSION_KEY); return null; }
+    return session.user;
+  } catch { return null; }
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
 function doLogin() {
   const user = document.getElementById('loginUser').value.trim().toLowerCase();
   const pass = document.getElementById('loginPass').value;
   const err = document.getElementById('loginError');
   err.style.display = 'none';
 
-  // Admin
   if (user === ADMIN.login && pass === ADMIN.password) {
     currentUser = ADMIN;
+    saveSession(currentUser);
     onLoginSuccess();
     return;
   }
-  // Sellers
   const seller = allSellers.find(s => s.login && s.login.toLowerCase() === user && s.password === pass && s.status === 'active');
   if (seller) {
     currentUser = { ...seller, role: 'seller' };
+    saveSession(currentUser);
     onLoginSuccess();
     return;
   }
@@ -550,13 +572,13 @@ function onLoginSuccess() {
   document.getElementById('currentUserName').textContent = name;
   document.getElementById('currentUserAvatar').textContent = initials(name);
   if (currentUser.color) document.getElementById('currentUserAvatar').style.background = currentUser.color;
-  // Ocultar menu vendedores para sellers
   if (currentUser.role === 'seller') document.getElementById('nav-sellers').style.display = 'none';
   loadAll();
 }
 
 function logout() {
   currentUser = null;
+  clearSession();
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPass').value = '';
   document.getElementById('loginScreen').classList.add('show');
@@ -565,8 +587,20 @@ function logout() {
 // INIT
 window.addEventListener('DOMContentLoaded', () => {
   db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
-  // Carregar sellers antes para permitir login de vendedor
-  loadSellers(true);
+  loadSellers(true).then(() => {
+    const saved = loadSession();
+    if (saved) {
+      // Revalida se for vendedor (pode ter sido desativado)
+      if (saved.role === 'seller') {
+        const still = allSellers.find(s => s.id == saved.id && s.status === 'active');
+        if (!still) { clearSession(); return; }
+        currentUser = { ...still, role: 'seller' };
+      } else {
+        currentUser = saved;
+      }
+      onLoginSuccess();
+    }
+  });
   document.querySelectorAll('.modal-overlay').forEach(o => {
     o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
   });
