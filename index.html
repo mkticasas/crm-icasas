@@ -365,6 +365,10 @@
     </div>
     <div class="sellers-grid" id="sellersGrid"><div class="loading" style="grid-column:span 3;">Carregando...</div></div>
   </div>
+  <footer style="border-top:1px solid var(--border); padding:14px 28px; display:flex; align-items:center; justify-content:space-between;">
+    <span style="font-size:11px; color:var(--text3);">© 2026 Lucas Ribeiro · Todos os direitos reservados</span>
+    <span style="font-size:11px; color:var(--text3);">iCasas CRM · Desenvolvido para uso interno</span>
+  </footer>
 </main>
 
 <!-- MODAL LEAD -->
@@ -414,8 +418,8 @@
     <div class="modal-body">
       <input type="hidden" id="editSellerId">
       <div class="form-row">
-        <div class="form-group"><label>Nome completo *</label><input type="text" id="s-name" placeholder="Ex: Renan Costa"></div>
-        <div class="form-group"><label>Apelido</label><input type="text" id="s-nickname" placeholder="Ex: Renan"></div>
+        <div class="form-group"><label>Nome completo *</label><input type="text" id="s-name" placeholder="Ex: Cris Oliveira"></div>
+        <div class="form-group"><label>Apelido</label><input type="text" id="s-nickname" placeholder="Ex: Cris"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Telefone</label><input type="tel" id="s-phone" placeholder="(17) 99999-9999"></div>
@@ -423,7 +427,7 @@
       </div>
       <div class="form-row">
         <div class="form-group"><label>Cargo</label>
-          <select id="s-role"><option>Corretor</option><option>Corretor Sênior</option><option>Gerente de Vendas</option><option>Diretor Comercial</option></select>
+          <select id="s-role"><option>Vendedor</option><option>Vendedor Sênior</option><option>Gerente de Vendas</option><option>Diretor Comercial</option></select>
         </div>
         <div class="form-group"><label>Meta mensal (R$)</label><input type="number" id="s-goal" placeholder="0"></div>
       </div>
@@ -442,7 +446,7 @@
         <input type="hidden" id="s-color" value="#3d7eff">
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Login (usuário)</label><input type="text" id="s-login" placeholder="ex: renan"></div>
+        <div class="form-group"><label>Login (usuário)</label><input type="text" id="s-login" placeholder="ex: cris"></div>
         <div class="form-group"><label>Senha</label><input type="password" id="s-password" placeholder="••••••••"></div>
       </div>
       <div class="form-group"><label>Status</label>
@@ -492,10 +496,7 @@
 
 <div class="toast" id="toast"></div>
 
-<footer style="margin-left:220px; border-top:1px solid var(--border); padding:14px 28px; display:flex; align-items:center; justify-content:space-between; background:var(--bg2);">
-  <span style="font-size:11px; color:var(--text3);">© 2026 Lucas Ribeiro · Todos os direitos reservados</span>
-  <span style="font-size:11px; color:var(--text3);">iCasas CRM · Desenvolvido para uso interno</span>
-</footer>
+
 
 <script>
 const SUPA_URL = 'https://mqdhavyaeujufhlqdlfg.supabase.co';
@@ -760,7 +761,7 @@ function renderSellers() {
         <div class="avatar-lg" style="background:${s.color||'#3d7eff'}">${initials(s.nickname||s.name)}</div>
         <div style="flex:1">
           <div class="seller-name">${s.name}</div>
-          <div class="seller-role">${s.role||'Corretor'} <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${s.status==='active'?'var(--green)':'var(--red)'};margin-left:6px;vertical-align:2px;"></span></div>
+          <div class="seller-role">${s.role||'Vendedor'} <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${s.status==='active'?'var(--green)':'var(--red)'};margin-left:6px;vertical-align:2px;"></span></div>
           ${s.login?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">Login: ${s.login}</div>`:''}
         </div>
       </div>
@@ -810,7 +811,7 @@ function openSellerModal(seller=null) {
   document.getElementById('sellerModalTitle').textContent = seller?'Editar Vendedor':'Novo Vendedor';
   [['s-name','name'],['s-nickname','nickname'],['s-phone','phone'],['s-email','email'],['s-goal','goal'],['s-login','login']].forEach(([id,k])=>document.getElementById(id).value=seller?(seller[k]||''):'');
   document.getElementById('s-password').value = '';
-  document.getElementById('s-role').value = seller?(seller.role||'Corretor'):'Corretor';
+  document.getElementById('s-role').value = seller?(seller.role||'Vendedor'):'Vendedor';
   document.getElementById('s-status').value = seller?(seller.status||'active'):'active';
   const color = seller?(seller.color||'#3d7eff'):'#3d7eff';
   document.getElementById('s-color').value = color;
