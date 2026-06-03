@@ -514,6 +514,72 @@
   </div>
 </div>
 
+<!-- MODAL MAPEAMENTO -->
+<div class="modal-overlay" id="mappingModal">
+  <div class="modal" style="width:560px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Mapeamento de Campos</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px;" id="mappingWebhookName">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('mappingModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mappingWebhookId">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6;">Configure como os campos do payload JSON se mapeiam para os campos do lead.</p>
+
+      <!-- Templates -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">Templates prontos:</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="applyTemplate('default')">Padrão</button>
+          <button class="btn btn-ghost btn-sm" onclick="applyTemplate('zapier')">Zapier</button>
+          <button class="btn btn-ghost btn-sm" onclick="applyTemplate('rdstation')">RD Station</button>
+          <button class="btn btn-ghost btn-sm" onclick="applyTemplate('make')">Make / n8n</button>
+          <button class="btn btn-ghost btn-sm" onclick="applyTemplate('meta')">Meta Lead Ads</button>
+        </div>
+      </div>
+
+      <!-- Fields -->
+      <div class="form-group">
+        <label>Nome <span style="color:var(--red);">*</span></label>
+        <input type="text" id="map-name" placeholder="name">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">Ex: name, nome, full_name, leads[0].name</div>
+      </div>
+      <div class="form-group">
+        <label>Telefone <span style="color:var(--red);">*</span></label>
+        <input type="text" id="map-phone" placeholder="phone">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">Ex: phone, telefone, celular, whatsapp</div>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="text" id="map-email" placeholder="email">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">Ex: email, e-mail, mail</div>
+      </div>
+      <div class="form-group">
+        <label>Observações</label>
+        <input type="text" id="map-notes" placeholder="notes">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">Ex: notes, mensagem, comments, message</div>
+      </div>
+      <div class="form-group">
+        <label>Nome da Campanha</label>
+        <input type="text" id="map-campaign" placeholder="campaign_name">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">Ex: campaign_name, ad_name, campanha</div>
+      </div>
+
+      <!-- Preview -->
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-top:4px;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:500;">Exemplo de payload esperado:</div>
+        <pre id="mappingPreview" style="font-size:11px;color:var(--text2);font-family:monospace;line-height:1.7;white-space:pre-wrap;"></pre>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('mappingModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMapping()">Salvar Mapeamento</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PERFIL -->
 <div class="modal-overlay" id="profileModal">
   <div class="modal" style="width:460px;">
@@ -1180,6 +1246,8 @@ function renderWebhooks() {
       ? '🔄 Round-robin automático'
       : `👤 Fixo: ${seller ? (seller.nickname || seller.name) : '—'}`;
     const leadsFromThis = allLeads.filter(l => l.webhook_token === wh.token).length;
+    const map = wh.field_map || {};
+    const hasMap = map.name || map.phone;
     return `<div class="webhook-card ${wh.active ? '' : 'inactive'}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
         <div style="flex:1;">
@@ -1187,10 +1255,13 @@ function renderWebhooks() {
             <span class="status-dot" style="background:${wh.active ? 'var(--green)' : 'var(--text3)'}"></span>
             <span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:600;">${wh.name}</span>
             <span class="badge badge-new" style="font-size:10px;">${wh.origin}</span>
+            ${hasMap ? '<span class="badge" style="font-size:10px;background:rgba(34,197,94,.15);color:#4ade80;">✓ Mapeado</span>' : '<span class="badge" style="font-size:10px;background:rgba(245,158,11,.15);color:#fbbf24;">⚠ Sem mapeamento</span>'}
           </div>
           <div style="font-size:12px;color:var(--text3);">${distLabel}</div>
         </div>
-        <div style="display:flex;gap:8px;flex-shrink:0;">
+        <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btn btn-ghost btn-sm" onclick="openMappingModal('${wh.id}')">Mapeamento</button>
+          <button class="btn btn-ghost btn-sm" onclick="openTestModal('${wh.id}')">Testar</button>
           <button class="btn btn-ghost btn-sm" onclick="editWebhook('${wh.id}')">Editar</button>
           <button class="btn btn-danger btn-sm" onclick="deleteWebhook('${wh.id}')">Excluir</button>
         </div>
@@ -1199,6 +1270,9 @@ function renderWebhooks() {
         <span>${webhookUrl}</span>
         <span class="copy-btn">📋 Copiar</span>
       </div>
+      ${hasMap ? `<div style="margin-top:8px;padding:8px 12px;background:var(--bg3);border-radius:8px;font-size:11px;color:var(--text3);font-family:monospace;">
+        nome→<strong>${map.name||'—'}</strong> · tel→<strong>${map.phone||'—'}</strong> · email→<strong>${map.email||'—'}</strong>${map.notes?' · obs→<strong>'+map.notes+'</strong>':''}
+      </div>` : ''}
       <div class="webhook-meta">
         <div class="webhook-stat">Leads recebidos: <strong>${wh.leads_count || leadsFromThis}</strong></div>
         <div class="webhook-stat">Criado em: <strong>${new Date(wh.created_at).toLocaleDateString('pt-BR')}</strong></div>
@@ -1273,6 +1347,103 @@ async function deleteWebhook(id) {
   showToast('Webhook excluído.', 'success');
   await loadWebhooks();
 }
+
+// MAPPING
+const TEMPLATES = {
+  default:   { name:'name',    phone:'phone',       email:'email',     notes:'notes',    campaign:'' },
+  zapier:    { name:'name',    phone:'phone_number',email:'email',     notes:'message',  campaign:'campaign_name' },
+  rdstation: { name:'nome',    phone:'telefone',    email:'email',     notes:'mensagem', campaign:'campanha' },
+  make:      { name:'name',    phone:'phone',       email:'email',     notes:'comments', campaign:'ad_name' },
+  meta:      { name:'full_name',phone:'phone_number',email:'email',    notes:'',         campaign:'campaign_name' }
+};
+
+function updateMappingPreview() {
+  const n = document.getElementById('map-name').value || 'name';
+  const p = document.getElementById('map-phone').value || 'phone';
+  const e = document.getElementById('map-email').value || 'email';
+  const no = document.getElementById('map-notes').value || 'notes';
+  const c = document.getElementById('map-campaign').value;
+  const obj = { [n]: 'Valor de Nome', [p]: '11999999999', [e]: 'Valor de Email' };
+  if (no) obj[no] = 'Valor de Observações';
+  if (c)  obj[c]  = 'Valor de Nome da Campanha';
+  document.getElementById('mappingPreview').textContent = JSON.stringify(obj, null, 2);
+}
+
+function applyTemplate(tpl) {
+  const t = TEMPLATES[tpl];
+  if (!t) return;
+  document.getElementById('map-name').value     = t.name;
+  document.getElementById('map-phone').value    = t.phone;
+  document.getElementById('map-email').value    = t.email;
+  document.getElementById('map-notes').value    = t.notes;
+  document.getElementById('map-campaign').value = t.campaign;
+  updateMappingPreview();
+}
+
+function openMappingModal(whId) {
+  const wh = allWebhooks.find(w => w.id === whId);
+  if (!wh) return;
+  document.getElementById('mappingWebhookId').value = whId;
+  document.getElementById('mappingWebhookName').textContent = wh.name;
+  const map = wh.field_map || {};
+  document.getElementById('map-name').value     = map.name     || 'name';
+  document.getElementById('map-phone').value    = map.phone    || 'phone';
+  document.getElementById('map-email').value    = map.email    || 'email';
+  document.getElementById('map-notes').value    = map.notes    || 'notes';
+  document.getElementById('map-campaign').value = map.campaign || '';
+  updateMappingPreview();
+  document.getElementById('mappingModal').classList.add('open');
+}
+
+async function saveMapping() {
+  const whId = document.getElementById('mappingWebhookId').value;
+  const field_map = {
+    name:     document.getElementById('map-name').value.trim()     || 'name',
+    phone:    document.getElementById('map-phone').value.trim()    || 'phone',
+    email:    document.getElementById('map-email').value.trim()    || 'email',
+    notes:    document.getElementById('map-notes').value.trim(),
+    campaign: document.getElementById('map-campaign').value.trim()
+  };
+  const { error } = await db.from('webhooks').update({ field_map }).eq('id', whId);
+  if (error) { showToast('Erro: ' + error.message, 'error'); return; }
+  showToast('Mapeamento salvo!', 'success');
+  closeModal('mappingModal');
+  await loadWebhooks();
+}
+
+// TEST WEBHOOK
+function openTestModal(whId) {
+  const wh = allWebhooks.find(w => w.id === whId);
+  if (!wh) return;
+  const map = wh.field_map || { name:'name', phone:'phone', email:'email' };
+  const payload = { [map.name||'name']: 'João Teste', [map.phone||'phone']: '17999999999', [map.email||'email']: 'joao@teste.com' };
+  if (map.notes) payload[map.notes] = 'Lead de teste';
+  if (map.campaign) payload[map.campaign] = wh.name;
+  const url = `${EDGE_BASE}/webhook-lead?token=${wh.token}`;
+
+  if (!confirm(`Enviar lead de teste para:\n${wh.name}\n\nPayload:\n${JSON.stringify(payload,null,2)}\n\nConfirmar?`)) return;
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(async data => {
+    if (data.success) {
+      showToast(`✅ Lead de teste criado! ID: ${data.lead_id}`, 'success');
+      await loadLeads(); renderDashboard(); renderPipeline();
+    } else {
+      showToast('Erro: ' + (data.error || 'Resposta inválida'), 'error');
+    }
+  })
+  .catch(() => showToast('Erro de conexão. Verifique se a Edge Function está publicada.', 'error'));
+}
+
+// Listen mapping field changes for live preview
+['map-name','map-phone','map-email','map-notes','map-campaign'].forEach(id => {
+  document.addEventListener('input', e => { if (e.target.id === id) updateMappingPreview(); });
+});
 
 // UTILS
 function showPage(page){
