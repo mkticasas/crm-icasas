@@ -1697,8 +1697,6 @@ function mobileNavTo(page){
   document.querySelectorAll('.mobile-nav-item').forEach(n=>n.classList.remove('active'));
   const mn=document.getElementById('mnav-'+page);if(mn)mn.classList.add('active');
 }
-// sync mobile nav with showPage
-const _origShowPage = showPage;
 </script>
 
 <div class="mobile-nav" id="mobileNav">
@@ -1727,4 +1725,5 @@ const _origShowPage = showPage;
 </div>
 
 <div class="toast" id="toast"></div>
+</body>
 </html>
