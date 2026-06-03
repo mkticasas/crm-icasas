@@ -208,6 +208,17 @@
   .wa-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;background:rgba(37,211,102,.15);color:#25d366;border:1px solid rgba(37,211,102,.25);cursor:pointer;text-decoration:none;transition:all .15s;}
   .wa-btn:hover{background:rgba(37,211,102,.25);}
 
+  .webhook-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:14px;}
+  .webhook-card.inactive{opacity:.55;}
+  .webhook-url{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);font-family:monospace;word-break:break-all;margin:10px 0;cursor:pointer;transition:border .15s;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .webhook-url:hover{border-color:var(--accent);}
+  .webhook-url span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .copy-btn{flex-shrink:0;font-size:11px;color:var(--accent);font-family:'DM Sans',sans-serif;}
+  .webhook-meta{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;}
+  .webhook-stat{font-size:12px;color:var(--text3);}
+  .webhook-stat strong{color:var(--text);font-weight:600;}
+  .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:2px;}
+
   @media(max-width:1100px){
     .metrics-grid{grid-template-columns:repeat(2,1fr);}
     .dashboard-grid{grid-template-columns:1fr;}
@@ -264,6 +275,9 @@
     <div class="drawer-label" id="dlabel-admin">Configurações</div>
     <div class="drawer-item" id="ditem-sellers" onclick="navTo('sellers')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Vendedores
+    </div>
+    <div class="drawer-item" id="ditem-integrations" onclick="navTo('integrations')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>Integrações
     </div>
   </div>
   <div class="drawer-bottom">
@@ -414,11 +428,91 @@
     </div>
   </div>
 
+  <!-- INTEGRATIONS PAGE -->
+  <div class="page" id="page-integrations">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;">Integrações via Webhook</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:4px;">Cada webhook gera uma URL única. Cole no Zapier para receber leads automaticamente.</div>
+      </div>
+      <button class="btn btn-primary" onclick="openWebhookModal()">+ Novo Webhook</button>
+    </div>
+
+    <!-- Como usar -->
+    <div class="card" style="margin-bottom:20px;border-color:rgba(61,126,255,.2);background:rgba(61,126,255,.05);">
+      <div style="display:flex;gap:14px;align-items:flex-start;">
+        <div style="color:var(--accent);flex-shrink:0;margin-top:2px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Como usar no Zapier</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7;">
+            1. Crie um webhook abaixo e copie a URL gerada<br>
+            2. No Zapier: Trigger → <strong>Meta Lead Ads</strong> → selecione a campanha<br>
+            3. Action → <strong>Webhooks by Zapier → POST</strong> → cole a URL<br>
+            4. Mapeie os campos: <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;">name</code>, <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;">phone</code>, <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;">email</code><br>
+            5. Pronto — leads chegam automaticamente e são distribuídos em ordem
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="webhooksList"><div class="loading">Carregando...</div></div>
+  </div>
+
   <footer style="border-top:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;margin-top:auto;">
     <span style="font-size:11px;color:var(--text3);">© 2026 Lucas Ribeiro · Todos os direitos reservados</span>
     <span style="font-size:11px;color:var(--text3);">iCasas CRM · Desenvolvido para uso interno</span>
   </footer>
 </main>
+
+<!-- MODAL WEBHOOK -->
+<div class="modal-overlay" id="webhookModal">
+  <div class="modal" style="width:500px;">
+    <div class="modal-header">
+      <div class="modal-title" id="webhookModalTitle">Novo Webhook</div>
+      <button class="modal-close" onclick="closeModal('webhookModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editWebhookId">
+      <div class="form-group">
+        <label>Nome da campanha *</label>
+        <input type="text" id="wh-name" placeholder="Ex: Campanha Feirão Junho, Instagram Stories...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Origem dos leads</label>
+          <select id="wh-origin">
+            <option>Instagram</option><option>Facebook</option><option>WhatsApp</option>
+            <option>Site</option><option>Feirão</option><option>Indicação</option><option>Outros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Distribuição</label>
+          <select id="wh-dist" onchange="toggleFixedSeller()">
+            <option value="roundrobin">Round-robin (ordem automática)</option>
+            <option value="fixed">Vendedor fixo</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" id="wh-seller-group" style="display:none;">
+        <label>Vendedor fixo</label>
+        <select id="wh-seller"><option value="">Selecionar...</option></select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="wh-active">
+          <option value="true">Ativo</option>
+          <option value="false">Inativo</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('webhookModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveWebhook()">Salvar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL PERFIL -->
 <div class="modal-overlay" id="profileModal">
@@ -631,6 +725,7 @@ function onLoginSuccess(){
   // hide sellers for non-admin
   if(currentUser.role==='seller'){
     document.getElementById('ditem-sellers').style.display='none';
+    document.getElementById('ditem-integrations').style.display='none';
     document.getElementById('dlabel-admin').style.display='none';
   }
   loadAll();
@@ -722,12 +817,17 @@ window.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 });
 
-async function loadAll(){await Promise.all([loadSellers(),loadLeads()]);renderDashboard();renderPipeline();}
+async function loadAll(){
+  await Promise.all([loadSellers(),loadLeads()]);
+  renderSellers(); // agora com allLeads já preenchido
+  renderDashboard();
+  renderPipeline();
+}
 
 async function loadSellers(preload=false){
   const{data}=await db.from('sellers').select('*').order('name');
   allSellers=data||[];
-  if(!preload){populateSellerDropdowns();renderSellers();}
+  if(!preload){populateSellerDropdowns();}
 }
 async function loadLeads(){
   const{data,error}=await db.from('leads').select('*').order('created_at',{ascending:false});
@@ -999,7 +1099,10 @@ async function saveSeller(){
   const{error}=id?await db.from('sellers').update(data).eq('id',id):await db.from('sellers').insert([data]);
   if(error){showToast('Erro: '+error.message,'error');return;}
   showToast(id?'Vendedor atualizado!':'Vendedor cadastrado!','success');
-  closeModal('sellerModal');await loadSellers();renderDashboard();
+  closeModal('sellerModal');
+  await loadSellers();
+  renderSellers();
+  renderDashboard();
 }
 function editLead(id){const l=allLeads.find(l=>l.id==id);if(l)openLeadModal(l);}
 function editSeller(id){const s=allSellers.find(s=>s.id==id);if(s)openSellerModal(s);}
@@ -1007,7 +1110,10 @@ async function deleteSeller(id){
   if(!confirm('Excluir este vendedor?'))return;
   const{error}=await db.from('sellers').delete().eq('id',id);
   if(error){showToast('Erro: '+error.message,'error');return;}
-  showToast('Vendedor removido.','success');await loadSellers();renderDashboard();
+  showToast('Vendedor removido.','success');
+  await loadSellers();
+  renderSellers();
+  renderDashboard();
 }
 
 // DETAIL PANEL
@@ -1050,17 +1156,136 @@ async function deleteCurrentLead(){
   await loadLeads();renderDashboard();renderPipeline();
 }
 
+// INTEGRATIONS
+let allWebhooks = [];
+const EDGE_BASE = 'https://mqdhavyaeujufhlqdlfg.supabase.co/functions/v1';
+
+async function loadWebhooks() {
+  const { data, error } = await db.from('webhooks').select('*').order('created_at', { ascending: false });
+  if (error) { showToast('Erro ao carregar webhooks.', 'error'); return; }
+  allWebhooks = data || [];
+  renderWebhooks();
+}
+
+function renderWebhooks() {
+  const el = document.getElementById('webhooksList');
+  if (!allWebhooks.length) {
+    el.innerHTML = `<div class="empty-state"><p>Nenhum webhook criado ainda.</p><button class="btn btn-primary" onclick="openWebhookModal()">Criar primeiro webhook</button></div>`;
+    return;
+  }
+  el.innerHTML = allWebhooks.map(wh => {
+    const webhookUrl = `${EDGE_BASE}/webhook-lead?token=${wh.token}`;
+    const seller = allSellers.find(s => s.id === wh.fixed_seller_id);
+    const distLabel = wh.distribution === 'roundrobin'
+      ? '🔄 Round-robin automático'
+      : `👤 Fixo: ${seller ? (seller.nickname || seller.name) : '—'}`;
+    const leadsFromThis = allLeads.filter(l => l.webhook_token === wh.token).length;
+    return `<div class="webhook-card ${wh.active ? '' : 'inactive'}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span class="status-dot" style="background:${wh.active ? 'var(--green)' : 'var(--text3)'}"></span>
+            <span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:600;">${wh.name}</span>
+            <span class="badge badge-new" style="font-size:10px;">${wh.origin}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text3);">${distLabel}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn btn-ghost btn-sm" onclick="editWebhook('${wh.id}')">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteWebhook('${wh.id}')">Excluir</button>
+        </div>
+      </div>
+      <div class="webhook-url" onclick="copyUrl('${webhookUrl}', this)">
+        <span>${webhookUrl}</span>
+        <span class="copy-btn">📋 Copiar</span>
+      </div>
+      <div class="webhook-meta">
+        <div class="webhook-stat">Leads recebidos: <strong>${wh.leads_count || leadsFromThis}</strong></div>
+        <div class="webhook-stat">Criado em: <strong>${new Date(wh.created_at).toLocaleDateString('pt-BR')}</strong></div>
+        <div class="webhook-stat">Status: <strong style="color:${wh.active ? 'var(--green)' : 'var(--text3)'}">${wh.active ? 'Ativo' : 'Inativo'}</strong></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function copyUrl(url, el) {
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = el.querySelector('.copy-btn');
+    btn.textContent = '✅ Copiado!';
+    setTimeout(() => btn.textContent = '📋 Copiar', 2000);
+    showToast('URL copiada!', 'success');
+  });
+}
+
+function openWebhookModal(wh = null) {
+  document.getElementById('editWebhookId').value = wh ? wh.id : '';
+  document.getElementById('webhookModalTitle').textContent = wh ? 'Editar Webhook' : 'Novo Webhook';
+  document.getElementById('wh-name').value = wh ? wh.name : '';
+  document.getElementById('wh-origin').value = wh ? wh.origin : 'Instagram';
+  document.getElementById('wh-dist').value = wh ? wh.distribution : 'roundrobin';
+  document.getElementById('wh-active').value = wh ? String(wh.active) : 'true';
+  // populate seller dropdown
+  const sel = document.getElementById('wh-seller');
+  while (sel.options.length > 1) sel.remove(1);
+  allSellers.filter(s => s.status === 'active').forEach(s => sel.add(new Option(s.nickname || s.name, s.id)));
+  sel.value = wh ? (wh.fixed_seller_id || '') : '';
+  toggleFixedSeller();
+  document.getElementById('webhookModal').classList.add('open');
+}
+
+function toggleFixedSeller() {
+  const dist = document.getElementById('wh-dist').value;
+  document.getElementById('wh-seller-group').style.display = dist === 'fixed' ? 'block' : 'none';
+}
+
+function editWebhook(id) {
+  const wh = allWebhooks.find(w => w.id === id);
+  if (wh) openWebhookModal(wh);
+}
+
+async function saveWebhook() {
+  const id = document.getElementById('editWebhookId').value;
+  const name = document.getElementById('wh-name').value.trim();
+  if (!name) { showToast('Nome é obrigatório.', 'error'); return; }
+  const dist = document.getElementById('wh-dist').value;
+  const fixedSeller = document.getElementById('wh-seller').value;
+  if (dist === 'fixed' && !fixedSeller) { showToast('Selecione um vendedor fixo.', 'error'); return; }
+  const data = {
+    name,
+    origin: document.getElementById('wh-origin').value,
+    distribution: dist,
+    fixed_seller_id: dist === 'fixed' ? fixedSeller : null,
+    active: document.getElementById('wh-active').value === 'true'
+  };
+  const { error } = id
+    ? await db.from('webhooks').update(data).eq('id', id)
+    : await db.from('webhooks').insert([data]);
+  if (error) { showToast('Erro: ' + error.message, 'error'); return; }
+  showToast(id ? 'Webhook atualizado!' : 'Webhook criado!', 'success');
+  closeModal('webhookModal');
+  await loadWebhooks();
+}
+
+async function deleteWebhook(id) {
+  if (!confirm('Excluir este webhook? Os leads já recebidos não serão afetados.')) return;
+  const { error } = await db.from('webhooks').delete().eq('id', id);
+  if (error) { showToast('Erro: ' + error.message, 'error'); return; }
+  showToast('Webhook excluído.', 'success');
+  await loadWebhooks();
+}
+
 // UTILS
 function showPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.drawer-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   const di=document.getElementById('ditem-'+page);if(di)di.classList.add('active');
-  const titles={dashboard:'Dashboard',leads:'Leads',pipeline:'Pipeline',sellers:'Vendedores',reports:'Relatórios'};
+  const titles={dashboard:'Dashboard',leads:'Leads',pipeline:'Pipeline',sellers:'Vendedores',reports:'Relatórios',integrations:'Integrações'};
   document.getElementById('pageTitle').textContent=titles[page]||page;
   if(page==='dashboard')renderDashboard();
   if(page==='pipeline')renderPipeline();
   if(page==='reports')populateSellerDropdowns();
+  if(page==='integrations')loadWebhooks();
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function initials(name){return(name||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
