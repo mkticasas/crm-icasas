@@ -947,7 +947,7 @@ const STAGES={
 
 // SESSION
 function saveSession(u){localStorage.setItem(SESSION_KEY,JSON.stringify({user:u,expires:Date.now()+SESSION_DAYS*86400000}));}
-function loadSession(){try{const r=localStorage.getItem(SESSION_KEY);if(!r)return null;const s=JSON.parse(r);if(Date.now()>s.expires){localStorage.removeItem(SESSION_KEY);return null;}return s.user;}catch{return null;}}
+function loadSession(){try{const r=localStorage.getItem(SESSION_KEY);if(!r)return null;const s=JSON.parse(r);if(Date.now()>s.expires){localStorage.removeItem(SESSION_KEY);return null;}return s.user;}catch(e){return null;}}
 function clearSession(){localStorage.removeItem(SESSION_KEY);}
 
 // LOGIN
@@ -1395,7 +1395,6 @@ async function saveSeller(){
 function editLead(id){const l=allLeads.find(l=>l.id==id);if(l)openLeadModal(l);}
 function editSeller(id){const s=allSellers.find(s=>s.id==id);if(s)openSellerModal(s);}
 async function deleteSeller(id){
-async function deleteSeller(id){
   if(!confirm('Excluir este vendedor? Os leads vinculados ficarão sem responsável.'))return;
   // Primeiro remove a referência nos leads para não quebrar FK
   await db.from('leads').update({seller_id:null}).eq('seller_id',id);
@@ -1666,7 +1665,7 @@ function openTestModal(whId) {
 }
 
 // Listen mapping field changes for live preview
-['map-name','map-phone','map-email','map-notes','map-campaign'].forEach(id => {
+;['map-name','map-phone','map-email','map-notes','map-campaign'].forEach(id => {
   document.addEventListener('input', e => { if (e.target.id === id) updateMappingPreview(); });
 });
 
