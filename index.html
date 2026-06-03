@@ -35,7 +35,7 @@
   .login-error{font-size:13px;color:var(--red);margin-top:10px;display:none;}
 
   /* MAIN / TOPBAR */
-  .main{flex:1;min-height:100vh;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+  .main{flex:1;min-height:100vh;display:flex;flex-direction:column;min-width:0;}
   .topbar{height:58px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50;}
   .topbar-left{display:flex;align-items:center;gap:14px;}
   .topbar-logo{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;letter-spacing:-.3px;display:flex;align-items:center;gap:6px;}
@@ -94,8 +94,10 @@
   .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 
   /* PAGES */
-  .page{display:none;padding:28px;flex:1;}
+  .page{display:none;padding:28px;}
   .page.active{display:block;}
+  #page-pipeline{padding:0;}
+  #page-pipeline.active{display:flex;flex-direction:column;height:calc(100vh - 58px);overflow:hidden;}
 
   /* DASHBOARD */
   .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
@@ -508,7 +510,7 @@
   </div>
 
   <!-- PIPELINE -->
-  <div class="page" id="page-pipeline" style="padding:0;display:flex;flex-direction:column;height:calc(100vh - 58px);overflow-y:hidden;overflow-x:hidden;">
+  <div class="page" id="page-pipeline">
 
     <!-- Pipeline Header fixo -->
     <div class="pipeline-header">
@@ -1671,13 +1673,12 @@ function openTestModal(whId) {
 
 // UTILS
 function showPage(page){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>{
+    p.classList.remove('active');
+  });
   document.querySelectorAll('.drawer-item').forEach(n=>n.classList.remove('active'));
-  const pageEl = document.getElementById('page-'+page);
+  const pageEl=document.getElementById('page-'+page);
   pageEl.classList.add('active');
-  // Pipeline needs flex display
-  if(page==='pipeline') pageEl.style.display='flex';
-  else pageEl.style.display='';
   const di=document.getElementById('ditem-'+page);if(di)di.classList.add('active');
   const titles={dashboard:'Dashboard',leads:'Leads',pipeline:'Pipeline',sellers:'Vendedores',reports:'Relatórios',integrations:'Integrações'};
   document.getElementById('pageTitle').textContent=titles[page]||page;
