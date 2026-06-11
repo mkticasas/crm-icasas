@@ -823,8 +823,7 @@
         <div class="form-group"><label>Telefone / WhatsApp *</label><input type="tel" id="l-phone" placeholder="(17) 99999-9999"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>E-mail</label><input type="email" id="l-email" placeholder="email@exemplo.com"></div>
-        <div class="form-group"><label>CPF</label><input type="text" id="l-cpf" placeholder="000.000.000-00"></div>
+        <div class="form-group" style="grid-column:span 2"><label>Endereço</label><input type="text" id="l-address" placeholder="Rua, número, bairro, cidade..."></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Vendedor responsável *</label><select id="l-seller"><option value="">Selecionar...</option></select></div>
@@ -909,7 +908,7 @@
       <div class="detail-section-title">Informações</div>
       <div class="detail-row"><label>Telefone</label><span id="dp-phone">—</span></div>
       <div class="detail-row"><label>E-mail</label><span id="dp-email">—</span></div>
-      <div class="detail-row"><label>CPF</label><span id="dp-cpf">—</span></div>
+      <div class="detail-row"><label>Endereço</label><span id="dp-address">—</span></div>
       <div class="detail-row"><label>Temperatura</label><span id="dp-temp">—</span></div>
       <div class="detail-row"><label>Vendedor</label><span id="dp-seller">—</span></div>
       <div class="detail-row"><label>Valor</label><span id="dp-value">—</span></div>
@@ -1228,6 +1227,7 @@ function pipelineCard(l){
     <div class="lead-name">${temp} ${l.name||'—'}</div>
     <div class="lead-meta">
       ${l.phone?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>${l.phone}</div>`:''}
+      ${l.address?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${l.address}</div>`:''}
       ${date?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${date}</div>`:''}
     </div>
     <div class="lead-footer">
@@ -1350,7 +1350,7 @@ function exportPDF(){
 function openLeadModal(lead=null){
   document.getElementById('editLeadId').value=lead?lead.id:'';
   document.getElementById('leadModalTitle').textContent=lead?'Editar Lead':'Novo Lead';
-  [['l-name','name'],['l-phone','phone'],['l-email','email'],['l-cpf','cpf'],['l-notes','notes'],['l-value','value']].forEach(([id,k])=>document.getElementById(id).value=lead?(lead[k]||''):'');
+  [['l-name','name'],['l-phone','phone'],['l-address','address'],['l-notes','notes'],['l-value','value']].forEach(([id,k])=>document.getElementById(id).value=lead?(lead[k]||''):'');
   document.getElementById('l-stage').value=lead?(lead.stage||'new'):'new';
   document.getElementById('l-seller').value=lead?(lead.seller_id||''):'';
   document.getElementById('l-temp').value=lead?(lead.temperature||'hot'):'hot';
@@ -1360,7 +1360,7 @@ async function saveLead(){
   const id=document.getElementById('editLeadId').value,seller_id=document.getElementById('l-seller').value;
   if(!document.getElementById('l-name').value.trim()){showToast('Nome é obrigatório.','error');return;}
   if(!seller_id){showToast('Selecione um vendedor.','error');return;}
-  const data={name:document.getElementById('l-name').value.trim(),phone:document.getElementById('l-phone').value.trim(),email:document.getElementById('l-email').value.trim(),cpf:document.getElementById('l-cpf').value.trim(),seller_id,stage:document.getElementById('l-stage').value,value:parseFloat(document.getElementById('l-value').value)||null,temperature:document.getElementById('l-temp').value,notes:document.getElementById('l-notes').value.trim()};
+  const data={name:document.getElementById('l-name').value.trim(),phone:document.getElementById('l-phone').value.trim(),address:document.getElementById('l-address').value.trim(),seller_id,stage:document.getElementById('l-stage').value,value:parseFloat(document.getElementById('l-value').value)||null,temperature:document.getElementById('l-temp').value,notes:document.getElementById('l-notes').value.trim()};
   const{error}=id?await db.from('leads').update(data).eq('id',id):await db.from('leads').insert([data]);
   if(error){showToast('Erro: '+error.message,'error');return;}
   showToast(id?'Lead atualizado!':'Lead cadastrado!','success');
@@ -1417,7 +1417,7 @@ function openDetail(id){
   document.getElementById('dp-stage-label').textContent=stage.label;
   document.getElementById('dp-phone').textContent=l.phone||'—';
   document.getElementById('dp-email').textContent=l.email||'—';
-  document.getElementById('dp-cpf').textContent=l.cpf||'—';
+  document.getElementById('dp-address').textContent=l.address||'—';
   document.getElementById('dp-temp').textContent=l.temperature==='hot'?'🔥 Quente':l.temperature==='warm'?'🌡️ Morno':'❄️ Frio';
   document.getElementById('dp-seller').textContent=s?(s.nickname||s.name):'—';
   document.getElementById('dp-value').textContent=l.value?'R$ '+parseFloat(l.value).toLocaleString('pt-BR'):'—';
