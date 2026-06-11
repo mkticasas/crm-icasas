@@ -346,7 +346,8 @@
   .toggle-on{background:var(--accent)!important;border-color:var(--accent)!important;}
   .toggle-thumb-on{left:21px!important;background:#fff!important;}
   @keyframes bellShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-15deg)}75%{transform:rotate(15deg)}}
-  .hamburger-btn{background:transparent;border:1px solid var(--border2);cursor:pointer;color:var(--text2);padding:6px 10px;display:flex;align-items:center;border-radius:var(--radius);transition:all .15s;}
+  .integ-tab{background:none;border:none;padding:7px 16px;border-radius:7px;font-size:13px;color:var(--text3);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+  .integ-tab.active{background:var(--bg2);color:var(--text);font-weight:500;}color:var(--text2);padding:6px 10px;display:flex;align-items:center;border-radius:var(--radius);transition:all .15s;}
   .hamburger-btn:hover{background:rgba(255,255,255,.05);color:var(--text);}
   @media(max-width:640px){
     .hamburger-btn{display:none;}
@@ -520,13 +521,10 @@
     <div class="pipeline-header">
       <div class="pipeline-header-top">
         <div>
-          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;">Pipeline</div>
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px;">Pipeline <span id="brClock" style="font-size:13px;font-weight:400;color:var(--text3);background:var(--bg3);padding:3px 10px;border-radius:20px;font-family:'DM Sans',sans-serif;letter-spacing:.3px;"></span></div>
           <div style="font-size:12px;color:var(--text3);margin-top:2px;">Arraste os leads entre as colunas para atualizar o status</div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openLeadModal()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Novo Lead
-        </button>
+
       </div>
       <div class="pipeline-filters-bar">
         <!-- Search -->
@@ -535,7 +533,7 @@
           <input type="text" id="pf-search" placeholder="Buscar leads..." oninput="renderPipeline()" style="padding-left:32px;width:200px;">
         </div>
         <!-- Vendedor -->
-        <div style="position:relative;display:flex;align-items:center;gap:6px;">
+        <div id="pf-seller-wrap" style="position:relative;display:flex;align-items:center;gap:6px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text3);flex-shrink:0;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
           <select id="pf-seller" onchange="renderPipeline()" style="width:auto;padding-right:28px;">
             <option value="">Todos os vendedores</option>
@@ -639,32 +637,75 @@
   <div class="page" id="page-integrations">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
       <div>
-        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;">Integrações via Webhook</div>
-        <div style="font-size:13px;color:var(--text3);margin-top:4px;">Cada webhook gera uma URL única. Cole no Zapier para receber leads automaticamente.</div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;">Integrações</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:4px;">Conecte fontes de leads externas: Zapier, Make, Google Ads, Facebook e mais.</div>
       </div>
-      <button class="btn btn-primary" onclick="openWebhookModal()">+ Novo Webhook</button>
+      <button class="btn btn-primary" id="btnNewWebhook" onclick="openWebhookModal()">+ Novo Webhook</button>
     </div>
 
-    <!-- Como usar -->
-    <div class="card" style="margin-bottom:20px;border-color:rgba(61,126,255,.2);background:rgba(61,126,255,.05);">
-      <div style="display:flex;gap:14px;align-items:flex-start;">
-        <div style="color:var(--accent);flex-shrink:0;margin-top:2px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        </div>
-        <div>
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Como usar no Zapier</div>
-          <div style="font-size:12px;color:var(--text2);line-height:1.7;">
-            1. Crie um webhook abaixo e copie a URL gerada<br>
-            2. No Zapier: Trigger → <strong>Meta Lead Ads</strong> → selecione a campanha<br>
-            3. Action → <strong>Webhooks by Zapier → POST</strong> → cole a URL<br>
-            4. Mapeie os campos: <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;">name</code>, <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;">phone</code>, <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;">email</code><br>
-            5. Pronto — leads chegam automaticamente e são distribuídos em ordem
+    <!-- Tabs -->
+    <div style="display:flex;gap:2px;background:var(--bg3);border-radius:10px;padding:4px;margin-bottom:20px;width:fit-content;">
+      <button class="integ-tab active" onclick="showIntegTab('webhooks')" id="itab-webhooks">Webhooks</button>
+      <button class="integ-tab" onclick="showIntegTab('logs')" id="itab-logs">Logs</button>
+    </div>
+
+    <!-- Webhooks tab -->
+    <div id="itab-webhooks-content">
+      <div class="card" style="margin-bottom:20px;border-color:rgba(61,126,255,.2);background:rgba(61,126,255,.05);">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div style="color:var(--accent);flex-shrink:0;margin-top:2px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Como usar no Zapier</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.7;">
+              1. Crie um webhook abaixo e copie a URL gerada<br>
+              2. No Zapier: Trigger → <strong>Meta Lead Ads</strong> → selecione a campanha<br>
+              3. Action → <strong>Webhooks by Zapier → POST</strong> → cole a URL<br>
+              4. Mapeie os campos: <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;">name</code>, <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;">phone</code>, <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;">email</code><br>
+              5. Pronto — leads chegam automaticamente e são distribuídos em ordem
+            </div>
           </div>
         </div>
       </div>
+      <div id="webhooksList"><div class="loading">Carregando...</div></div>
     </div>
 
-    <div id="webhooksList"><div class="loading">Carregando...</div></div>
+    <!-- Logs tab -->
+    <div id="itab-logs-content" style="display:none;">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+        <select id="log-webhook-filter" style="min-width:180px;" onchange="renderLogs()">
+          <option value="">Todos os webhooks</option>
+        </select>
+        <select id="log-status-filter" style="min-width:130px;" onchange="renderLogs()">
+          <option value="">Todos</option>
+          <option value="success">✅ Sucesso</option>
+          <option value="error">❌ Erro</option>
+        </select>
+        <input type="date" id="log-date-filter" onchange="renderLogs()" style="min-width:140px;">
+        <button class="btn btn-ghost btn-sm" onclick="refreshLogs()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Atualizar
+        </button>
+        <span id="logCount" style="font-size:12px;color:var(--text3);margin-left:auto;"></span>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:90px;">Status</th>
+                <th>Webhook</th>
+                <th>Lead</th>
+                <th>Telefone</th>
+                <th>Vendedor</th>
+                <th>Data/Hora</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="logsTable"><tr><td colspan="7"><div class="loading">Carregando logs...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <footer style="border-top:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;margin-top:auto;">
@@ -1049,7 +1090,13 @@ function onLoginSuccess(){
     document.getElementById('ditem-sellers').style.display='none';
     document.getElementById('ditem-integrations').style.display='none';
     document.getElementById('dlabel-admin').style.display='none';
+    // Hide seller filter in pipeline
+    const sw=document.getElementById('pf-seller-wrap');if(sw)sw.style.display='none';
   }
+  // Show FAB
+  const fab=document.getElementById('fabNewLead');if(fab)fab.style.display='block';
+  // Start Brasilia clock
+  startBrClock();
   loadAll().then(()=>{
     showPage('pipeline');
     document.querySelectorAll('.mobile-nav-item').forEach(n=>n.classList.remove('active'));
@@ -1277,7 +1324,7 @@ function renderPipeline(){
   const standbyCount = allLeads.filter(l=>l.stage==='standby').length;
   const sc = document.getElementById('standbyCount');
   if(sc) sc.textContent = standbyCount;
-  board.innerHTML = Object.entries(STAGES).filter(([key])=>key!=='standby'&&key!=='not_going').map(([key,stage]) => {
+  board.innerHTML = Object.entries(STAGES).filter(([key])=>key!=='standby').map(([key,stage]) => {
     const leads = filtered.filter(l => l.stage===key);
     const total = leads.reduce((a,l) => a+(parseFloat(l.value)||0), 0);
     const cards = leads.length
@@ -1657,10 +1704,17 @@ function updateNotifBell(){
   const bell=document.getElementById('notifBell');
   const badge=document.getElementById('notifBadge');
   if(!bell)return;
-  if(pendingNotifs.length>0){
+  // Show bell if there are pending notifs OR standby leads with active reminders
+  const standbyWithReminder = allLeads.filter(l=>l.stage==='standby'&&l.reminder_date&&new Date(l.reminder_date)>new Date()).length;
+  const total = pendingNotifs.length + standbyWithReminder;
+  if(total>0){
     bell.style.display='block';
-    badge.textContent=pendingNotifs.length;
-    bell.querySelector('div').style.animation='bellShake .6s ease 3';
+    badge.textContent=total;
+    if(pendingNotifs.length>0){
+      const bel=bell.querySelector('div');
+      if(bel)bel.style.animation='none';
+      setTimeout(()=>{if(bel)bel.style.animation='bellShake .6s ease 3';},50);
+    }
   } else {
     bell.style.display='none';
   }
@@ -1952,6 +2006,81 @@ function openTestModal(whId) {
   document.addEventListener('input', e => { if (e.target.id === id) updateMappingPreview(); });
 });
 
+// INTEGRATION TABS
+function showIntegTab(tab){
+  document.querySelectorAll('.integ-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('itab-'+tab).classList.add('active');
+  document.getElementById('itab-webhooks-content').style.display = tab==='webhooks'?'block':'none';
+  document.getElementById('itab-logs-content').style.display    = tab==='logs'?'block':'none';
+  document.getElementById('btnNewWebhook').style.display        = tab==='webhooks'?'':'none';
+  if(tab==='logs') refreshLogs();
+}
+
+async function refreshLogs(){
+  // Populate webhook filter
+  const sel=document.getElementById('log-webhook-filter');
+  while(sel.options.length>1)sel.remove(1);
+  allWebhooks.forEach(w=>sel.add(new Option(w.name,w.token)));
+  await renderLogs();
+}
+
+async function renderLogs(){
+  const tbody=document.getElementById('logsTable');
+  tbody.innerHTML=`<tr><td colspan="7"><div class="loading">Carregando...</div></td></tr>`;
+
+  // Leads that came via webhook (have webhook_token)
+  let logs = allLeads.filter(l=>l.webhook_token);
+
+  // Apply filters
+  const whFilter=document.getElementById('log-webhook-filter').value;
+  const stFilter=document.getElementById('log-status-filter').value;
+  const dtFilter=document.getElementById('log-date-filter').value;
+  if(whFilter) logs=logs.filter(l=>l.webhook_token==whFilter);
+  if(dtFilter) logs=logs.filter(l=>l.created_at&&l.created_at.slice(0,10)===dtFilter);
+  // stFilter: all webhook leads are "success" since they exist in DB
+  if(stFilter==='error') logs=[];
+
+  document.getElementById('logCount').textContent=`${logs.length} registro${logs.length!==1?'s':''}`;
+
+  if(!logs.length){
+    tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><p>Nenhum log encontrado.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML=logs.map(l=>{
+    const wh=allWebhooks.find(w=>w.token==l.webhook_token);
+    const s=allSellers.find(s=>s.id==l.seller_id);
+    const date=l.created_at?new Date(l.created_at).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+    const stage=STAGES[l.stage]||STAGES.new;
+    return `<tr onclick="openDetail(${l.id})" style="cursor:pointer;">
+      <td><span style="background:rgba(34,197,94,.15);color:#4ade80;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">✅ sucesso</span></td>
+      <td><span style="font-size:12px;font-weight:500;">${wh?wh.name:'—'}</span><br><span style="font-size:10px;color:var(--text3);">webhook</span></td>
+      <td style="font-weight:500;color:var(--text);">${l.name||'—'}</td>
+      <td style="font-size:12px;">${l.phone||'—'}</td>
+      <td>${s?`<span style="display:flex;align-items:center;gap:5px;"><div style="width:16px;height:16px;border-radius:50%;background:${s.color||'#3d7eff'};display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;">${initials(s.nickname||s.name)}</div>${s.nickname||s.name}</span>`:'—'}</td>
+      <td style="font-size:12px;color:var(--text3);">${date}</td>
+      <td><span class="badge ${stage.badge}" style="font-size:10px;">${stage.label}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// BRASILIA CLOCK
+function startBrClock(){
+  function tick(){
+    const el=document.getElementById('brClock');
+    if(!el)return;
+    const now=new Date();
+    // Brasília = UTC-3
+    const br=new Date(now.toLocaleString('en-US',{timeZone:'America/Sao_Paulo'}));
+    const h=String(br.getHours()).padStart(2,'0');
+    const m=String(br.getMinutes()).padStart(2,'0');
+    const s=String(br.getSeconds()).padStart(2,'0');
+    el.textContent=`🕐 ${h}:${m}:${s}`;
+  }
+  tick();
+  setInterval(tick,1000);
+}
+
 // UTILS
 function showPage(page){
   document.querySelectorAll('.page').forEach(p=>{
@@ -2005,8 +2134,16 @@ function mobileNavTo(page){
   </div>
 </div>
 
+<!-- FAB NOVO LEAD -->
+<div id="fabNewLead" style="display:none;position:fixed;bottom:90px;right:24px;z-index:9996;">
+  <button onclick="openLeadModal()" style="width:48px;height:48px;background:var(--accent);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(61,126,255,.4);transition:all .15s;" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+  <div style="position:absolute;right:58px;top:50%;transform:translateY(-50%);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;font-size:12px;white-space:nowrap;pointer-events:none;color:var(--text2);">Novo Lead</div>
+</div>
+
 <!-- FLOATING NOTIFICATION BELL -->
-<div id="notifBell" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9998;">
+<div id="notifBell" style="display:none;position:fixed;bottom:150px;right:24px;z-index:9998;">
   <div onclick="openNotifPanel()" style="width:52px;height:52px;background:var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(245,158,11,.5);">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
   </div>
