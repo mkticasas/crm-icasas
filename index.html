@@ -135,6 +135,7 @@
   .badge-negotiation{background:rgba(16,185,129,.15);color:#34d399;}
   .badge-won{background:rgba(34,197,94,.2);color:#4ade80;}
   .badge-standby{background:rgba(100,116,139,.15);color:#94a3b8;}
+  .badge-not-going{background:rgba(124,58,237,.15);color:#a78bfa;}
 
   /* PIPELINE HEADER */
   .pipeline-header{padding:16px 24px 0;flex-shrink:0;background:var(--bg);}
@@ -344,6 +345,7 @@
 
   .toggle-on{background:var(--accent)!important;border-color:var(--accent)!important;}
   .toggle-thumb-on{left:21px!important;background:#fff!important;}
+  @keyframes bellShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-15deg)}75%{transform:rotate(15deg)}}
   .hamburger-btn{background:transparent;border:1px solid var(--border2);cursor:pointer;color:var(--text2);padding:6px 10px;display:flex;align-items:center;border-radius:var(--radius);transition:all .15s;}
   .hamburger-btn:hover{background:rgba(255,255,255,.05);color:var(--text);}
   @media(max-width:640px){
@@ -486,7 +488,7 @@
         <select id="f-stage" onchange="filterLeads()">
           <option value="">Todos</option><option value="new">Novo Lead</option><option value="contact">Contato Realizado</option>
           <option value="proposal">Proposta Enviada</option><option value="negotiation">Em Negociação</option>
-          <option value="won">Fechado - Ganho</option><option value="lost">Fechado - Perdido</option>
+          <option value="won">Fechado - Ganho</option><option value="lost">Lead Perdido</option>
         </select>
       </div>
       <div class="filter-group"><label>Vendedor</label><select id="f-seller" onchange="filterLeads()"><option value="">Todos</option></select></div>
@@ -604,7 +606,7 @@
           <select id="r-stage">
             <option value="">Todos</option><option value="new">Novo Lead</option><option value="contact">Contato Realizado</option>
             <option value="proposal">Proposta Enviada</option><option value="negotiation">Em Negociação</option>
-            <option value="won">Fechado - Ganho</option><option value="lost">Fechado - Perdido</option>
+            <option value="won">Fechado - Ganho</option><option value="lost">Lead Perdido</option>
           </select>
         </div>
         <div class="filter-group"><label>Vendedor</label><select id="r-seller"><option value="">Todos</option></select></div>
@@ -881,9 +883,10 @@
         <div class="form-group" style="grid-column:span 2"><label>Endereço</label><input type="text" id="l-address" placeholder="Rua, número, bairro, cidade..."></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Vendedor responsável *</label><select id="l-seller"><option value="">Selecionar...</option></select></div>
+        <div class="form-group" id="l-seller-group"><label>Vendedor responsável *</label><select id="l-seller"><option value="">Selecionar...</option></select></div>
+        <div class="form-group" id="l-seller-fixed" style="display:none;"><label>Vendedor responsável</label><div style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);" id="l-seller-name">—</div></div>
         <div class="form-group"><label>Estágio</label>
-          <select id="l-stage"><option value="new">Novo Lead</option><option value="contact">Contato Realizado</option><option value="proposal">Proposta Enviada</option><option value="negotiation">Em Negociação</option><option value="won">Fechado - Ganho</option><option value="lost">Fechado - Perdido</option><option value="standby">Standby</option></select>
+          <select id="l-stage"><option value="new">Novo Lead</option><option value="contact">Contato Realizado</option><option value="proposal">Proposta Enviada</option><option value="negotiation">Em Negociação</option><option value="won">Fechado - Ganho</option><option value="lost">Lead Perdido</option><option value="standby">Standby</option><option value="not_going">Não vai fazer</option></select>
         </div>
       </div>
       <div class="form-row">
@@ -1012,8 +1015,9 @@ const STAGES={
   proposal:{label:'Proposta Enviada',badge:'badge-proposal',dot:'#f59e0b'},
   negotiation:{label:'Em Negociação',badge:'badge-negotiation',dot:'#10b981'},
   won:{label:'Fechado - Ganho',badge:'badge-won',dot:'#22c55e'},
-  lost:{label:'Fechado - Perdido',badge:'badge-lost',dot:'#ef4444'},
-  standby:{label:'Standby',badge:'badge-standby',dot:'#64748b'}
+  lost:{label:'Lead Perdido',badge:'badge-lost',dot:'#ef4444'},
+  standby:{label:'Standby',badge:'badge-standby',dot:'#64748b'},
+  not_going:{label:'Não vai fazer',badge:'badge-not-going',dot:'#7c3aed'}
 };
 
 // SESSION
@@ -1273,7 +1277,7 @@ function renderPipeline(){
   const standbyCount = allLeads.filter(l=>l.stage==='standby').length;
   const sc = document.getElementById('standbyCount');
   if(sc) sc.textContent = standbyCount;
-  board.innerHTML = Object.entries(STAGES).filter(([key])=>key!=='standby').map(([key,stage]) => {
+  board.innerHTML = Object.entries(STAGES).filter(([key])=>key!=='standby'&&key!=='not_going').map(([key,stage]) => {
     const leads = filtered.filter(l => l.stage===key);
     const total = leads.reduce((a,l) => a+(parseFloat(l.value)||0), 0);
     const cards = leads.length
@@ -1430,8 +1434,18 @@ function openLeadModal(lead=null){
   document.getElementById('leadModalTitle').textContent=lead?'Editar Lead':'Novo Lead';
   [['l-name','name'],['l-phone','phone'],['l-address','address'],['l-notes','notes'],['l-value','value']].forEach(([id,k])=>document.getElementById(id).value=lead?(lead[k]||''):'');
   document.getElementById('l-stage').value=lead?(lead.stage||'new'):'new';
-  document.getElementById('l-seller').value=lead?(lead.seller_id||''):'';
   document.getElementById('l-temp').value=lead?(lead.temperature||'hot'):'hot';
+  // Se for vendedor, preenche automaticamente e esconde o select
+  if(currentUser&&currentUser.role==='seller'){
+    document.getElementById('l-seller').value=currentUser.id;
+    document.getElementById('l-seller-group').style.display='none';
+    document.getElementById('l-seller-fixed').style.display='block';
+    document.getElementById('l-seller-name').textContent=currentUser.nickname||currentUser.name;
+  } else {
+    document.getElementById('l-seller').value=lead?(lead.seller_id||''):'';
+    document.getElementById('l-seller-group').style.display='block';
+    document.getElementById('l-seller-fixed').style.display='none';
+  }
   document.getElementById('leadModal').classList.add('open');
 }
 async function saveLead(){
@@ -1612,13 +1626,17 @@ async function clearReminder(){
 
 // NOTIFICATION CHECK
 let reminderCheckInterval=null;
+let pendingNotifs=[];
+
 function scheduleReminderCheck(){
   if(reminderCheckInterval)clearInterval(reminderCheckInterval);
   checkReminders();
   reminderCheckInterval=setInterval(checkReminders,60000);
 }
+
 function checkReminders(){
   const now=new Date();
+  let newOnes=false;
   allLeads.filter(l=>{
     if(!l.reminder_date)return false;
     const d=new Date(l.reminder_date);
@@ -1627,15 +1645,66 @@ function checkReminders(){
     const key=`reminded_${l.id}_${l.reminder_date}`;
     if(sessionStorage.getItem(key))return;
     sessionStorage.setItem(key,'1');
-    showReminderNotif(l);
+    if(!pendingNotifs.find(n=>n.id==l.id&&n.reminder_date==l.reminder_date)){
+      pendingNotifs.push({...l});
+      newOnes=true;
+    }
   });
+  if(newOnes) updateNotifBell();
 }
+
+function updateNotifBell(){
+  const bell=document.getElementById('notifBell');
+  const badge=document.getElementById('notifBadge');
+  if(!bell)return;
+  if(pendingNotifs.length>0){
+    bell.style.display='block';
+    badge.textContent=pendingNotifs.length;
+    bell.querySelector('div').style.animation='bellShake .6s ease 3';
+  } else {
+    bell.style.display='none';
+  }
+}
+
+function openNotifPanel(){
+  const panel=document.getElementById('notifPanel');
+  const list=document.getElementById('notifList');
+  if(pendingNotifs.length===0){list.innerHTML='<div class="empty-state" style="padding:24px;"><p>Nenhum lembrete pendente.</p></div>';panel.style.display='block';return;}
+  list.innerHTML=pendingNotifs.map(l=>`
+    <div style="padding:10px 12px;border-radius:8px;background:var(--bg3);margin-bottom:6px;cursor:pointer;" onclick="openDetail(${l.id});closeNotifPanel();">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:3px;">${l.name}</div>
+          ${l.reminder_note?`<div style="font-size:12px;color:var(--text3);">${l.reminder_note}</div>`:''}
+          <div style="font-size:11px;color:var(--amber);margin-top:3px;">🔔 ${new Date(l.reminder_date).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        <button onclick="event.stopPropagation();dismissNotif(${l.id},'${l.reminder_date}')" class="modal-close" style="flex-shrink:0;">×</button>
+      </div>
+    </div>
+  `).join('');
+  panel.style.display='block';
+}
+
+function closeNotifPanel(){document.getElementById('notifPanel').style.display='none';}
+
+function dismissNotif(id,date){
+  pendingNotifs=pendingNotifs.filter(n=>!(n.id==id&&n.reminder_date==date));
+  updateNotifBell();
+  openNotifPanel();
+}
+
+function markAllRead(){
+  pendingNotifs=[];
+  updateNotifBell();
+  closeNotifPanel();
+}
+
 function showReminderNotif(l){
-  const t=document.getElementById('toast');
-  t.innerHTML=`🔔 <strong>Lembrete:</strong> ${l.name}${l.reminder_note?' — '+l.reminder_note:''}`;
-  t.className='toast show';t.style.borderColor='rgba(245,158,11,.4)';t.style.cursor='pointer';
-  t.onclick=()=>{openDetail(l.id);t.classList.remove('show');t.style.cursor='';t.onclick=null;};
-  setTimeout(()=>{t.classList.remove('show');t.style.cursor='';t.onclick=null;},8000);
+  // Also add to pending list
+  if(!pendingNotifs.find(n=>n.id==l.id&&n.reminder_date==l.reminder_date)){
+    pendingNotifs.push({...l});
+    updateNotifBell();
+  }
 }
 
 // INTEGRATIONS
@@ -1933,6 +2002,26 @@ function mobileNavTo(page){
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       <span>Menu</span>
     </div>
+  </div>
+</div>
+
+<!-- FLOATING NOTIFICATION BELL -->
+<div id="notifBell" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9998;">
+  <div onclick="openNotifPanel()" style="width:52px;height:52px;background:var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(245,158,11,.5);">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+  </div>
+  <div id="notifBadge" style="position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);">0</div>
+</div>
+
+<!-- NOTIFICATION PANEL -->
+<div id="notifPanel" style="display:none;position:fixed;bottom:86px;right:24px;width:320px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);z-index:9997;box-shadow:0 8px 32px rgba(0,0,0,.4);">
+  <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-family:'Syne',sans-serif;font-weight:600;font-size:14px;">🔔 Lembretes</div>
+    <button class="modal-close" onclick="closeNotifPanel()">×</button>
+  </div>
+  <div id="notifList" style="max-height:320px;overflow-y:auto;padding:8px;"></div>
+  <div style="padding:10px 14px;border-top:1px solid var(--border);">
+    <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;" onclick="markAllRead()">Marcar todos como lidos</button>
   </div>
 </div>
 
