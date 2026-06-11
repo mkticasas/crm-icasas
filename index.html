@@ -342,7 +342,8 @@
     footer{display:none!important;}
   }
 
-  .hamburger-btn{background:none;border:none;cursor:pointer;color:var(--text2);padding:4px;display:flex;align-items:center;border-radius:8px;transition:color .15s;}
+  .toggle-on{background:var(--accent)!important;border-color:var(--accent)!important;}
+  .toggle-thumb-on{left:21px!important;background:#fff!important;}
   .hamburger-btn:hover{color:var(--text);}
   @media(max-width:640px){
     .hamburger-btn{display:none;}
@@ -859,7 +860,7 @@
       </div>
       <div class="form-row">
         <div class="form-group"><label>Cargo</label>
-          <select id="s-role"><option>Vendedor</option><option>Vendedor Sênior</option><option>Gerente de Vendas</option><option>Diretor Comercial</option></select>
+          <select id="s-role" onchange="autoSetPermission()"><option>Vendedor</option><option>Vendedor Sênior</option><option>Gerente de Vendas</option><option>Diretor Comercial</option></select>
         </div>
         <div class="form-group"><label>Meta mensal (R$)</label><input type="number" id="s-goal" placeholder="0"></div>
       </div>
@@ -876,6 +877,20 @@
           <div class="color-opt" data-color="#ec4899" onclick="selectColor(this)" style="width:28px;height:28px;border-radius:50%;background:#ec4899;cursor:pointer;border:2px solid transparent;"></div>
         </div>
         <input type="hidden" id="s-color" value="#3d7eff">
+      </div>
+      <div class="form-group">
+        <label>Permissões</label>
+        <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:13px;font-weight:500;">Ver todos os leads</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;">Permite visualizar leads de todos os vendedores</div>
+          </div>
+          <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
+            <input type="checkbox" id="s-can-see-all" style="opacity:0;width:0;height:0;position:absolute;">
+            <span onclick="document.getElementById('s-can-see-all').click()" id="s-toggle-track" style="position:absolute;cursor:pointer;inset:0;background:var(--bg2);border:1px solid var(--border2);border-radius:22px;transition:.2s;"></span>
+            <span onclick="document.getElementById('s-can-see-all').click()" id="s-toggle-thumb" style="position:absolute;left:3px;top:3px;width:14px;height:14px;background:var(--text3);border-radius:50%;transition:.2s;pointer-events:none;"></span>
+          </label>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Login (usuário)</label><input type="text" id="s-login" placeholder="ex: cris"></div>
@@ -1088,9 +1103,10 @@ async function loadSellers(preload=false){
 
 async function loadLeads(){
   let query=db.from('leads').select('*').order('created_at',{ascending:false});
-  // Vendedor só vê os próprios leads
+  // Vendedor só vê os próprios leads, a menos que tenha permissão de ver todos
   if(currentUser&&currentUser.role==='seller'){
-    query=query.eq('seller_id',currentUser.id);
+    const canSeeAll = currentUser.can_see_all_leads || ROLES_SEE_ALL.includes(currentUser.role);
+    if(!canSeeAll) query=query.eq('seller_id',currentUser.id);
   }
   const{data,error}=await query;
   if(error){showToast('Erro ao carregar leads.','error');return;}
@@ -1273,7 +1289,7 @@ function renderSellers(){
         <div style="flex:1"><div class="seller-name">${s.name}</div>
         <div class="seller-role">${s.role||'Vendedor'} <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${s.status==='active'?'var(--green)':'var(--red)'};margin-left:6px;vertical-align:2px;"></span></div>
         ${s.login?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">Login: ${s.login}</div>`:''}
-        </div>
+        ${s.can_see_all_leads?`<div style="font-size:10px;color:var(--accent);margin-top:3px;">👁 Vê todos os leads</div>`:''}
       </div>
       <div class="seller-stats">
         <div class="seller-stat"><div class="seller-stat-label">Leads</div><div class="seller-stat-value">${leads.length}</div></div>
@@ -1375,6 +1391,8 @@ function openSellerModal(seller=null){
   document.getElementById('s-password').value='';
   document.getElementById('s-role').value=seller?(seller.role||'Vendedor'):'Vendedor';
   document.getElementById('s-status').value=seller?(seller.status||'active'):'active';
+  const canSeeAll = seller ? (seller.can_see_all_leads || ROLES_SEE_ALL.includes(seller.role)) : false;
+  setTimeout(()=>setToggle(canSeeAll), 50);
   const color=seller?(seller.color||'#3d7eff'):'#3d7eff';
   document.getElementById('s-color').value=color;
   document.querySelectorAll('.color-opt').forEach(el=>el.style.border=el.dataset.color===color?`2px solid ${el.dataset.color}`:'2px solid transparent');
@@ -1384,7 +1402,7 @@ async function saveSeller(){
   const id=document.getElementById('editSellerId').value;
   if(!document.getElementById('s-name').value.trim()){showToast('Nome é obrigatório.','error');return;}
   const pass=document.getElementById('s-password').value;
-  const data={name:document.getElementById('s-name').value.trim(),nickname:document.getElementById('s-nickname').value.trim(),phone:document.getElementById('s-phone').value.trim(),email:document.getElementById('s-email').value.trim(),role:document.getElementById('s-role').value,goal:parseFloat(document.getElementById('s-goal').value)||null,color:document.getElementById('s-color').value,status:document.getElementById('s-status').value,login:document.getElementById('s-login').value.trim()};
+  const data={name:document.getElementById('s-name').value.trim(),nickname:document.getElementById('s-nickname').value.trim(),phone:document.getElementById('s-phone').value.trim(),email:document.getElementById('s-email').value.trim(),role:document.getElementById('s-role').value,goal:parseFloat(document.getElementById('s-goal').value)||null,color:document.getElementById('s-color').value,status:document.getElementById('s-status').value,login:document.getElementById('s-login').value.trim(),can_see_all_leads:document.getElementById('s-can-see-all').checked};
   if(pass)data.password=pass;
   const{error}=id?await db.from('sellers').update(data).eq('id',id):await db.from('sellers').insert([data]);
   if(error){showToast('Erro: '+error.message,'error');return;}
@@ -1574,7 +1592,29 @@ async function deleteWebhook(id) {
   await loadWebhooks();
 }
 
-// MAPPING
+// Cargos que por padrão têm permissão de ver todos os leads
+const ROLES_SEE_ALL = ['Gerente de Vendas','Diretor Comercial'];
+
+function autoSetPermission(){
+  const role = document.getElementById('s-role').value;
+  const shouldSeeAll = ROLES_SEE_ALL.includes(role);
+  setToggle(shouldSeeAll);
+}
+
+function setToggle(val){
+  const cb = document.getElementById('s-can-see-all');
+  const track = document.getElementById('s-toggle-track');
+  const thumb = document.getElementById('s-toggle-thumb');
+  if(!cb) return;
+  cb.checked = val;
+  if(val){ track.classList.add('toggle-on'); thumb.classList.add('toggle-thumb-on'); }
+  else { track.classList.remove('toggle-on'); thumb.classList.remove('toggle-thumb-on'); }
+}
+
+// Sync visual toggle when checkbox changes
+document.addEventListener('change', e => {
+  if(e.target.id === 's-can-see-all') setToggle(e.target.checked);
+});
 const TEMPLATES = {
   default:   { name:'name',    phone:'phone',       email:'email',     notes:'notes',    campaign:'' },
   zapier:    { name:'name',    phone:'phone_number',email:'email',     notes:'message',  campaign:'campaign_name' },
