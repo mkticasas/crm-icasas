@@ -134,7 +134,7 @@
   .badge-proposal{background:rgba(245,158,11,.15);color:#fbbf24;}
   .badge-negotiation{background:rgba(16,185,129,.15);color:#34d399;}
   .badge-won{background:rgba(34,197,94,.2);color:#4ade80;}
-  .badge-lost{background:rgba(239,68,68,.15);color:#f87171;}
+  .badge-standby{background:rgba(100,116,139,.15);color:#94a3b8;}
 
   /* PIPELINE HEADER */
   .pipeline-header{padding:16px 24px 0;flex-shrink:0;background:var(--bg);}
@@ -344,7 +344,8 @@
 
   .toggle-on{background:var(--accent)!important;border-color:var(--accent)!important;}
   .toggle-thumb-on{left:21px!important;background:#fff!important;}
-  .hamburger-btn:hover{color:var(--text);}
+  .hamburger-btn{background:transparent;border:1px solid var(--border2);cursor:pointer;color:var(--text2);padding:6px 10px;display:flex;align-items:center;border-radius:var(--radius);transition:all .15s;}
+  .hamburger-btn:hover{background:rgba(255,255,255,.05);color:var(--text);}
   @media(max-width:640px){
     .hamburger-btn{display:none;}
     .topbar-logo img{height:20px;width:20px;}
@@ -558,6 +559,11 @@
             <option value="cold">❄️ Frios</option>
           </select>
         </div>
+        <!-- Standby button -->
+        <button class="btn btn-ghost btn-sm" onclick="toggleStandbyPanel()" id="btnStandby" style="margin-left:auto;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.364 5.636a9 9 0 1 1-12.728 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+          Standby <span id="standbyCount" style="background:var(--bg3);border-radius:20px;padding:1px 7px;font-size:11px;">0</span>
+        </button>
       </div>
     </div>
 
@@ -566,6 +572,18 @@
       <div class="pipeline-board" id="pipelineBoard">
         <div class="loading" style="grid-column:span 6;">Carregando...</div>
       </div>
+    </div>
+
+    <!-- STANDBY PANEL -->
+    <div id="standbyPanel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:320px;background:var(--bg2);border-left:1px solid var(--border2);z-index:50;display:none;flex-direction:column;">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:600;font-size:15px;">Standby</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">Leads pausados temporariamente</div>
+        </div>
+        <button class="modal-close" onclick="toggleStandbyPanel()">×</button>
+      </div>
+      <div id="standbyList" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
     </div>
   </div>
 
@@ -652,6 +670,42 @@
     <span style="font-size:11px;color:var(--text3);">iCasas CRM · Desenvolvido para uso interno</span>
   </footer>
 </main>
+
+<!-- MODAL LEMBRETE -->
+<div class="modal-overlay" id="reminderModal">
+  <div class="modal" style="width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">🔔 Definir Lembrete</div>
+      <button class="modal-close" onclick="closeModal('reminderModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="reminderLeadId">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;" id="reminderLeadName">—</div>
+      <div class="form-group">
+        <label>Data e hora do lembrete</label>
+        <input type="datetime-local" id="reminder-date" style="width:100%;">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+        <button class="btn btn-ghost btn-sm" onclick="setReminderQuick(1)">Amanhã</button>
+        <button class="btn btn-ghost btn-sm" onclick="setReminderQuick(3)">3 dias</button>
+        <button class="btn btn-ghost btn-sm" onclick="setReminderQuick(7)">1 semana</button>
+        <button class="btn btn-ghost btn-sm" onclick="setReminderQuick(15)">15 dias</button>
+        <button class="btn btn-ghost btn-sm" onclick="setReminderQuick(30)">30 dias</button>
+        <button class="btn btn-ghost btn-sm" onclick="setReminderQuick(60)">60 dias</button>
+        <button class="btn btn-ghost btn-sm" onclick="setReminderQuick(120)">120 dias</button>
+      </div>
+      <div class="form-group">
+        <label>Observação do lembrete</label>
+        <input type="text" id="reminder-note" placeholder="Ex: Ligar para fechar proposta..." style="width:100%;">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="clearReminder()">Remover lembrete</button>
+      <button class="btn btn-ghost" onclick="closeModal('reminderModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveReminder()">Salvar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL WEBHOOK -->
 <div class="modal-overlay" id="webhookModal">
@@ -829,7 +883,7 @@
       <div class="form-row">
         <div class="form-group"><label>Vendedor responsável *</label><select id="l-seller"><option value="">Selecionar...</option></select></div>
         <div class="form-group"><label>Estágio</label>
-          <select id="l-stage"><option value="new">Novo Lead</option><option value="contact">Contato Realizado</option><option value="proposal">Proposta Enviada</option><option value="negotiation">Em Negociação</option><option value="won">Fechado - Ganho</option><option value="lost">Fechado - Perdido</option></select>
+          <select id="l-stage"><option value="new">Novo Lead</option><option value="contact">Contato Realizado</option><option value="proposal">Proposta Enviada</option><option value="negotiation">Em Negociação</option><option value="won">Fechado - Ganho</option><option value="lost">Fechado - Perdido</option><option value="standby">Standby</option></select>
         </div>
       </div>
       <div class="form-row">
@@ -958,7 +1012,8 @@ const STAGES={
   proposal:{label:'Proposta Enviada',badge:'badge-proposal',dot:'#f59e0b'},
   negotiation:{label:'Em Negociação',badge:'badge-negotiation',dot:'#10b981'},
   won:{label:'Fechado - Ganho',badge:'badge-won',dot:'#22c55e'},
-  lost:{label:'Fechado - Perdido',badge:'badge-lost',dot:'#ef4444'}
+  lost:{label:'Fechado - Perdido',badge:'badge-lost',dot:'#ef4444'},
+  standby:{label:'Standby',badge:'badge-standby',dot:'#64748b'}
 };
 
 // SESSION
@@ -992,10 +1047,10 @@ function onLoginSuccess(){
     document.getElementById('dlabel-admin').style.display='none';
   }
   loadAll().then(()=>{
-    // Página padrão: pipeline
     showPage('pipeline');
     document.querySelectorAll('.mobile-nav-item').forEach(n=>n.classList.remove('active'));
     const mn=document.getElementById('mnav-pipeline');if(mn)mn.classList.add('active');
+    scheduleReminderCheck();
   });
 }
 function logout(){currentUser=null;clearSession();document.getElementById('loginUser').value='';document.getElementById('loginPass').value='';document.getElementById('loginScreen').classList.add('show');closeDrawer();}
@@ -1214,7 +1269,11 @@ function renderPipeline(){
   });
 
   const board = document.getElementById('pipelineBoard');
-  board.innerHTML = Object.entries(STAGES).map(([key,stage]) => {
+  // Update standby count
+  const standbyCount = allLeads.filter(l=>l.stage==='standby').length;
+  const sc = document.getElementById('standbyCount');
+  if(sc) sc.textContent = standbyCount;
+  board.innerHTML = Object.entries(STAGES).filter(([key])=>key!=='standby').map(([key,stage]) => {
     const leads = filtered.filter(l => l.stage===key);
     const total = leads.reduce((a,l) => a+(parseFloat(l.value)||0), 0);
     const cards = leads.length
@@ -1249,6 +1308,8 @@ function pipelineCard(l){
     <div class="lead-footer">
       <span class="lead-value">${l.value?'R$ '+parseFloat(l.value).toLocaleString('pt-BR'):'—'}</span>
       <div class="lead-footer-right">
+        ${l.reminder_date&&new Date(l.reminder_date)>new Date()?`<span title="Lembrete: ${new Date(l.reminder_date).toLocaleDateString('pt-BR')}" style="font-size:12px;cursor:pointer;" onclick="event.stopPropagation();openReminderModal(${l.id})">🔔</span>`:''}
+        <span title="Standby" style="font-size:11px;cursor:pointer;color:var(--text3);padding:2px 4px;border-radius:4px;transition:color .15s;" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--text3)'" onclick="event.stopPropagation();updateStage(${l.id},'standby')">⏸</span>
         ${waNum?`<a class="wa-btn" href="https://wa.me/55${waNum}" target="_blank" onclick="event.stopPropagation()" style="padding:3px 7px;font-size:10px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>`:''}
         ${s?`<div class="avatar-tag" style="background:${s.color||'#3d7eff'}" title="${s.nickname||s.name}">${initials(s.nickname||s.name)}</div>`:''}
       </div>
@@ -1290,6 +1351,7 @@ function renderSellers(){
         <div class="seller-role">${s.role||'Vendedor'} <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${s.status==='active'?'var(--green)':'var(--red)'};margin-left:6px;vertical-align:2px;"></span></div>
         ${s.login?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">Login: ${s.login}</div>`:''}
         ${s.can_see_all_leads?`<div style="font-size:10px;color:var(--accent);margin-top:3px;">👁 Vê todos os leads</div>`:''}
+        </div>
       </div>
       <div class="seller-stats">
         <div class="seller-stat"><div class="seller-stat-label">Leads</div><div class="seller-stat-value">${leads.length}</div></div>
@@ -1464,6 +1526,116 @@ async function deleteCurrentLead(){
   if(error){showToast('Erro: '+error.message,'error');return;}
   showToast('Lead excluído.','success');closeDetail();
   await loadLeads();renderDashboard();renderPipeline();
+}
+
+// STANDBY PANEL
+let standbyOpen = false;
+function toggleStandbyPanel(){
+  standbyOpen = !standbyOpen;
+  const panel = document.getElementById('standbyPanel');
+  const wrap = document.querySelector('.pipeline-wrap');
+  if(standbyOpen){
+    panel.style.display='flex';
+    wrap.style.marginRight='320px';
+    renderStandbyList();
+  } else {
+    panel.style.display='none';
+    wrap.style.marginRight='0';
+  }
+}
+
+function renderStandbyList(){
+  const list = document.getElementById('standbyList');
+  const standby = allLeads.filter(l=>l.stage==='standby');
+  document.getElementById('standbyCount').textContent = standby.length;
+  if(!standby.length){list.innerHTML='<div class="empty-state"><p>Nenhum lead em standby.</p></div>';return;}
+  list.innerHTML = standby.map(l=>{
+    const s = allSellers.find(s=>s.id==l.seller_id);
+    const hasReminder = l.reminder_date && new Date(l.reminder_date) > new Date();
+    const reminderStr = l.reminder_date ? new Date(l.reminder_date).toLocaleDateString('pt-BR') : null;
+    return `<div class="lead-card" style="cursor:default;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div class="lead-name">${l.temperature==='hot'?'🔥':l.temperature==='warm'?'🌡️':'❄️'} ${l.name}</div>
+        ${s?`<div class="avatar-tag" style="background:${s.color||'#3d7eff'};flex-shrink:0;">${initials(s.nickname||s.name)}</div>`:''}
+      </div>
+      ${l.phone?`<div style="font-size:11px;color:var(--text3);margin-bottom:3px;">📞 ${l.phone}</div>`:''}
+      ${hasReminder?`<div style="font-size:11px;color:var(--amber);margin-bottom:3px;">🔔 ${reminderStr}${l.reminder_note?' — '+l.reminder_note:''}</div>`:''}
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="updateStage(${l.id},'new')">← Voltar</button>
+        <button class="btn btn-ghost btn-sm" onclick="openReminderModal(${l.id})">🔔</button>
+        ${l.phone?`<a href="https://wa.me/55${l.phone.replace(/\D/g,'')}" target="_blank" class="btn btn-ghost btn-sm" style="background:rgba(37,211,102,.1);color:#25d366;border-color:rgba(37,211,102,.2);"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// REMINDERS
+function openReminderModal(leadId){
+  const l=allLeads.find(l=>l.id==leadId);if(!l)return;
+  document.getElementById('reminderLeadId').value=leadId;
+  document.getElementById('reminderLeadName').textContent=`Lead: ${l.name}`;
+  document.getElementById('reminder-note').value=l.reminder_note||'';
+  if(l.reminder_date){
+    const d=new Date(l.reminder_date);
+    const local=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    document.getElementById('reminder-date').value=local;
+  } else {document.getElementById('reminder-date').value='';}
+  document.getElementById('reminderModal').classList.add('open');
+}
+
+function setReminderQuick(days){
+  const d=new Date();d.setDate(d.getDate()+days);d.setHours(9,0,0,0);
+  const local=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  document.getElementById('reminder-date').value=local;
+}
+
+async function saveReminder(){
+  const id=document.getElementById('reminderLeadId').value;
+  const date=document.getElementById('reminder-date').value;
+  const note=document.getElementById('reminder-note').value.trim();
+  if(!date){showToast('Selecione uma data.','error');return;}
+  const{error}=await db.from('leads').update({reminder_date:new Date(date).toISOString(),reminder_note:note}).eq('id',id);
+  if(error){showToast('Erro: '+error.message,'error');return;}
+  showToast('Lembrete salvo!','success');
+  closeModal('reminderModal');
+  await loadLeads();if(standbyOpen)renderStandbyList();renderPipeline();scheduleReminderCheck();
+}
+
+async function clearReminder(){
+  const id=document.getElementById('reminderLeadId').value;
+  const{error}=await db.from('leads').update({reminder_date:null,reminder_note:null}).eq('id',id);
+  if(error){showToast('Erro: '+error.message,'error');return;}
+  showToast('Lembrete removido.','success');
+  closeModal('reminderModal');
+  await loadLeads();if(standbyOpen)renderStandbyList();renderPipeline();
+}
+
+// NOTIFICATION CHECK
+let reminderCheckInterval=null;
+function scheduleReminderCheck(){
+  if(reminderCheckInterval)clearInterval(reminderCheckInterval);
+  checkReminders();
+  reminderCheckInterval=setInterval(checkReminders,60000);
+}
+function checkReminders(){
+  const now=new Date();
+  allLeads.filter(l=>{
+    if(!l.reminder_date)return false;
+    const d=new Date(l.reminder_date);
+    return d<=now&&d>new Date(now-24*60*60*1000);
+  }).forEach(l=>{
+    const key=`reminded_${l.id}_${l.reminder_date}`;
+    if(sessionStorage.getItem(key))return;
+    sessionStorage.setItem(key,'1');
+    showReminderNotif(l);
+  });
+}
+function showReminderNotif(l){
+  const t=document.getElementById('toast');
+  t.innerHTML=`🔔 <strong>Lembrete:</strong> ${l.name}${l.reminder_note?' — '+l.reminder_note:''}`;
+  t.className='toast show';t.style.borderColor='rgba(245,158,11,.4)';t.style.cursor='pointer';
+  t.onclick=()=>{openDetail(l.id);t.classList.remove('show');t.style.cursor='';t.onclick=null;};
+  setTimeout(()=>{t.classList.remove('show');t.style.cursor='';t.onclick=null;},8000);
 }
 
 // INTEGRATIONS
