@@ -347,7 +347,19 @@
   .toggle-thumb-on{left:21px!important;background:#fff!important;}
   @keyframes bellShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-15deg)}75%{transform:rotate(15deg)}}
   .integ-tab{background:none;border:none;padding:7px 16px;border-radius:7px;font-size:13px;color:var(--text3);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
-  .integ-tab.active{background:var(--bg2);color:var(--text);font-weight:500;}color:var(--text2);padding:6px 10px;display:flex;align-items:center;border-radius:var(--radius);transition:all .15s;}
+  .integ-tab.active{background:var(--bg2);color:var(--text);font-weight:500;}
+
+  /* TAGS */
+  .tag-pill{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border2);color:var(--text2);transition:all .15s;user-select:none;}
+  .tag-pill:hover{border-color:var(--text3);}
+  .tag-pill.active.tag-call_today{background:rgba(59,130,246,.18);border-color:#3b82f6;color:#60a5fa;}
+  .tag-pill.active.tag-called{background:rgba(34,197,94,.18);border-color:#22c55e;color:#4ade80;}
+  .tag-pill.active.tag-dont_forget{background:rgba(245,158,11,.18);border-color:#f59e0b;color:#fbbf24;}
+  .lead-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;}
+  .lead-tag-badge{font-size:9px;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap;}
+  .lead-tag-badge.tag-call_today{background:rgba(59,130,246,.18);color:#60a5fa;}
+  .lead-tag-badge.tag-called{background:rgba(34,197,94,.18);color:#4ade80;}
+  .lead-tag-badge.tag-dont_forget{background:rgba(245,158,11,.18);color:#fbbf24;}color:var(--text2);padding:6px 10px;display:flex;align-items:center;border-radius:var(--radius);transition:all .15s;}
   .hamburger-btn:hover{background:rgba(255,255,255,.05);color:var(--text);}
   @media(max-width:640px){
     .hamburger-btn{display:none;}
@@ -937,6 +949,15 @@
           <select id="l-temp"><option value="hot">🔥 Quente</option><option value="warm">🌡️ Morno</option><option value="cold">❄️ Frio</option></select>
         </div>
       </div>
+      <div class="form-group">
+        <label>Etiquetas</label>
+        <div id="l-tags-picker" style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="tag-pill tag-call_today" data-tag="call_today" onclick="toggleTag(this)">📞 Chamar Hoje</span>
+          <span class="tag-pill tag-called" data-tag="called" onclick="toggleTag(this)">✅ Chamei</span>
+          <span class="tag-pill tag-dont_forget" data-tag="dont_forget" onclick="toggleTag(this)">⚠️ Não Esquecer</span>
+        </div>
+        <input type="hidden" id="l-tags" value="">
+      </div>
       <div class="form-group"><label>Observações</label><textarea id="l-notes" placeholder="Informações relevantes sobre o lead..."></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('leadModal')">Cancelar</button><button class="btn btn-primary" onclick="saveLead()">Salvar Lead</button></div>
@@ -1017,6 +1038,14 @@
     <div class="detail-section">
       <div class="detail-section-title">Mover estágio</div>
       <div class="stage-pills" id="dpStagePills"></div>
+    </div>
+    <div class="detail-section" style="margin-top:16px;">
+      <div class="detail-section-title">Etiquetas</div>
+      <div id="dpTagsPicker" style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span class="tag-pill tag-call_today" data-tag="call_today" onclick="toggleDpTag(this)">📞 Chamar Hoje</span>
+        <span class="tag-pill tag-called" data-tag="called" onclick="toggleDpTag(this)">✅ Chamei</span>
+        <span class="tag-pill tag-dont_forget" data-tag="dont_forget" onclick="toggleDpTag(this)">⚠️ Não Esquecer</span>
+      </div>
     </div>
     <div class="detail-section" style="margin-top:16px;">
       <div class="detail-section-title">Informações</div>
@@ -1351,6 +1380,10 @@ function pipelineCard(l){
     ondragstart="onDragStart(event,${l.id})"
     ondragend="onDragEnd(event)"
     onclick="openDetail(${l.id})">
+    ${l.tags&&l.tags.length?`<div class="lead-tags">${l.tags.map(t=>{
+      const tagLabels={call_today:'📞 Chamar Hoje',called:'✅ Chamei',dont_forget:'⚠️ Não Esquecer'};
+      return `<span class="lead-tag-badge tag-${t}">${tagLabels[t]||t}</span>`;
+    }).join('')}</div>`:''}
     <div class="lead-name">${temp} ${l.name||'—'}</div>
     <div class="lead-meta">
       ${l.phone?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>${l.phone}</div>`:''}
@@ -1483,6 +1516,12 @@ function openLeadModal(lead=null){
   [['l-name','name'],['l-phone','phone'],['l-address','address'],['l-notes','notes'],['l-value','value']].forEach(([id,k])=>document.getElementById(id).value=lead?(lead[k]||''):'');
   document.getElementById('l-stage').value=lead?(lead.stage||'new'):'new';
   document.getElementById('l-temp').value=lead?(lead.temperature||'hot'):'hot';
+  // Tags
+  const currentTags=lead&&lead.tags?lead.tags:[];
+  document.getElementById('l-tags').value=currentTags.join(',');
+  document.querySelectorAll('#l-tags-picker .tag-pill').forEach(p=>{
+    p.classList.toggle('active',currentTags.includes(p.dataset.tag));
+  });
   // Se for vendedor, preenche automaticamente e esconde o select
   if(currentUser&&currentUser.role==='seller'){
     document.getElementById('l-seller').value=currentUser.id;
@@ -1496,11 +1535,20 @@ function openLeadModal(lead=null){
   }
   document.getElementById('leadModal').classList.add('open');
 }
+
+function toggleTag(el){
+  el.classList.toggle('active');
+  const active=[...document.querySelectorAll('#l-tags-picker .tag-pill.active')].map(p=>p.dataset.tag);
+  document.getElementById('l-tags').value=active.join(',');
+}
+
 async function saveLead(){
   const id=document.getElementById('editLeadId').value,seller_id=document.getElementById('l-seller').value;
   if(!document.getElementById('l-name').value.trim()){showToast('Nome é obrigatório.','error');return;}
   if(!seller_id){showToast('Selecione um vendedor.','error');return;}
-  const data={name:document.getElementById('l-name').value.trim(),phone:document.getElementById('l-phone').value.trim(),address:document.getElementById('l-address').value.trim(),seller_id,stage:document.getElementById('l-stage').value,value:parseFloat(document.getElementById('l-value').value)||null,temperature:document.getElementById('l-temp').value,notes:document.getElementById('l-notes').value.trim()};
+  const tagsRaw=document.getElementById('l-tags').value;
+  const tags=tagsRaw?tagsRaw.split(',').filter(Boolean):[];
+  const data={name:document.getElementById('l-name').value.trim(),phone:document.getElementById('l-phone').value.trim(),address:document.getElementById('l-address').value.trim(),seller_id,stage:document.getElementById('l-stage').value,value:parseFloat(document.getElementById('l-value').value)||null,temperature:document.getElementById('l-temp').value,notes:document.getElementById('l-notes').value.trim(),tags};
   const{error}=id?await db.from('leads').update(data).eq('id',id):await db.from('leads').insert([data]);
   if(error){showToast('Erro: '+error.message,'error');return;}
   showToast(id?'Lead atualizado!':'Lead cadastrado!','success');
@@ -1571,7 +1619,22 @@ function openDetail(id){
     Abrir no WhatsApp
   </a>`:'';
   document.getElementById('dpStagePills').innerHTML=Object.entries(STAGES).map(([k,st])=>`<div class="stage-pill s-${k} ${l.stage===k?'active':''}" onclick="updateStage(${l.id},'${k}')">${st.label}</div>`).join('');
+  // Tags
+  const leadTags=l.tags||[];
+  document.querySelectorAll('#dpTagsPicker .tag-pill').forEach(p=>{
+    p.classList.toggle('active',leadTags.includes(p.dataset.tag));
+  });
   document.getElementById('detailPanel').classList.add('open');
+}
+
+async function toggleDpTag(el){
+  if(!currentDetailLead)return;
+  el.classList.toggle('active');
+  const active=[...document.querySelectorAll('#dpTagsPicker .tag-pill.active')].map(p=>p.dataset.tag);
+  const{error}=await db.from('leads').update({tags:active}).eq('id',currentDetailLead.id);
+  if(error){showToast('Erro: '+error.message,'error');return;}
+  await loadLeads();renderPipeline();
+  if(currentDetailLead){currentDetailLead=allLeads.find(l=>l.id==currentDetailLead.id);}
 }
 async function updateStage(id,stage){
   const{error}=await db.from('leads').update({stage}).eq('id',id);
