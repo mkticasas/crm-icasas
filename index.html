@@ -1726,6 +1726,7 @@ function toggleReferral(){
   }
 }
 
+function toggleTag(el){
   const wasActive=el.classList.contains('active');
   document.querySelectorAll('#l-tags-picker .tag-pill').forEach(p=>{p.classList.remove('active');applyTagPillStyle(p,false);});
   if(!wasActive){el.classList.add('active');applyTagPillStyle(el,true);}
