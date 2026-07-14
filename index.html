@@ -1005,6 +1005,28 @@
         <div class="form-group" style="grid-column:span 2"><label>Endereço</label><input type="text" id="l-address" placeholder="Rua, número, bairro, cidade..."></div>
       </div>
       <div class="form-row">
+        <div class="form-group"><label>Origem</label>
+          <select id="l-origin">
+            <option value="">Selecionar...</option>
+            <option>Instagram</option>
+            <option>Facebook</option>
+            <option>WhatsApp</option>
+            <option>Site</option>
+            <option>Feirão</option>
+            <option>Google</option>
+            <option>Indicação</option>
+            <option>Outros</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px;">
+            <input type="checkbox" id="l-is-referral" onchange="toggleReferral()" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">
+            É uma indicação
+          </label>
+          <input type="text" id="l-referral-name" placeholder="Quem indicou?" style="display:none;">
+        </div>
+      </div>
+      <div class="form-row">
         <div class="form-group" id="l-seller-group"><label>Vendedor responsável *</label><select id="l-seller"><option value="">Selecionar...</option></select></div>
         <div class="form-group" id="l-seller-fixed" style="display:none;"><label>Vendedor responsável</label><div style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);" id="l-seller-name">—</div></div>
         <div class="form-group"><label>Estágio</label>
@@ -1120,6 +1142,8 @@
       <div class="detail-section-title">Informações</div>
       <div class="detail-row"><label>Telefone</label><span id="dp-phone">—</span></div>
       <div class="detail-row"><label>E-mail</label><span id="dp-email">—</span></div>
+      <div class="detail-row"><label>Origem</label><span id="dp-origin">—</span></div>
+      <div class="detail-row" id="dp-referral-row" style="display:none;"><label>Indicado por</label><span id="dp-referral">—</span></div>
       <div class="detail-row"><label>Endereço</label><span id="dp-address">—</span></div>
       <div class="detail-row"><label>Temperatura</label><span id="dp-temp">—</span></div>
       <div class="detail-row"><label>Vendedor</label><span id="dp-seller">—</span></div>
@@ -1664,6 +1688,12 @@ function openLeadModal(lead=null){
   [['l-name','name'],['l-phone','phone'],['l-address','address'],['l-notes','notes'],['l-value','value']].forEach(([id,k])=>document.getElementById(id).value=lead?(lead[k]||''):'');
   document.getElementById('l-stage').value=lead?(lead.stage||'new'):'new';
   document.getElementById('l-temp').value=lead?(lead.temperature||'hot'):'hot';
+  // Origem
+  document.getElementById('l-origin').value=lead?(lead.origin||''):'';
+  const isRef=lead?!!(lead.referral_name)&&lead.origin==='Indicação':false;
+  document.getElementById('l-is-referral').checked=isRef;
+  document.getElementById('l-referral-name').value=lead?(lead.referral_name||''):'';
+  document.getElementById('l-referral-name').style.display=isRef?'block':'none';
   // Tags
   const currentTags=lead&&lead.tags?lead.tags:[];
   document.getElementById('l-tags').value=currentTags.join(',');
@@ -1685,7 +1715,17 @@ function openLeadModal(lead=null){
   document.getElementById('leadModal').classList.add('open');
 }
 
-function toggleTag(el){
+function toggleReferral(){
+  const cb=document.getElementById('l-is-referral');
+  const field=document.getElementById('l-referral-name');
+  const originSelect=document.getElementById('l-origin');
+  field.style.display=cb.checked?'block':'none';
+  if(cb.checked){
+    originSelect.value='Indicação';
+    field.focus();
+  }
+}
+
   const wasActive=el.classList.contains('active');
   document.querySelectorAll('#l-tags-picker .tag-pill').forEach(p=>{p.classList.remove('active');applyTagPillStyle(p,false);});
   if(!wasActive){el.classList.add('active');applyTagPillStyle(el,true);}
@@ -1699,7 +1739,10 @@ async function saveLead(){
   if(!seller_id){showToast('Selecione um vendedor.','error');return;}
   const tagsRaw=document.getElementById('l-tags').value;
   const tags=tagsRaw?tagsRaw.split(',').filter(Boolean):[];
-  const data={name:document.getElementById('l-name').value.trim(),phone:document.getElementById('l-phone').value.trim(),address:document.getElementById('l-address').value.trim(),seller_id,stage:document.getElementById('l-stage').value,value:parseFloat(document.getElementById('l-value').value)||null,temperature:document.getElementById('l-temp').value,notes:document.getElementById('l-notes').value.trim(),tags};
+  const isRef=document.getElementById('l-is-referral').checked;
+  const origin=document.getElementById('l-origin').value;
+  const referral_name=isRef?document.getElementById('l-referral-name').value.trim():'';
+  const data={name:document.getElementById('l-name').value.trim(),phone:document.getElementById('l-phone').value.trim(),address:document.getElementById('l-address').value.trim(),seller_id,stage:document.getElementById('l-stage').value,value:parseFloat(document.getElementById('l-value').value)||null,temperature:document.getElementById('l-temp').value,notes:document.getElementById('l-notes').value.trim(),tags,origin:origin||null,referral_name:referral_name||null};
   // Para lead novo, inclui os anexos pendentes
   if(!id&&pendingAttachments.length)data.attachments=pendingAttachments;
   const{error,data:saved}=id?await db.from('leads').update(data).eq('id',id).select():await db.from('leads').insert([data]).select();
@@ -1763,6 +1806,14 @@ function openDetail(id){
   document.getElementById('dp-email').textContent=l.email||'—';
   document.getElementById('dp-address').textContent=l.address||'—';
   document.getElementById('dp-temp').textContent=l.temperature==='hot'?'🔥 Quente':l.temperature==='warm'?'🌡️ Morno':'❄️ Frio';
+  document.getElementById('dp-origin').textContent=l.origin||'—';
+  const refRow=document.getElementById('dp-referral-row');
+  if(l.referral_name){
+    refRow.style.display='flex';
+    document.getElementById('dp-referral').textContent=l.referral_name;
+  } else {
+    refRow.style.display='none';
+  }
   document.getElementById('dp-seller').textContent=s?(s.nickname||s.name):'—';
   document.getElementById('dp-value').textContent=l.value?'R$ '+parseFloat(l.value).toLocaleString('pt-BR'):'—';
   document.getElementById('dp-created').textContent=l.created_at?new Date(l.created_at).toLocaleDateString('pt-BR'):'—';
