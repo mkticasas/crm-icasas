@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iCasas CRM — TV</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0c10;--bg2:#11141b;--bg3:#171b24;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f0f2f7;--text2:#8a90a0;--text3:#5a6070;--accent:#3d7eff;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--purple:#a855f7;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+.tv-header{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;height:60px;}
+.tv-logo{display:flex;align-items:center;gap:10px;}
+.tv-logo img{height:30px;width:30px;object-fit:contain;}
+.tv-logo-text{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;}
+.tv-logo-text span{color:var(--accent);}
+.tv-header-right{display:flex;align-items:center;gap:18px;}
+.tv-clock{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;}
+.tv-date{font-size:11px;color:var(--text3);text-align:right;line-height:1.4;}
+.realtime-badge{display:flex;align-items:center;gap:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--green);}
+.realtime-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.tv-body{flex:1;display:grid;grid-template-rows:auto 1fr;gap:12px;padding:12px 16px;overflow:hidden;}
+.metrics-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative;overflow:hidden;}
+.metric-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.metric-card.c-blue::after{background:var(--accent);}
+.metric-card.c-green::after{background:var(--green);}
+.metric-card.c-amber::after{background:var(--amber);}
+.metric-card.c-purple::after{background:var(--purple);}
+.metric-card.c-red::after{background:var(--red);}
+.metric-card.c-teal::after{background:#10b981;}
+.metric-label{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:6px;}
+.metric-value{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;line-height:1;}
+.metric-sub{font-size:10px;color:var(--text2);margin-top:4px;}
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:12px;overflow:hidden;min-height:0;}
+.tv-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden;}
+.tv-card-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.tv-card-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px;}
+.tv-card-body{flex:1;overflow:hidden;padding:10px;}
+.tv-card-body.no-pad{padding:0;}
+.pipeline-cols{display:flex;gap:6px;height:100%;overflow-x:auto;padding:8px;}
+.pipeline-col{background:var(--bg3);border-radius:8px;min-width:110px;flex:1;display:flex;flex-direction:column;}
+.pipeline-col-hd{padding:6px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.pipeline-col-body{flex:1;overflow-y:auto;padding:4px;display:flex;flex-direction:column;gap:4px;}
+.pipeline-col-body::-webkit-scrollbar{width:2px;}
+.pipeline-col-body::-webkit-scrollbar-thumb{background:var(--border2);}
+.col-count{border-radius:8px;padding:1px 6px;font-size:9px;}
+.mini-card{background:var(--bg2);border-radius:6px;padding:5px 7px;}
+.mini-card-name{font-weight:600;font-size:10px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mini-card-info{font-size:9px;color:var(--text3);}
+.ranking-table{width:100%;}
+.ranking-table td{padding:7px 10px;font-size:12px;border-bottom:1px solid var(--border);}
+.ranking-table tr:last-child td{border-bottom:none;}
+.rank-name{font-weight:600;font-size:12px;}
+.rank-won{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--green);}
+.rank-rate{font-size:11px;color:var(--text2);}
+.progress-bar{height:3px;background:var(--bg3);border-radius:2px;margin-top:3px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:2px;transition:width .5s;}
+.leads-feed{display:flex;flex-direction:column;gap:5px;}
+.feed-item{background:var(--bg3);border-radius:7px;padding:7px 10px;display:flex;align-items:center;gap:8px;animation:slideIn .4s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.feed-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;}
+.feed-info{flex:1;min-width:0;}
+.feed-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.feed-meta{font-size:9px;color:var(--text3);margin-top:1px;}
+.feed-badge{font-size:9px;padding:2px 7px;border-radius:8px;font-weight:600;flex-shrink:0;}
+.origin-list{display:flex;flex-direction:column;gap:7px;}
+.origin-item{display:flex;align-items:center;gap:8px;}
+.origin-label{font-size:11px;color:var(--text2);width:80px;flex-shrink:0;}
+.origin-bar-wrap{flex:1;height:7px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.origin-bar{height:100%;border-radius:3px;background:var(--accent);transition:width .8s;}
+.origin-count{font-size:11px;font-weight:600;width:28px;text-align:right;flex-shrink:0;}
+.new-lead-flash{position:fixed;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),#6fa3ff,var(--accent));animation:flashAnim 2s ease forwards;}
+@keyframes flashAnim{0%{opacity:1;}100%{opacity:0;}}
+.empty-tv{text-align:center;padding:24px;color:var(--text3);font-size:12px;}
+</style>
+</head>
+<body>
+<div class="tv-header">
+  <div class="tv-logo">
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iQ2FtYWRhXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+CiAgPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDMwLjQuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDIuMS40IEJ1aWxkIDIyNikgIC0tPgogIDxkZWZzPgogICAgPHN0eWxlPgogICAgICAuc3QwIHsKICAgICAgICBmaWxsOiAjNTdhYzZlOwogICAgICB9CgogICAgICAuc3QxIHsKICAgICAgICBmaWxsOiAjZWQ4MDM2OwogICAgICB9CgogICAgICAuc3QyIHsKICAgICAgICBmaWxsOiAjZmZmOwogICAgICB9CgogICAgICAuc3QzIHsKICAgICAgICBmaWxsOiAjNGNhOGQ4OwogICAgICB9CiAgICA8L3N0eWxlPgogIDwvZGVmcz4KICA8cGF0aCBjbGFzcz0ic3QyIiBkPSJNMjM4LjQ0LDMxMC44OGMtMy4yNC0xLjMtNi45Ni0uNDktOS41NywyLjU3LTEwLjUsMTIuMzItMjcuMjIsMTUuODYtNDAuOTIsOS4xNS0xNC4xMi02LjkzLTIxLjE4LTIxLjU4LTE4Ljg1LTM3LjE1LDIuMDktMTMuOTksMTAuNTItMjQuNDQsMjQuMTUtMjguMzEsMTMuNTMtMy44NSwyNi45NC4zNCwzNS45NiwxMS4zNywyLjg3LDMuNSw4LjExLDMuNzYsMTEuMTcsMS4xMSwzLjEzLTIuNzIsMy4yLTcuNTIuNDctMTAuODgtMTEuNjgtMTQuNDEtMjkuNTQtMTkuOTgtNDcuNTYtMTYuNzYtMjYuODIsNC43OC00NC4yNCwyOC4zNi00MC44MSw1NS4zMywyLjc2LDIxLjY4LDE4LjQsMzguMjYsNDAuMTQsNDIuMjEsMTMuMzQsMi40MiwyNi4zMi41NCwzNy44MS02Ljg4LDQuOTYtMy4yLDkuNjUtNy4yMywxMS45NC0xMi44NywxLjU2LTMuODItLjg3LTcuNjUtMy45My04Ljg4WiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0zMTAuNDgsMjkwLjAxYy0uMTQtMTIuODItOS45LTIxLjY2LTIyLjA0LTIzLjc4LTEyLjg1LTIuMjUtMjUuNjMuOS0zNC4zNywxMC41OS0yLjksMy4yLTIuNzMsNy4zNC0uMSwxMCwyLjc1LDIuNzYsNy4wNiwyLjU3LDEwLjAyLS4wOSw1Ljk4LTUuMzcsMTMuOTktOC42NywyMS45NC01Ljk4LDcuNDgsMi41NiwxMC4xNywxMC43Niw4LjQ2LDE4LjM0bC0yMC42OC4wM2MtMTMuMDQuMDItMjUuOTEsNi41My0yNS4xMSwyMi4wNi40OCw5LjQzLDYuNzQsMTUuNjUsMTUuMTMsMTcuOTUsMTAuNzEsMi45NSwyMS42MSwxLjgzLDMwLjk1LTUuOTEsMi4wNCw1LjM0LDQuOTksNy45MSw5LjY0LDcuMjIsNC4wMS0uNTksNi42My0zLjgyLDYuNTgtOC41MmwtLjQxLTQxLjkyWk0yOTIuMzgsMzIwLjIyYy01LjIyLDcuMi0xNC44Miw5LjgxLTIyLjY4LDYuNDYtMy42MS0xLjU0LTUuNTQtNS4yNy01LjAxLTguNiwxLjY0LTEwLjU1LDE5LjE2LTYuMywyOS4wNy03LjE5LDIuMDIsMi4yMy41NSw2LjY3LTEuMzgsOS4zM1oiLz4KICA8cGF0aCBjbGFzcz0ic3QyIiBkPSJNNDMwLjEzLDI3MC40N2MtMTQuNzktOC43Mi0zMy43Ny01Ljk4LTQ1LjQ2LDYuNDEtMi45OSwzLjE2LTIuMzcsNy43Ny4xOSwxMC4wOSwyLjU3LDIuMzEsNi43NywyLjYxLDkuNjctLjA5LDYuMDEtNS41NiwxNC4yMy04Ljk1LDIyLjQ0LTYuMDEsNy4xMywyLjU2LDEwLjI5LDExLjI2LDcuODgsMTguMDNsLTIxLjY2LjI4Yy0xMy4zLjE3LTI0LjgsOC4yMi0yNC4wOCwyMS45NC40NSw4LjQ4LDYuMzIsMTUuNDgsMTUuMzcsMTguMDUsMTEuMTksMy4yLDIxLjYxLDEuMTcsMzEtNS42OCwyLjA2LDUuNDQsNS4xMSw3LjM5LDkuMjYsNy4wMyw0LjAyLS4zNiw2Ljk0LTMuNTksNi45My04LjA4bC0uMDMtMjMuNzVjLS4wMy0xMi42NCwxLjk1LTMwLjI2LTExLjUtMzguMjFaTTQyNS40NSwzMTQuMzZjLTIuNTIsMTEuNjYtMTUuNzcsMTcuMDMtMjUuOTgsMTEuODUtMy40Mi0xLjc0LTQuNTMtNS43OS0zLjc4LTkuMTIuNjYtMy4wMiwzLjg5LTUuNTEsNy42NS01LjkyLDMuNzEtLjQxLDE5LjUtMS4wNywyMS42NC4yMS41NS4zMy44MSwxLjQyLjQ3LDIuOTlaIi8+CiAgPHBhdGggY2xhc3M9InN0MiIgZD0iTTQ5Ny42OCwzMzQuMjhjNy44Mi02LjUxLDkuMzctMTguMjUsMy45LTI2LjQtMi45LTQuMzItNy4xOC02LjkxLTExLjczLTguOWwtMTYuMzktNy4xN2MtMi44Ni0xLjI1LTQuODQtNC00LjMzLTYuNzQuNDktMi42NCwyLjg0LTQuNTQsNS43NS01LjIzLDEzLjczLTMuMjQsMjEuMjcsMTIuNDIsMjcuNTQsNC4zNCwxLjgtMi4zMiwyLjUyLTYuNDQtLjA2LTkuMDEtOS43Ny05LjcyLTIzLjc3LTEyLjE3LTM2LjQxLTcuMTUtNy44MiwzLjEtMTIuMzksOS44Ny0xMi42OCwxNy43OC0uODksMjQuNTYsMzcuNTgsMjEuMjUsMzUuNjQsMzQuNDQtLjQ0LDIuOTYtMy4wNCw1LjE1LTYuMzgsNi4wMi0xNi40Nyw0LjMyLTIyLjM3LTE0LjYzLTMwLjU4LTcuMy0yLjAyLDEuOC0zLjUsNS45Mi0xLjI3LDkuMDEsOS45NSwxMy44MSwzNC4yNSwxNi45NSw0Ny4wMSw2LjMzWiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0zNjEuNTUsMzAwLjEybC0xOC45OS04LjQxYy0yLjg3LTEuMjctNC41NC0zLjg0LTQuMDctNi43My40MS0yLjUxLDIuODYtNC40OSw1LjkyLTUuMTgsMTMuNjUtMy4wNywyMC42MywxMi4xMiwyNy4xMSw0LjUxLDIuMTQtMi41MSwyLjUyLTYuNzktLjI4LTkuNTItOS41NC05LjI3LTI0LjA2LTExLjgxLTM2LjM4LTYuNy03LjYyLDMuMTYtMTIuMTIsMTAuMDctMTIuMjksMTcuNzItLjE4LDcuOTUsNC4wNCwxNS4xNCwxMS41OCwxOC40N2wxOS41OSw4LjY2YzIuOTksMS4zMiw0Ljk4LDQuMzUsNC41OSw3LjE1LS40MiwzLjAxLTMuMDMsNS4wOS02LjI0LDYuMDQtMTYuNDgsNC45LTIyLjctMTUuMTQtMzEuMTgtNi45MS0yLjQ4LDIuNDEtMy4xNSw2Ljg1LS4xNywxMC4wOSw5LjcyLDEwLjU2LDI1Ljk5LDE0LjIsMzkuNzksOC44Miw4LjY1LTMuMzcsMTMuMjctMTAuNzgsMTMuNDYtMTguNjYuMjEtOC41OS00LjQ1LTE1Ljc5LTEyLjQ2LTE5LjM0WiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0xMzQuMjcsMjY1LjU1Yy00LjE1LS4wMy03Ljk5LDIuOTktOCw3LjcybC0uMSw1OC42M2MwLDQuNjUsMi40LDguMDEsNi40Nyw4LjQ5LDQuMzEuNTEsOC40OC0xLjQ5LDkuMDEtNi43M3YtNjEuMjhjLS4yOC0zLjktMy41Ni02LjgxLTcuMzgtNi44NFoiLz4KICA8Y2lyY2xlIGNsYXNzPSJzdDIiIGN4PSIxMzQuMTQiIGN5PSIyNDEuMDQiIHI9IjEwLjMxIi8+CiAgPHBhdGggY2xhc3M9InN0MiIgZD0iTTM3MS42NiwxNzcuODdjLTQuNTQsNC43Ny0xMi4yOCwyLjk5LTE3LjE1LTEuMjFsLTExMy42OS05OC4yNWMtOS4xNC03LjkxLTIyLjg1LTguMTctMzIuMTgtLjEyTDM0LjcyLDIyOC4yOWMtMy4zMiwyLjg3LTUuNTEsNS45NC02Ljc1LDkuOS0xLjY2LDUuMjcsMS42OSwxMC4zNSw3LjI3LDExLjMzLDEwLjc0LDEuODcsMjYuNzctLjA3LDM1LjMyLjg4LDQuNzUuNTQsOC43OSwzLjk3LDkuMDUsOS4wNS45MiwxNy45NC0uMSwzNS44Ny0uMDUsNTMuODQuMDMsMTIuMy42MSwyNC42LjYsMzYuODksMCw3LjU5LDAsMTUuMTksMCwyMi43OCwwLC43MSwwLDEuNDIsMCwyLjEzdjM3LjAzYzAsMTIuMTksNC42OCwyMi4wNiwxNy44OSwyMi45NiwxNy43NiwxLjE5LDM1LjE1LjE0LDUzLjA0LS4zNiwyLjU3LS4wNyw1Ljk0LDEuMDUsNi43NSwzLjQ3LDEuNCw0LjE2LDEuMTQsOS4wNy0uNTUsMTMuMDQtLjY0LDEuNTUtMy40MiwxLjg4LTQuOTIsMS45bC0zMy4xOC41LTI0LjE2LjFjLTguOTguMDMtMTcuMjktMi4yMy0yMy43My05LjI4LTUuOTQtNi40Ni0xMC40My0xNC40OS0xMS4zMS0yMy42Ni0xLjUtMTUuNTEtLjk3LTMwLjYxLS45OC00NS43bC0uMDMtMzcuOTcuMDMtMzcuOThjMC02Ljg3LS42NC0xMy44MiwwLTIwLjcxLS40My0xLjguNS0zLjktMS4wNy01LjUxLTYuNjctNi44MS0zOC44NSw1LjExLTQ4LjM4LTIwLjIxLTUuMDgtMTMuNTEtMS4zNS0yOC4wNyw5Ljk4LTM3Ljg0TDE5NC40Myw2My45MWMxNy40NS0xNS4wNiw0Mi45Ni0xNS4yLDYwLjM3LS4xNGwxMTQuNTksOTkuMDZjNC4xNSwzLjU5LDYuMTMsMTEuMDIsMi4yOCwxNS4wNFoiLz4KICA8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMjUyLjkzLDM4Mi41Yy00Ljk1LjU3LTguOTIsNC4yMS04LjkyLDkuOTlsLS4wNyw1OC41N2MwLDYuMiw1Ljc5LDkuOTgsMTEuMjEsOS40OSw1LjczLS41Miw5LjAyLTUuMTcsOC45Ny0xMS42NWwtLjQ2LTU3LjU3Yy0uMDUtNi01LjUtOS40NC0xMC43My04Ljg0WiIvPgogIDxwYXRoIGNsYXNzPSJzdDMiIGQ9Ik0yMjEuOTEsMzgyLjU1Yy01LjIyLjk1LTguNDEsNC44Mi04LjM5LDEwLjcybC4xNCw1OC42NGMuMDEsNS45LDYuMzUsOS4xMiwxMS4yMSw4LjU2LDUuNjktLjY1LDguODktNS4yLDguODItMTEuNjZsLS42LTU4LjA3Yy0uMDYtNi4xMy02LjI5LTkuMDgtMTEuMTgtOC4xOVoiLz4KICA8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTkyLjI1LDM4Mi40N2MtNS4wNC41Ny05LjA2LDQuMDgtOS4wOCw5LjkybC0uMjUsNTYuMDNjLS4wMyw2Ljg4LDMuMTUsMTEuOTYsMTAuMTcsMTIuMTEsNi4wNy4xMywxMC4yNC00LjUzLDEwLjE3LTExLjY1bC0uNTctNTguMDNjLS4wNi01Ljc2LTUuNjItOC45Mi0xMC40My04LjM4WiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik00ODIuMzMsNDA2LjUxYy0xMC41NCwwLTE5LjA3LDguNTMtMTkuMDcsMTkuMDVzOC41MywxOS4wNywxOS4wNywxOS4wNywxOS4wNy04LjUzLDE5LjA3LTE5LjA3LTguNTUtMTkuMDUtMTkuMDctMTkuMDVaTTQ4Mi4xOSw0MzkuNzhjLTcuNjMtLjA3LTE0LjQ3LTUuNzItMTQuNzItMTMuNzMtLjI2LTguNTIsNi42OC0xNC41OCwxNC43Mi0xNC42Niw3LjctLjA3LDE1LjU1LDUuOTEsMTUuMDMsMTUuMDMtLjQ3LDguMzQtOC4wNSwxMy40NC0xNS4wMywxMy4zN1oiLz4KICA8cGF0aCBjbGFzcz0ic3QyIiBkPSJNMzEzLjEyLDQyNS40N2MtLjguNjQtLjg1LDMuODcuNDgsMy45bDkuNTguMjVjLS40NSw1LjI4LTQuNjIsOC42NS05LjU0LDkuNzktNy4zOCwxLjcxLTE1LjA3LTEuODktMTcuMjYtOC44My0yLjE5LTYuOTYuNDYtMTQuNzEsNi45Mi0xNy43OCw2LjU5LTMuMTMsMTQuMjUtMS4xNiwxOC4yOSw0Ljk3LDEuMjEuMjcsMy42NC0xLjcyLDMuNDItMi44MS0yLjU1LTUuNS04Ljk4LTcuOTItMTQuOTQtOC4wNS0xMC44Ni0uMjQtMTguNjYsNy41Ny0xOC45OSwxOC4xOS0uMzYsMTEuNjgsOC4zMiwxOS43LDE5Ljg2LDE5LjIsMTAuNDgtLjQ2LDE4LjA3LTguNjIsMTYuNTktMTkuMTktNS4xMS4zLTEwLjEtLjM5LTE0LjQuMzdaIi8+CiAgPHBhdGggY2xhc3M9InN0MiIgZD0iTTM1NC42NSw0MjcuMDFjMy41Mi0uMTcsNi4zNC0uNjcsOC4yMi0yLjg1LDEuNjgtMS45MiwyLjMtNC42MSwyLjExLTcuNDMtLjM2LTUuMTYtMy44OS04Ljg4LTkuMjEtOC44NmwtMTEuMjYuMDd2MzYuMDdjMS41NC4yNCwyLjg1LjIxLDQuMjMuMDMuNTUtNS44LS42NC0xMS4xMS41OS0xNi44MWwxMi45MiwxNi40NGMxLjc2LjUyLDMuNjYuOTgsNS42MSwwbC0xMy4yMS0xNi42N1pNMzQ4Ljg4LDQyMi41bC0uMDItMTAuMjFjMy40OS0uMTYsNi44MS0uNTcsOS45MSwxLjM1LDEuNzYsMS4wOSwyLjQyLDUuMi41OSw2Ljk0LTIuODcsMi43Ni03LDEuOS0xMC40OCwxLjkyWiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik00MDkuNzMsNDA4LjQzbC0uMDIsMjMuMzVjMCw4LjE1LTYuNDMsMTIuODctMTQuMywxMi40NC00LjAyLS4yMS03LjkxLS44OC0xMC41Mi0zLjc1LTIuNDQtMi42OC0zLjQtNi40OC0zLjM1LTEwLjE0bC4wOS0yMi40NGMxLjI4LjA3LDIuNTctLjE5LDQuMzIuMTJsLjA3LDIzLjE4Yy4wMyw1Ljg0LDQuNzIsOSwxMC4yMSw4LjY5LDUuMTYtLjMxLDguOTUtMy4yOCw4Ljk4LTguNzRsLjE2LTIyLjcxYy45OC0uODgsMy4zMy0uODYsNC4zNywwWiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik00NDIuNiw0MDguNDhjLTQuNjUtMS4yNC05LjM2LS4yOS0xNC4zNS0uNTl2MzYuMjZjMS4yOC0uMDcsMi41Ny4yMSw0LjMtLjE0bC4wNS0xNi4yOWMzLjg3LS4xOSw3LjYuNjQsMTEuMTEtLjk4LDMuOC0xLjc0LDUuMjUtNS43OSw1LjA0LTkuNzItLjE5LTMuNDUtMi03LjQzLTYuMTUtOC41M1pNNDQyLjc5LDQyMS45N2MtMy41MiwxLjUtNi42NywxLjc0LTEwLjIxLDEuMzZ2LTExLjA0YzMuNzEtLjM2LDcuMTItLjEyLDEwLjI5LDEuNjYsMS43MywyLjM3LDEuODMsNS40NC0uMDksOC4wMVoiLz4KPC9zdmc+" alt="iCasas">
+    <div>
+      <div class="tv-logo-text">i<span>Casas</span> CRM</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;">Dashboard em Tempo Real</div>
+    </div>
+  </div>
+  <div class="tv-header-right">
+    <div class="realtime-badge">
+      <span class="realtime-dot" id="realtimeDot"></span>
+      <span id="realtimeStatus">Conectando...</span>
+    </div>
+    <div>
+      <div class="tv-clock" id="tvClock">00:00:00</div>
+      <div class="tv-date" id="tvDate">—</div>
+    </div>
+  </div>
+</div>
+<div class="tv-body">
+  <div class="metrics-row">
+    <div class="metric-card c-blue"><div class="metric-label">Total de Leads</div><div class="metric-value" id="m-total">—</div><div class="metric-sub">cadastrados</div></div>
+    <div class="metric-card c-green"><div class="metric-label">Fechados</div><div class="metric-value" id="m-won">—</div><div class="metric-sub" id="m-revenue">R$ 0</div></div>
+    <div class="metric-card c-amber"><div class="metric-label">Em Negociação</div><div class="metric-value" id="m-neg">—</div><div class="metric-sub">leads ativos</div></div>
+    <div class="metric-card c-purple"><div class="metric-label">Conversão</div><div class="metric-value" id="m-rate">—</div><div class="metric-sub">do total</div></div>
+    <div class="metric-card c-teal"><div class="metric-label">Novos Hoje</div><div class="metric-value" id="m-today">—</div><div class="metric-sub">leads hoje</div></div>
+    <div class="metric-card c-red"><div class="metric-label">Vendedores</div><div class="metric-value" id="m-sellers">—</div><div class="metric-sub">ativos</div></div>
+  </div>
+  <div class="bottom-grid">
+    <div class="tv-card">
+      <div class="tv-card-header">
+        <div class="tv-card-title"><span style="width:7px;height:7px;background:var(--accent);border-radius:50%;display:inline-block;"></span>Pipeline</div>
+        <span style="font-size:10px;color:var(--text3);" id="pipeline-total-val"></span>
+      </div>
+      <div class="tv-card-body no-pad"><div class="pipeline-cols" id="tvPipeline"></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;overflow:hidden;">
+      <div class="tv-card" style="flex:1;">
+        <div class="tv-card-header"><div class="tv-card-title">🏆 Ranking de Vendedores</div></div>
+        <div class="tv-card-body no-pad" style="overflow-y:auto;"><table class="ranking-table" id="tvRanking"></table></div>
+      </div>
+      <div class="tv-card" style="flex:0 0 auto;">
+        <div class="tv-card-header"><div class="tv-card-title">📊 Origem dos Leads</div></div>
+        <div class="tv-card-body"><div class="origin-list" id="tvOrigin"></div></div>
+      </div>
+    </div>
+    <div class="tv-card">
+      <div class="tv-card-header">
+        <div class="tv-card-title"><span class="realtime-dot"></span>Leads Recentes</div>
+        <span style="font-size:10px;color:var(--text3);">ao vivo</span>
+      </div>
+      <div class="tv-card-body" style="overflow-y:auto;" id="tvFeed"><div class="empty-tv">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+<script>
+const SUPA_URL='https://mqdhavyaeujufhlqdlfg.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xZGhhdnlhZXVqdWZobHFkbGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NDg0OTUsImV4cCI6MjA5NTUyNDQ5NX0.bmlsVIXzQ1H-R4CEVZJzg_8TXygBsSQ57GOteBKqLHE';
+const STAGES={new:'Novo Lead',contact:'Contato Realizado',proposal:'Proposta Enviada',negotiation:'Em Negociação',won:'Fechado - Ganho',lost:'Lead Perdido',standby:'Standby',not_going:'Não vai fazer'};
+const STAGE_COLORS={new:'#3d7eff',contact:'#a855f7',proposal:'#f59e0b',negotiation:'#10b981',won:'#22c55e',lost:'#ef4444',standby:'#64748b',not_going:'#7c3aed'};
+let db,allLeads=[],allSellers=[];
+function initials(n){return(n||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
+function hexToRgba(hex,a){hex=hex.replace('#','');const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);return`rgba(${r},${g},${b},${a})`;}
+function startClock(){
+  function tick(){
+    const now=new Date();
+    const br=new Date(now.toLocaleString('en-US',{timeZone:'America/Sao_Paulo'}));
+    document.getElementById('tvClock').textContent=[br.getHours(),br.getMinutes(),br.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+    document.getElementById('tvDate').textContent=br.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
+  }
+  tick();setInterval(tick,1000);
+}
+async function loadAll(){
+  const [s,l]=await Promise.all([
+    db.from('sellers').select('*').eq('status','active').order('name'),
+    db.from('leads').select('*').order('created_at',{ascending:false})
+  ]);
+  allSellers=s.data||[];allLeads=l.data||[];render();
+}
+function render(){renderMetrics();renderPipeline();renderRanking();renderOrigin();renderFeed();}
+function renderMetrics(){
+  const today=new Date().toISOString().slice(0,10);
+  const won=allLeads.filter(l=>l.stage==='won');
+  const revenue=won.reduce((a,l)=>a+(parseFloat(l.value)||0),0);
+  const rate=allLeads.length>0?Math.round((won.length/allLeads.length)*100):0;
+  const todayLeads=allLeads.filter(l=>l.created_at&&l.created_at.slice(0,10)===today);
+  document.getElementById('m-total').textContent=allLeads.length;
+  document.getElementById('m-won').textContent=won.length;
+  document.getElementById('m-revenue').textContent='R$ '+revenue.toLocaleString('pt-BR');
+  document.getElementById('m-neg').textContent=allLeads.filter(l=>l.stage==='negotiation').length;
+  document.getElementById('m-rate').textContent=rate+'%';
+  document.getElementById('m-today').textContent=todayLeads.length;
+  document.getElementById('m-sellers').textContent=allSellers.length;
+}
+function renderPipeline(){
+  const mainStages=['new','contact','proposal','negotiation','won','lost'];
+  const totalVal=allLeads.filter(l=>l.stage==='negotiation'||l.stage==='proposal').reduce((a,l)=>a+(parseFloat(l.value)||0),0);
+  document.getElementById('pipeline-total-val').textContent=totalVal>0?'R$ '+totalVal.toLocaleString('pt-BR'):'';
+  document.getElementById('tvPipeline').innerHTML=mainStages.map(key=>{
+    const leads=allLeads.filter(l=>l.stage===key).slice(0,8);
+    const color=STAGE_COLORS[key];
+    const label=STAGES[key]?.replace('Contato Realizado','Contato')?.replace('Proposta Enviada','Proposta')?.replace('Fechado - Ganho','Ganho')?.replace('Lead Perdido','Perdido');
+    return`<div class="pipeline-col">
+      <div class="pipeline-col-hd" style="color:${color};">${label}<span class="col-count" style="background:${hexToRgba(color,.15)};">${allLeads.filter(l=>l.stage===key).length}</span></div>
+      <div class="pipeline-col-body">${leads.length?leads.map(l=>{
+        const temp=l.temperature==='hot'?'🔥':l.temperature==='warm'?'🌡️':'❄️';
+        return`<div class="mini-card"><div class="mini-card-name">${temp} ${l.name||'—'}</div>${l.phone?`<div class="mini-card-info">${l.phone}</div>`:''}</div>`;
+      }).join(''):'<div class="mini-card-info" style="padding:6px;text-align:center;font-size:10px;">Vazio</div>'}</div>
+    </div>`;
+  }).join('');
+}
+function renderRanking(){
+  const stats=allSellers.map(s=>{
+    const leads=allLeads.filter(l=>l.seller_id===s.id);
+    const won=leads.filter(l=>l.stage==='won').length;
+    return{s,leads:leads.length,won,rate:leads.length>0?Math.round((won/leads.length)*100):0};
+  }).sort((a,b)=>b.won-a.won);
+  const medals=['🥇','🥈','🥉'];
+  const maxWon=Math.max(...stats.map(x=>x.won),1);
+  document.getElementById('tvRanking').innerHTML=stats.map((st,i)=>{
+    const color=st.s.color||'#3d7eff';
+    return`<tr>
+      <td style="width:28px;text-align:center;">${medals[i]||''}</td>
+      <td><div style="display:flex;align-items:center;gap:7px;">
+        <div style="width:24px;height:24px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0;">${initials(st.s.nickname||st.s.name)}</div>
+        <div><div class="rank-name">${st.s.nickname||st.s.name}</div>
+        <div class="progress-bar" style="width:90px;"><div class="progress-fill" style="width:${Math.round((st.won/maxWon)*100)}%;background:${color};"></div></div></div>
+      </div></td>
+      <td style="text-align:center;font-size:11px;color:var(--text2);">${st.leads}L</td>
+      <td style="text-align:center;"><span class="rank-won">${st.won}</span></td>
+      <td style="text-align:center;"><span class="rank-rate">${st.rate}%</span></td>
+    </tr>`;
+  }).join('');
+}
+function renderOrigin(){
+  const origins={};
+  allLeads.forEach(l=>{if(l.origin)origins[l.origin]=(origins[l.origin]||0)+1;});
+  const sorted=Object.entries(origins).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const max=sorted[0]?.[1]||1;
+  const colors=['#3d7eff','#a855f7','#f59e0b','#10b981','#ef4444'];
+  document.getElementById('tvOrigin').innerHTML=sorted.length?sorted.map(([name,count],i)=>
+    `<div class="origin-item"><span class="origin-label">${name}</span><div class="origin-bar-wrap"><div class="origin-bar" style="width:${Math.round((count/max)*100)}%;background:${colors[i]||'#3d7eff'};"></div></div><span class="origin-count">${count}</span></div>`
+  ).join(''):'<div class="empty-tv">Sem dados de origem.</div>';
+}
+function renderFeed(){
+  const recent=allLeads.slice(0,10);
+  document.getElementById('tvFeed').innerHTML=recent.length?
+    `<div class="leads-feed">${recent.map(l=>{
+      const s=allSellers.find(s=>s.id===l.seller_id);
+      const color=s?.color||'#3d7eff';
+      const stageColor=STAGE_COLORS[l.stage]||'#5a6070';
+      const stage=STAGES[l.stage]||l.stage;
+      const time=l.created_at?new Date(l.created_at).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+      return`<div class="feed-item">
+        <div class="feed-avatar" style="background:${color}">${s?initials(s.nickname||s.name):'?'}</div>
+        <div class="feed-info"><div class="feed-name">${l.name||'—'}</div><div class="feed-meta">${l.origin||''}${l.origin&&time?' · ':''}${time}</div></div>
+        <span class="feed-badge" style="background:${hexToRgba(stageColor,.15)};color:${stageColor};">${stage}</span>
+      </div>`;
+    }).join('')}</div>`
+    :'<div class="empty-tv">Nenhum lead ainda.</div>';
+}
+function flashNewLead(){
+  const bar=document.createElement('div');bar.className='new-lead-flash';document.body.appendChild(bar);
+  setTimeout(()=>bar.remove(),2000);
+}
+function startRealtime(){
+  db.channel('tv-realtime')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'leads'},p=>{allLeads.unshift(p.new);render();flashNewLead();})
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'leads'},p=>{const i=allLeads.findIndex(l=>l.id==p.new.id);if(i!==-1)allLeads[i]=p.new;else allLeads.unshift(p.new);render();})
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'leads'},p=>{allLeads=allLeads.filter(l=>l.id!=p.old.id);render();})
+    .subscribe(status=>{
+      const dot=document.getElementById('realtimeDot');
+      const txt=document.getElementById('realtimeStatus');
+      if(status==='SUBSCRIBED'){dot.style.background='var(--green)';txt.textContent='Tempo real ativo';}
+      else{dot.style.background='var(--amber)';txt.textContent='Reconectando...';}
+    });
+}
+window.addEventListener('DOMContentLoaded',()=>{
+  db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+  startClock();
+  loadAll().then(startRealtime);
+});
+</script>
+</body>
+</html>
