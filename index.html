@@ -430,6 +430,10 @@
     <div class="drawer-item" id="ditem-integrations" onclick="navTo('integrations')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>Integrações
     </div>
+    <a href="https://mkticasas.github.io/obras-automacao/" target="_blank" class="drawer-item" style="text-decoration:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Acompanhamento de Obras
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;opacity:.4;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
   </div>
   <div class="drawer-bottom">
     <div class="drawer-logout" onclick="logout()">
@@ -447,6 +451,9 @@
       <span class="topbar-sep">·</span>
       <div class="topbar-title" id="pageTitle">Dashboard</div>
       <span id="brClock" style="font-size:12px;font-weight:400;color:var(--text3);background:var(--bg3);padding:3px 10px;border-radius:20px;font-family:'DM Sans',sans-serif;letter-spacing:.3px;display:none;"></span>
+      <span title="Status tempo real" style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);">
+        <span id="realtimeDot" style="width:7px;height:7px;border-radius:50%;background:var(--text3);display:inline-block;transition:background .3s;" title="Conectando..."></span>
+      </span>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <button class="btn btn-primary btn-sm" onclick="openLeadModal()">
@@ -1203,6 +1210,7 @@ function onLoginSuccess(){
     document.querySelectorAll('.mobile-nav-item').forEach(n=>n.classList.remove('active'));
     const mn=document.getElementById('mnav-pipeline');if(mn)mn.classList.add('active');
     scheduleReminderCheck();
+    startRealtime();
   });
 }
 function logout(){currentUser=null;clearSession();document.getElementById('loginUser').value='';document.getElementById('loginPass').value='';document.getElementById('loginScreen').classList.add('show');closeDrawer();}
@@ -1280,6 +1288,68 @@ async function saveProfile(){
 
 
 
+
+// REALTIME
+let realtimeChannel = null;
+
+function startRealtime(){
+  if(realtimeChannel) db.removeChannel(realtimeChannel);
+
+  realtimeChannel = db.channel('crm-realtime')
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'leads'}, async (payload)=>{
+      // Lead novo chegou
+      const lead = payload.new;
+      allLeads.unshift(lead);
+      filterLeads();
+      renderDashboard();
+      renderPipeline();
+      updateNotifBell();
+      if(standbyOpen) renderStandbyList();
+      // Toast de notificação
+      showNewLeadToast(lead);
+    })
+    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'leads'}, async (payload)=>{
+      // Lead atualizado
+      const updated = payload.new;
+      const idx = allLeads.findIndex(l=>l.id==updated.id);
+      if(idx!==-1) allLeads[idx]=updated;
+      else allLeads.unshift(updated);
+      filterLeads();
+      renderPipeline();
+      updateNotifBell();
+      if(standbyOpen) renderStandbyList();
+      // Atualiza painel de detalhes se estiver aberto
+      if(currentDetailLead&&currentDetailLead.id==updated.id){
+        currentDetailLead=updated;
+        openDetail(updated.id);
+      }
+    })
+    .on('postgres_changes', {event:'DELETE', schema:'public', table:'leads'}, async (payload)=>{
+      allLeads = allLeads.filter(l=>l.id!=payload.old.id);
+      filterLeads();
+      renderDashboard();
+      renderPipeline();
+    })
+    .subscribe((status)=>{
+      const dot = document.getElementById('realtimeDot');
+      if(status==='SUBSCRIBED'){
+        if(dot){dot.style.background='var(--green)';dot.title='Tempo real ativo';}
+      } else {
+        if(dot){dot.style.background='var(--red)';dot.title='Tempo real desconectado';}
+      }
+    });
+}
+
+function showNewLeadToast(lead){
+  const s = allSellers.find(s=>s.id==lead.seller_id);
+  const t = document.getElementById('toast');
+  t.innerHTML = `🔔 <strong>Novo lead!</strong> ${lead.name||'—'}${s?' → '+(s.nickname||s.name):''}`;
+  t.className = 'toast success show';
+  t.style.borderColor = 'rgba(61,126,255,.4)';
+  t.style.cursor = 'pointer';
+  t.onclick = ()=>{ openDetail(lead.id); t.classList.remove('show'); t.style.cursor=''; t.onclick=null; };
+  setTimeout(()=>{ t.classList.remove('show'); t.style.cursor=''; t.onclick=null; t.style.borderColor=''; }, 6000);
+}
 
 // INIT
 window.addEventListener('DOMContentLoaded',()=>{
