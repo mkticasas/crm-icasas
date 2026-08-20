@@ -1229,7 +1229,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-console.log('%cCRM versão 20/08 12:56','background:#3d7eff;color:#fff;padding:2px 8px;border-radius:4px');
+console.log('%cCRM versão 20/08 13:11','background:#3d7eff;color:#fff;padding:2px 8px;border-radius:4px');
 const SUPA_URL='https://mqdhavyaeujufhlqdlfg.supabase.co';
 const ROLES_SEE_ALL = ['Gerente de Vendas','Diretor Comercial'];
 
@@ -1346,10 +1346,32 @@ async function salvarNovaSenha(){
   erro.style.display='none';
   if(s1.length<6){erro.textContent='A senha precisa de pelo menos 6 caracteres.';erro.style.display='block';return;}
   if(s1!==s2){erro.textContent='As senhas não conferem.';erro.style.display='block';return;}
+
+  // confere se existe sessão de recuperação antes de tentar salvar
+  const {data:{session:sessaoAtual}}=await db.auth.getSession();
+  if(!sessaoAtual){
+    erro.innerHTML='Este link já foi usado ou expirou. Isso é comum quando o Outlook/e-mail corporativo '+
+      'verifica o link automaticamente antes de você clicar. <br><br>'+
+      '<span style="cursor:pointer;text-decoration:underline;color:var(--accent);" onclick="mostrarTela(\'esqueci\')">'+
+      'Pedir um novo link</span>';
+    erro.style.display='block';
+    return;
+  }
+
   btn.disabled=true; btn.textContent='Salvando...';
   const {error}=await db.auth.updateUser({password:s1});
   btn.disabled=false; btn.textContent='Salvar e entrar';
-  if(error){erro.textContent='Não foi possível salvar: '+error.message;erro.style.display='block';return;}
+  if(error){
+    if(error.message&&error.message.toLowerCase().indexOf('session')>=0){
+      erro.innerHTML='A sessão expirou durante o processo. '+
+        '<span style="cursor:pointer;text-decoration:underline;color:var(--accent);" onclick="mostrarTela(\'esqueci\')">'+
+        'Pedir um novo link</span>';
+    } else {
+      erro.textContent='Não foi possível salvar: '+error.message;
+    }
+    erro.style.display='block';
+    return;
+  }
   history.replaceState(null,'',location.pathname);   // limpa o link do e-mail da barra de endereço
   const {data:{session}}=await db.auth.getSession();
   if(session&&session.user&&await carregarUsuarioLogado(session.user)){ onLoginSuccess(); }
@@ -1360,11 +1382,21 @@ async function salvarNovaSenha(){
 function ligarEscutaRecuperacao(){
   if(!db)return;
   db.auth.onAuthStateChange(function(evento){
-    if(evento==='PASSWORD_RECOVERY'){
-      document.getElementById('loginScreen').classList.add('show');
-      mostrarTela('nova');
+    if(evento==='PASSWORD_RECOVERY'||evento==='SIGNED_IN'){
+      // se a URL veio de um link de recuperação, mostra a tela de nova senha
+      const veioDeRecovery = location.hash.indexOf('type=recovery')>=0 || location.search.indexOf('type=recovery')>=0;
+      if(evento==='PASSWORD_RECOVERY' || veioDeRecovery){
+        document.getElementById('loginScreen').classList.add('show');
+        mostrarTela('nova');
+      }
     }
   });
+  // se a página já carregou com o link de recovery na URL, mostra a tela na hora
+  // (cobre o caso do evento disparar antes da escuta estar pronta)
+  if(location.hash.indexOf('type=recovery')>=0 || location.search.indexOf('type=recovery')>=0){
+    document.getElementById('loginScreen').classList.add('show');
+    mostrarTela('nova');
+  }
 }
 
 // ===== LOGIN VIA SUPABASE AUTH (senha com hash, fora do banco de dados) =====
