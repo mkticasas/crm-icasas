@@ -1229,7 +1229,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-console.log('%cCRM versão 20/08 13:11','background:#3d7eff;color:#fff;padding:2px 8px;border-radius:4px');
+console.log('%cCRM versão 20/08 13:24','background:#3d7eff;color:#fff;padding:2px 8px;border-radius:4px');
 const SUPA_URL='https://mqdhavyaeujufhlqdlfg.supabase.co';
 const ROLES_SEE_ALL = ['Gerente de Vendas','Diretor Comercial'];
 
@@ -1685,6 +1685,15 @@ function iniciarDb(tentativa){
     return;
   }
   ligarEscutaRecuperacao();
+
+  // se o link é de recuperação de senha, NUNCA tenta logar com sessão salva —
+  // mesmo que já exista uma sessão ativa nesse navegador, o link tem prioridade.
+  const ehLinkDeRecuperacao = location.hash.indexOf('type=recovery')>=0 || location.search.indexOf('type=recovery')>=0;
+  if(ehLinkDeRecuperacao){
+    loadSellers(true).catch(function(e){console.error('Falha ao carregar vendedores:',e);});
+    return;   // ligarEscutaRecuperacao() já cuidou de mostrar a tela de nova senha
+  }
+
   loadSellers(true).then(()=>{
     restaurarSessao().then(function(ok){ if(ok) onLoginSuccess(); });
   }).catch(function(e){
