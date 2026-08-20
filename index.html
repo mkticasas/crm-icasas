@@ -1229,7 +1229,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-console.log('%cCRM versão 20/08 13:24','background:#3d7eff;color:#fff;padding:2px 8px;border-radius:4px');
+console.log('%cCRM versão 20/08 18:10','background:#3d7eff;color:#fff;padding:2px 8px;border-radius:4px');
 const SUPA_URL='https://mqdhavyaeujufhlqdlfg.supabase.co';
 const ROLES_SEE_ALL = ['Gerente de Vendas','Diretor Comercial'];
 
@@ -1372,28 +1372,36 @@ async function salvarNovaSenha(){
     erro.style.display='block';
     return;
   }
-  history.replaceState(null,'',location.pathname);   // limpa o link do e-mail da barra de endereço
+  limparLinkRecoveryDaUrl();   // limpa o link do e-mail da barra de endereço
   const {data:{session}}=await db.auth.getSession();
   if(session&&session.user&&await carregarUsuarioLogado(session.user)){ onLoginSuccess(); }
   else { mostrarTela('entrar'); showToast('Senha alterada. Entre com a nova senha.','success'); }
 }
 
 // quem clica no link do e-mail cai aqui: o Supabase abre uma sessão de recuperação
+let jaTratouLinkRecovery = false;   // evita reprocessar o mesmo link depois da 1ª vez (ex.: ao clicar em Sair)
+function linkDeRecoveryNaUrl(){
+  return location.hash.indexOf('type=recovery')>=0 || location.search.indexOf('type=recovery')>=0;
+}
+// tira o token de recuperação da barra de endereço sem recarregar a página —
+// assim ele não é reprocessado em nenhum evento futuro (logout, refresh, etc.)
+function limparLinkRecoveryDaUrl(){
+  if(linkDeRecoveryNaUrl()) history.replaceState(null,'',location.pathname+location.search.replace(/[?&]?type=recovery[^&]*/,''));
+}
 function ligarEscutaRecuperacao(){
   if(!db)return;
   db.auth.onAuthStateChange(function(evento){
-    if(evento==='PASSWORD_RECOVERY'||evento==='SIGNED_IN'){
-      // se a URL veio de um link de recuperação, mostra a tela de nova senha
-      const veioDeRecovery = location.hash.indexOf('type=recovery')>=0 || location.search.indexOf('type=recovery')>=0;
-      if(evento==='PASSWORD_RECOVERY' || veioDeRecovery){
-        document.getElementById('loginScreen').classList.add('show');
-        mostrarTela('nova');
-      }
+    if(jaTratouLinkRecovery)return;   // já mostramos a tela de recovery uma vez: ignora eventos depois disso
+    if(evento==='PASSWORD_RECOVERY'||(evento==='SIGNED_IN'&&linkDeRecoveryNaUrl())){
+      jaTratouLinkRecovery = true;
+      document.getElementById('loginScreen').classList.add('show');
+      mostrarTela('nova');
     }
   });
   // se a página já carregou com o link de recovery na URL, mostra a tela na hora
   // (cobre o caso do evento disparar antes da escuta estar pronta)
-  if(location.hash.indexOf('type=recovery')>=0 || location.search.indexOf('type=recovery')>=0){
+  if(!jaTratouLinkRecovery && linkDeRecoveryNaUrl()){
+    jaTratouLinkRecovery = true;
     document.getElementById('loginScreen').classList.add('show');
     mostrarTela('nova');
   }
@@ -1520,7 +1528,17 @@ function redesenharPaginaAtual(){
   }catch(e){console.warn('redesenho falhou',e);}
 }
 
-function logout(){currentUser=null;clearSession();document.getElementById('loginUser').value='';document.getElementById('loginPass').value='';document.getElementById('loginScreen').classList.add('show');closeDrawer();}
+function logout(){
+  // limpa qualquer resquício de link de recuperação ANTES de tudo,
+  // incondicionalmente — não depende de nenhuma variável de estado
+  if(location.hash.indexOf('type=recovery')>=0 || location.search.indexOf('type=recovery')>=0){
+    history.replaceState(null,'',location.pathname);
+  }
+  jaTratouLinkRecovery = false;
+  currentUser=null;clearSession();
+  document.getElementById('loginUser').value='';document.getElementById('loginPass').value='';
+  document.getElementById('loginScreen').classList.add('show');mostrarTela('entrar');closeDrawer();
+}
 
 // DRAWER
 function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('drawerOverlay').classList.add('open');}
@@ -1688,8 +1706,7 @@ function iniciarDb(tentativa){
 
   // se o link é de recuperação de senha, NUNCA tenta logar com sessão salva —
   // mesmo que já exista uma sessão ativa nesse navegador, o link tem prioridade.
-  const ehLinkDeRecuperacao = location.hash.indexOf('type=recovery')>=0 || location.search.indexOf('type=recovery')>=0;
-  if(ehLinkDeRecuperacao){
+  if(linkDeRecoveryNaUrl()){
     loadSellers(true).catch(function(e){console.error('Falha ao carregar vendedores:',e);});
     return;   // ligarEscutaRecuperacao() já cuidou de mostrar a tela de nova senha
   }
