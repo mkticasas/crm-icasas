@@ -1229,7 +1229,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-console.log('%cCRM versão 20/08 12:53','background:#3d7eff;color:#fff;padding:2px 8px;border-radius:4px');
+console.log('%cCRM versão 20/08 12:56','background:#3d7eff;color:#fff;padding:2px 8px;border-radius:4px');
 const SUPA_URL='https://mqdhavyaeujufhlqdlfg.supabase.co';
 const ROLES_SEE_ALL = ['Gerente de Vendas','Diretor Comercial'];
 
@@ -1357,12 +1357,15 @@ async function salvarNovaSenha(){
 }
 
 // quem clica no link do e-mail cai aqui: o Supabase abre uma sessão de recuperação
-db.auth.onAuthStateChange(function(evento){
-  if(evento==='PASSWORD_RECOVERY'){
-    document.getElementById('loginScreen').classList.add('show');
-    mostrarTela('nova');
-  }
-});
+function ligarEscutaRecuperacao(){
+  if(!db)return;
+  db.auth.onAuthStateChange(function(evento){
+    if(evento==='PASSWORD_RECOVERY'){
+      document.getElementById('loginScreen').classList.add('show');
+      mostrarTela('nova');
+    }
+  });
+}
 
 // ===== LOGIN VIA SUPABASE AUTH (senha com hash, fora do banco de dados) =====
 async function doLogin(){
@@ -1649,6 +1652,7 @@ function iniciarDb(tentativa){
     avisoConexao('Erro ao conectar: '+e.message+'. Recarregue a página.');
     return;
   }
+  ligarEscutaRecuperacao();
   loadSellers(true).then(()=>{
     restaurarSessao().then(function(ok){ if(ok) onLoginSuccess(); });
   }).catch(function(e){
