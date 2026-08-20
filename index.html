@@ -382,43 +382,10 @@
     <div class="login-logo">iCasas CRM</div>
     <div class="login-sub">Gestão comercial · Acesso restrito</div>
     <h2>Entrar</h2>
-    <!-- ===== ENTRAR ===== -->
-    <div id="telaEntrar">
-      <div class="form-group"><label>E-mail</label><input type="email" id="loginUser" placeholder="seu@email.com" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
-      <div class="form-group"><label>Senha</label><input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-      <div class="login-error" id="loginError">E-mail ou senha incorretos.</div>
-      <button class="btn btn-primary btn-full" style="margin-top:20px;" onclick="doLogin()">Entrar</button>
-      <div style="text-align:center;margin-top:16px;">
-        <span onclick="mostrarTela('esqueci')" style="font-size:13px;color:var(--text3);cursor:pointer;">Esqueci minha senha</span>
-      </div>
-    </div>
-
-    <!-- ===== ESQUECI MINHA SENHA ===== -->
-    <div id="telaEsqueci" style="display:none;">
-      <p style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:18px;">
-        Digite seu e-mail. Vamos enviar um link para você criar uma senha nova.
-      </p>
-      <div class="form-group"><label>E-mail</label><input type="email" id="recEmail" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')enviarLinkSenha()"></div>
-      <div class="login-error" id="recErro">Não foi possível enviar.</div>
-      <div id="recOk" style="display:none;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:#22c55e;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.5;margin-top:6px;">
-        Link enviado. Confira sua caixa de entrada e o spam — ele vale por 1 hora.
-      </div>
-      <button class="btn btn-primary btn-full" style="margin-top:18px;" id="recBtn" onclick="enviarLinkSenha()">Enviar link</button>
-      <div style="text-align:center;margin-top:16px;">
-        <span onclick="mostrarTela('entrar')" style="font-size:13px;color:var(--text3);cursor:pointer;">Voltar para o login</span>
-      </div>
-    </div>
-
-    <!-- ===== DEFINIR NOVA SENHA (quem chegou pelo link do e-mail) ===== -->
-    <div id="telaNovaSenha" style="display:none;">
-      <p style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:18px;">
-        Crie sua nova senha de acesso.
-      </p>
-      <div class="form-group"><label>Nova senha</label><input type="password" id="novaSenha1" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
-      <div class="form-group"><label>Repita a nova senha</label><input type="password" id="novaSenha2" placeholder="••••••••" autocomplete="new-password" onkeydown="if(event.key==='Enter')salvarNovaSenha()"></div>
-      <div class="login-error" id="novaErro">As senhas não conferem.</div>
-      <button class="btn btn-primary btn-full" style="margin-top:18px;" id="novaBtn" onclick="salvarNovaSenha()">Salvar e entrar</button>
-    </div>
+    <div class="form-group"><label>Usuário</label><input type="text" id="loginUser" placeholder="Seu usuário" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="form-group"><label>Senha</label><input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="login-error" id="loginError">Usuário ou senha incorretos.</div>
+    <button class="btn btn-primary btn-full" style="margin-top:20px;" onclick="doLogin()">Entrar</button>
   </div>
 </div>
 
@@ -887,12 +854,22 @@
           </select>
         </div>
         <div class="form-group">
+          <label>Empresa</label>
+          <select id="wh-empresa">
+            <option value="automacao">iCasas Automação</option>
+            <option value="construtora">iCasas Construtora</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
           <label>Distribuição</label>
           <select id="wh-dist" onchange="toggleFixedSeller()">
             <option value="roundrobin">Round-robin (ordem automática)</option>
             <option value="fixed">Vendedor fixo</option>
           </select>
         </div>
+        <div></div>
       </div>
       <div class="form-group" id="wh-seller-group" style="display:none;">
         <label>Vendedor fixo</label>
@@ -1293,109 +1270,19 @@ function preencherEtapas(valorAtual){
 }
 
 // SESSION
-function saveSession(u){/* sessão agora é gerenciada pelo Supabase Auth */}
+function saveSession(u){localStorage.setItem(SESSION_KEY,JSON.stringify({user:u,expires:Date.now()+SESSION_DAYS*86400000}));}
 function loadSession(){try{const r=localStorage.getItem(SESSION_KEY);if(!r)return null;const s=JSON.parse(r);if(Date.now()>s.expires){localStorage.removeItem(SESSION_KEY);return null;}return s.user;}catch(e){return null;}}
-function clearSession(){try{db.auth.signOut();}catch(e){}localStorage.removeItem(SESSION_KEY);}
+function clearSession(){localStorage.removeItem(SESSION_KEY);}
 
 // LOGIN
-// ===== TELAS DA ÁREA DE LOGIN =====
-function mostrarTela(qual){
-  const t={entrar:'telaEntrar',esqueci:'telaEsqueci',nova:'telaNovaSenha'};
-  Object.values(t).forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
-  const alvo=document.getElementById(t[qual]||t.entrar);
-  if(alvo)alvo.style.display='';
-  ['loginError','recErro','novaErro'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
-  const ok=document.getElementById('recOk'); if(ok)ok.style.display='none';
-  // o e-mail digitado no login já vem preenchido na recuperação
-  if(qual==='esqueci'){
-    const u=document.getElementById('loginUser'), r=document.getElementById('recEmail');
-    if(u&&r&&u.value.trim())r.value=u.value.trim();
-  }
-}
-
-// envia o link de redefinição por e-mail
-async function enviarLinkSenha(){
-  if(!precisaDb())return;
-  const email=(document.getElementById('recEmail').value||'').trim().toLowerCase();
-  const erro=document.getElementById('recErro'), ok=document.getElementById('recOk'), btn=document.getElementById('recBtn');
-  erro.style.display='none'; ok.style.display='none';
-  if(!email||email.indexOf('@')<0){erro.textContent='Digite um e-mail válido.';erro.style.display='block';return;}
-  btn.disabled=true; btn.textContent='Enviando...';
-  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
-  btn.disabled=false; btn.textContent='Enviar link';
-  if(error){erro.textContent='Não foi possível enviar: '+error.message;erro.style.display='block';return;}
-  ok.style.display='block';
-}
-
-// grava a senha nova de quem chegou pelo link
-async function salvarNovaSenha(){
-  if(!precisaDb())return;
-  const s1=document.getElementById('novaSenha1').value, s2=document.getElementById('novaSenha2').value;
-  const erro=document.getElementById('novaErro'), btn=document.getElementById('novaBtn');
-  erro.style.display='none';
-  if(s1.length<6){erro.textContent='A senha precisa de pelo menos 6 caracteres.';erro.style.display='block';return;}
-  if(s1!==s2){erro.textContent='As senhas não conferem.';erro.style.display='block';return;}
-  btn.disabled=true; btn.textContent='Salvando...';
-  const {error}=await db.auth.updateUser({password:s1});
-  btn.disabled=false; btn.textContent='Salvar e entrar';
-  if(error){erro.textContent='Não foi possível salvar: '+error.message;erro.style.display='block';return;}
-  history.replaceState(null,'',location.pathname);   // limpa o link do e-mail da barra de endereço
-  const {data:{session}}=await db.auth.getSession();
-  if(session&&session.user&&await carregarUsuarioLogado(session.user)){ onLoginSuccess(); }
-  else { mostrarTela('entrar'); showToast('Senha alterada. Entre com a nova senha.','success'); }
-}
-
-// quem clica no link do e-mail cai aqui: o Supabase abre uma sessão de recuperação
-db.auth.onAuthStateChange(function(evento){
-  if(evento==='PASSWORD_RECOVERY'){
-    document.getElementById('loginScreen').classList.add('show');
-    mostrarTela('nova');
-  }
-});
-
-// ===== LOGIN VIA SUPABASE AUTH (senha com hash, fora do banco de dados) =====
-async function doLogin(){
-  if(!precisaDb())return;
-  const email=document.getElementById('loginUser').value.trim().toLowerCase();
-  const senha=document.getElementById('loginPass').value;
-  const erro=document.getElementById('loginError');
-  erro.style.display='none';
-  if(!email||!senha){erro.textContent='Preencha e-mail e senha.';erro.style.display='block';return;}
-
-  const {data:sessao,error}=await db.auth.signInWithPassword({email,password:senha});
-  if(error||!sessao||!sessao.user){
-    erro.textContent='E-mail ou senha incorretos.';erro.style.display='block';return;
-  }
-  const ok=await carregarUsuarioLogado(sessao.user);
-  if(!ok){
-    erro.textContent='Login válido, mas seu usuário não está vinculado a um vendedor. Fale com o administrador.';
-    erro.style.display='block';
-    await db.auth.signOut();
-    return;
-  }
-  onLoginSuccess();
-}
-// busca o vendedor ligado ao usuário autenticado
-async function carregarUsuarioLogado(authUser){
-  const {data}=await db.from('sellers').select('*').eq('auth_user_id',authUser.id).maybeSingle();
-  if(!data||data.status!=='active')return false;
-  currentUser={...data, role: (data.role==='admin'?'admin':'seller'), auth_email: authUser.email};
-  return true;
-}
-// mantém o usuário logado entre visitas, com a sessão do próprio Supabase
-async function restaurarSessao(){
-  const {data:{session}}=await db.auth.getSession();
-  if(!session||!session.user)return false;
-  return await carregarUsuarioLogado(session.user);
-}
-// recuperação de senha por e-mail
-async function esqueciSenha(){
-  const email=document.getElementById('loginUser').value.trim().toLowerCase();
-  const erro=document.getElementById('loginError');
-  if(!email){erro.textContent='Digite seu e-mail primeiro.';erro.style.display='block';return;}
-  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.href});
-  erro.style.display='block';
-  erro.textContent = error ? 'Não foi possível enviar o link.' : 'Link de recuperação enviado para o seu e-mail.';
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim().toLowerCase();
+  const p=document.getElementById('loginPass').value;
+  document.getElementById('loginError').style.display='none';
+  if(u===ADMIN.login&&p===ADMIN.password){currentUser=ADMIN;saveSession(currentUser);onLoginSuccess();return;}
+  const s=allSellers.find(s=>s.login&&s.login.toLowerCase()===u&&s.password===p&&s.status==='active');
+  if(s){currentUser={...s,role:'seller'};saveSession(currentUser);onLoginSuccess();return;}
+  document.getElementById('loginError').style.display='block';
 }
 function onLoginSuccess(){
   document.getElementById('loginScreen').classList.remove('show');
@@ -1516,7 +1403,7 @@ async function saveProfile(){
   const newPass=document.getElementById('p-newpass').value;
   const confirmPass=document.getElementById('p-confirmpass').value;
   if(newPass&&newPass!==confirmPass){showToast('As senhas não conferem.','error');return;}
-  if(newPass&&newPass.length<6){showToast('A senha precisa de pelo menos 6 caracteres.','error');return;}
+  if(newPass&&newPass.length<4){showToast('Senha deve ter ao menos 4 caracteres.','error');return;}
   const data={
     name:document.getElementById('p-name').value.trim(),
     nickname:document.getElementById('p-nickname').value.trim(),
@@ -1524,11 +1411,7 @@ async function saveProfile(){
     email:document.getElementById('p-email').value.trim(),
     color:document.getElementById('p-color').value
   };
-  // a senha não fica mais na tabela — vai pro Supabase Auth
-  if(newPass){
-    const {error:errSenha}=await db.auth.updateUser({password:newPass});
-    if(errSenha){showToast('Não foi possível trocar a senha: '+errSenha.message,'error');return;}
-  }
+  if(newPass)data.password=newPass;
   if(currentUser.role==='admin'){
     Object.assign(currentUser,data);
     saveSession(currentUser);
@@ -1616,42 +1499,17 @@ function showNewLeadToast(lead){
   setTimeout(()=>{ t.classList.remove('show'); t.style.cursor=''; t.onclick=null; t.style.borderColor=''; }, 6000);
 }
 
-// INIT — com proteção contra falha de carregamento do CDN do Supabase
-function avisoConexao(msg){
-  const e=document.getElementById('loginError');
-  if(e){e.textContent=msg;e.style.display='block';}
-  else alert(msg);
-}
-function iniciarDb(tentativa){
-  tentativa=tentativa||1;
-  if(typeof window.supabase==='undefined'||!window.supabase.createClient){
-    if(tentativa>=6){
-      avisoConexao('Não foi possível carregar a conexão com o servidor. Verifique sua internet e recarregue a página (Ctrl+Shift+R).');
-      return;
-    }
-    setTimeout(function(){iniciarDb(tentativa+1);},500);  // tenta de novo por até 3s
-    return;
-  }
-  try{
-    db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
-  }catch(e){
-    avisoConexao('Erro ao conectar: '+e.message+'. Recarregue a página.');
-    return;
-  }
-  loadSellers(true).then(()=>{
-    restaurarSessao().then(function(ok){ if(ok) onLoginSuccess(); });
-  }).catch(function(e){
-    console.error('Falha ao carregar vendedores no início:',e);
-  });
-}
-// impede clicar em qualquer botão de autenticação antes do db existir
-function precisaDb(){
-  if(db)return true;
-  avisoConexao('Ainda conectando ao servidor... espere alguns segundos e tente de novo.');
-  return false;
-}
+// INIT
 window.addEventListener('DOMContentLoaded',()=>{
-  iniciarDb();
+  db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+  loadSellers(true).then(()=>{
+    const saved=loadSession();
+    if(saved){
+      if(saved.role==='seller'){const s=allSellers.find(s=>s.id==saved.id&&s.status==='active');if(!s){clearSession();return;}currentUser={...s,role:'seller'};}
+      else currentUser=saved;
+      onLoginSuccess();
+    }
+  });
   document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 });
 
@@ -2349,10 +2207,12 @@ function renderWebhooks() {
   el.innerHTML = allWebhooks.map(wh => {
     const webhookUrl = `${EDGE_BASE}/webhook-lead?token=${wh.token}`;
     const seller = allSellers.find(s => s.id === wh.fixed_seller_id);
-    const distLabel = wh.distribution === 'roundrobin'
+    const distLabel = (wh.distribution === 'roundrobin'
       ? '🔄 Round-robin automático'
-      : `👤 Fixo: ${seller ? (seller.nickname || seller.name) : '—'}`;
+      : `👤 Fixo: ${seller ? (seller.nickname || seller.name) : '—'}`)
+      + ` · <span style="color:${empresaInfo(wh.empresa||'automacao').cor}">${empresaInfo(wh.empresa||'automacao').nome}</span>`;
     const leadsFromThis = allLeads.filter(l => l.webhook_token === wh.token).length;
+    const empWh = empresaInfo(wh.empresa||'automacao');
     const map = wh.field_map || {};
     const hasMap = map.name || map.phone;
     return `<div class="webhook-card ${wh.active ? '' : 'inactive'}">
@@ -2404,6 +2264,7 @@ function openWebhookModal(wh = null) {
   document.getElementById('wh-name').value = wh ? wh.name : '';
   document.getElementById('wh-origin').value = wh ? wh.origin : 'Instagram';
   document.getElementById('wh-dist').value = wh ? wh.distribution : 'roundrobin';
+  document.getElementById('wh-empresa').value = wh ? (wh.empresa||'automacao') : (typeof empresaAtiva!=='undefined'&&empresaAtiva!=='__todas'?empresaAtiva:'automacao');
   document.getElementById('wh-active').value = wh ? String(wh.active) : 'true';
   // populate seller dropdown
   const sel = document.getElementById('wh-seller');
@@ -2435,6 +2296,7 @@ async function saveWebhook() {
     name,
     origin: document.getElementById('wh-origin').value,
     distribution: dist,
+    empresa: document.getElementById('wh-empresa').value,
     fixed_seller_id: dist === 'fixed' ? fixedSeller : null,
     active: document.getElementById('wh-active').value === 'true'
   };
