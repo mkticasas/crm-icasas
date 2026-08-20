@@ -1315,6 +1315,7 @@ function mostrarTela(qual){
 
 // envia o link de redefinição por e-mail
 async function enviarLinkSenha(){
+  if(!precisaDb())return;
   const email=(document.getElementById('recEmail').value||'').trim().toLowerCase();
   const erro=document.getElementById('recErro'), ok=document.getElementById('recOk'), btn=document.getElementById('recBtn');
   erro.style.display='none'; ok.style.display='none';
@@ -1328,6 +1329,7 @@ async function enviarLinkSenha(){
 
 // grava a senha nova de quem chegou pelo link
 async function salvarNovaSenha(){
+  if(!precisaDb())return;
   const s1=document.getElementById('novaSenha1').value, s2=document.getElementById('novaSenha2').value;
   const erro=document.getElementById('novaErro'), btn=document.getElementById('novaBtn');
   erro.style.display='none';
@@ -1353,6 +1355,7 @@ db.auth.onAuthStateChange(function(evento){
 
 // ===== LOGIN VIA SUPABASE AUTH (senha com hash, fora do banco de dados) =====
 async function doLogin(){
+  if(!precisaDb())return;
   const email=document.getElementById('loginUser').value.trim().toLowerCase();
   const senha=document.getElementById('loginPass').value;
   const erro=document.getElementById('loginError');
@@ -1613,13 +1616,42 @@ function showNewLeadToast(lead){
   setTimeout(()=>{ t.classList.remove('show'); t.style.cursor=''; t.onclick=null; t.style.borderColor=''; }, 6000);
 }
 
-// INIT
-window.addEventListener('DOMContentLoaded',()=>{
-  db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+// INIT — com proteção contra falha de carregamento do CDN do Supabase
+function avisoConexao(msg){
+  const e=document.getElementById('loginError');
+  if(e){e.textContent=msg;e.style.display='block';}
+  else alert(msg);
+}
+function iniciarDb(tentativa){
+  tentativa=tentativa||1;
+  if(typeof window.supabase==='undefined'||!window.supabase.createClient){
+    if(tentativa>=6){
+      avisoConexao('Não foi possível carregar a conexão com o servidor. Verifique sua internet e recarregue a página (Ctrl+Shift+R).');
+      return;
+    }
+    setTimeout(function(){iniciarDb(tentativa+1);},500);  // tenta de novo por até 3s
+    return;
+  }
+  try{
+    db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+  }catch(e){
+    avisoConexao('Erro ao conectar: '+e.message+'. Recarregue a página.');
+    return;
+  }
   loadSellers(true).then(()=>{
-    // sessão do Supabase Auth: se ainda é válida, entra direto
     restaurarSessao().then(function(ok){ if(ok) onLoginSuccess(); });
+  }).catch(function(e){
+    console.error('Falha ao carregar vendedores no início:',e);
   });
+}
+// impede clicar em qualquer botão de autenticação antes do db existir
+function precisaDb(){
+  if(db)return true;
+  avisoConexao('Ainda conectando ao servidor... espere alguns segundos e tente de novo.');
+  return false;
+}
+window.addEventListener('DOMContentLoaded',()=>{
+  iniciarDb();
   document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 });
 
