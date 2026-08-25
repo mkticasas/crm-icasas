@@ -416,9 +416,30 @@ function desenhar(){
   ativarDragDrop();
 }
 
+// há quantos dias a obra está parada nesta etapa —
+// conta a partir de quando a etapa ANTERIOR foi concluída (ou da criação da obra, se for a 1ª etapa)
+function diasParadoNaEtapa(obra, etapa){
+  if(!etapa) return null;
+  const ordenadas = etapas.slice().sort(function(a,b){return a.numero-b.numero;});
+  const idx = ordenadas.findIndex(function(e){return e.numero===etapa.numero;});
+  let desde;
+  if(idx<=0){
+    desde = obra.criado || obra.atualizado;
+  } else {
+    const anterior = ordenadas[idx-1];
+    const linhaAnterior = (progresso[obra.id]||{})[anterior.numero];
+    desde = (linhaAnterior && linhaAnterior.concluida_em) || obra.criado || obra.atualizado;
+  }
+  if(!desde) return null;
+  const dias = Math.floor((Date.now()-new Date(desde).getTime())/86400000);
+  return dias>=0 ? dias : 0;
+}
+
 function montarCardKanban(obra, etapa){
   const atrasada = estaAtrasada(obra);
   const editavel = etapa ? podeEditar(obra, etapa) : false;
+  const dias = etapa ? diasParadoNaEtapa(obra, etapa) : null;
+  const tagDias = (dias!=null) ? '<span style="font-size:9.5px;color:'+(dias>=3?'var(--red)':'var(--text3)')+';">'+dias+'d parado</span>' : '';
   let acoes = '';
   if(etapa && etapa.requer_dois){
     const linha = (progresso[obra.id]||{})[etapa.numero] || {};
@@ -428,11 +449,13 @@ function montarCardKanban(obra, etapa){
     acoes = '<div class="kb-card-acoes">'+
       '<div class="kb-check-mini'+(linha.confirmado_parte1?' on':'')+(podeP1?'':' travado')+'" title="'+esc(nomes[0])+'" onclick="'+(podeP1?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',1)':'event.stopPropagation();')+'">'+(linha.confirmado_parte1?'✓':'')+'</div>'+
       '<div class="kb-check-mini'+(linha.confirmado_parte2?' on':'')+(podeP2?'':' travado')+'" title="'+esc(nomes[1]||'')+(etapa.aprovacao_financeiro?' — aprovação financeira':'')+'" onclick="'+(podeP2?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',2)':'event.stopPropagation();')+'">'+(linha.confirmado_parte2?'✓':'')+'</div>'+
-      '<span style="font-size:9.5px;color:var(--text3);">'+(etapa.aprovacao_financeiro?(linha.confirmado_parte2?'aprovado':'aguarda aprovação'):'confirmar')+'</span></div>';
+      '<span style="font-size:9.5px;color:var(--text3);">'+(etapa.aprovacao_financeiro?(linha.confirmado_parte2?'aprovado':'aguarda aprovação'):'confirmar')+'</span>'+
+      '<span style="margin-left:auto;">'+tagDias+'</span></div>';
   } else if(etapa){
     acoes = '<div class="kb-card-acoes">'+
       '<div class="kb-check-mini" onclick="event.stopPropagation();'+(editavel?'toggleEtapa(\''+obra.id+'\','+etapa.numero+')':'')+'"></div>'+
-      '<span style="font-size:9.5px;color:var(--text3);">'+(editavel?'concluir':'aguardando')+'</span></div>';
+      '<span style="font-size:9.5px;color:var(--text3);">'+(editavel?'concluir':'aguardando')+'</span>'+
+      '<span style="margin-left:auto;">'+tagDias+'</span></div>';
   }
   const nomeCorretor = nomeDoVendedor(obra.corretor_id);
   return '<div class="kb-card'+(atrasada?' atrasado':'')+(editavel?'':' travado')+'" '+
