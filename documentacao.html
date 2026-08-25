@@ -131,6 +131,13 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
 .kb-check-mini{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;}
 .kb-check-mini.on{background:var(--green);border-color:var(--green);color:#062b12;}
 .kb-badge-atraso{background:rgba(239,68,68,.2);color:#ff8080;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;}
+.kanban-tv .kb-col{width:210px;min-height:200px;}
+.kanban-tv .kb-col-cab{font-size:13px;}
+.kanban-tv .kb-col-tag{font-size:11.5px;}
+.kanban-tv .kb-card{font-size:14px;padding:11px 12px;}
+.kanban-tv .kb-card-nome{font-size:15px;}
+.kanban-tv .kb-card-end{font-size:12px;}
+.kanban-tv .kb-check-mini{width:20px;height:20px;}
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
@@ -190,7 +197,7 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
       <button onclick="fecharModoTV()" style="background:rgba(255,255,255,.08);border:none;color:var(--text2);border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer;">Sair do modo TV ✕</button>
     </div>
   </div>
-  <div id="tvGrid" style="display:grid;gap:18px;padding:28px 36px;overflow-y:auto;height:calc(100vh - 88px);"></div>
+  <div id="tvGrid" class="kanban-doc kanban-tv" style="padding:22px 30px;height:calc(100vh - 88px);overflow-y:hidden;"></div>
 </div>
 
 <div class="fundo" id="mdEquipe">
@@ -471,16 +478,28 @@ async function abrirObra(id){
 }
 function fecharObra(){ $('mdObra').classList.remove('on'); obraAbertaId=null; }
 
+function souFinanceiro(){ return eu && eu.role==='Financeiro'; }
+
 function podeEditar(obra, etapa){
   if(souAdmin()) return true;
-  // só a etapa em que a obra está EXATAMENTE agora pode ser marcada —
-  // calculado ao vivo, não depende do bloco_atual salvo na obra
   if(etapaAtualNumero(obra.id) !== etapa.numero) return false;
-  // doc_responsavel é a comparação exata (preenchida na tela de Equipe);
-  // sem ela, cai no nome por aproximação, como antes
   if(eu.doc_responsavel) return etapa.responsavel.indexOf(eu.doc_responsavel)>=0;
   const meuNome=(eu.nickname||eu.name||'').toLowerCase();
   return etapa.responsavel.toLowerCase().indexOf(meuNome)>=0;
+}
+
+// para etapas de dupla confirmação (8, 9, 18...): decide quem pode marcar CADA lado.
+// numParte é 1 ou 2. Quando a etapa exige aprovação do financeiro, o lado 2
+// é liberado só por quem tem esse papel — não pelo nome, igual as outras.
+function podeConfirmarParte(obra, etapa, numParte){
+  if(souAdmin()) return true;
+  if(etapaAtualNumero(obra.id) !== etapa.numero) return false;
+  if(etapa.aprovacao_financeiro && numParte===2) return souFinanceiro();
+  const nomes = etapa.responsavel.split('/').map(function(s){return s.trim();});
+  const alvo = (nomes[numParte-1]||'').toLowerCase();
+  if(eu.doc_responsavel) return alvo.indexOf(eu.doc_responsavel.toLowerCase())>=0;
+  const meuNome=(eu.nickname||eu.name||'').toLowerCase();
+  return alvo.indexOf(meuNome)>=0;
 }
 
 // monta o HTML dos 8 blocos com as 43 etapas — usado tanto no card da grade quanto no modal
@@ -573,29 +592,30 @@ function atualizarRelogioTV(){
   const el=$('tvRelogio');
   if(el) el.textContent = new Date().toLocaleString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 }
+// Modo TV mostra o kanban completo (mesmas colunas e cards da tela normal),
+// só que com fonte maior — não é mais um resumo por obra.
 function renderTV(){
   const el=$('tvGrid');
   if(!el) return;
-  const ativas = obras.filter(function(o){ return !o.arquivada; });
-  const cols = ativas.length<=2 ? 1 : (ativas.length<=6 ? 2 : 3);
-  el.style.gridTemplateColumns = 'repeat('+cols+', 1fr)';
+  const ordenadas = etapas.slice().sort(function(a,b){return a.numero-b.numero;});
 
-  if(!ativas.length){ el.innerHTML='<p style="color:var(--text3);font-size:18px;">Nenhuma obra em andamento.</p>'; return; }
-
-  el.innerHTML = ativas.map(function(o){
-    const pr = progressoObra(o.id);
-    const etAtual = etapas.find(function(e){ return e.bloco===o.bloco_atual; });
-    const atrasada = estaAtrasada(o);
-    return '<div class="tv-card'+(atrasada?' atraso':'')+'">'+
-      '<div class="tv-nome">'+esc(o.nome)+'</div>'+
-      '<div class="tv-end">'+esc(o.endereco||'—')+'</div>'+
-      '<div class="tv-fase"><span class="tv-fase-resp">'+esc(etAtual?etAtual.responsavel:'—')+'</span>'+
-        '<span class="tv-fase-etapa">'+(etAtual?(etAtual.numero+'. '+esc(etAtual.titulo)):'Concluída')+'</span></div>'+
-      '<div class="tv-barra-wrap"><div class="tv-barra" style="width:'+pr.pct+'%"></div></div>'+
-      '<div class="tv-rodape"><span>'+pr.feitas+' de '+pr.total+' etapas ('+pr.pct+'%)</span>'+
-      (atrasada?'<span class="tv-badge-atraso">⚠ ATRASADA</span>':'<span></span>')+
-      '</div></div>';
+  const colunas = ordenadas.map(function(e){
+    const aqui = obras.filter(function(o){ return !o.arquivada && etapaAtualNumero(o.id)===e.numero; });
+    return '<div class="kb-col" data-etapa="'+e.numero+'" style="--cor-bloco:'+corDoBloco(e.bloco)+';">'+
+      '<div class="kb-col-cab">'+e.numero+'. '+esc(e.titulo)+'</div>'+
+      '<div class="kb-col-tag"><span>'+esc(e.responsavel)+'</span>'+(e.prazo_dias?'<span>'+e.prazo_dias+'d</span>':'')+'</div>'+
+      aqui.map(function(o){ return montarCardKanban(o, e); }).join('') +
+    '</div>';
   }).join('');
+
+  const colunaFim = '<div class="kb-col" data-etapa="fim" style="width:230px;">'+
+    '<div class="kb-col-cab">✓ Concluídas</div><div class="kb-col-tag"><span></span></div>'+
+    obras.filter(function(o){ return !o.arquivada && etapaAtualNumero(o.id)==null; })
+         .map(function(o){ return montarCardKanban(o, null); }).join('') +
+  '</div>';
+
+  el.innerHTML = colunas + colunaFim;
+  ativarDragDrop(); // pra continuar podendo marcar/arrastar direto do telão, se alguém estiver perto
 }
 document.addEventListener('keydown', function(e){
   if(e.key==='Escape' && !$('tv').classList.contains('oculto')) fecharModoTV();
