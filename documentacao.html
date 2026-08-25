@@ -186,6 +186,14 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
   <div class="modal-obra">
     <div class="modal-cab"><h3 id="obraTitulo">Obra</h3><button class="x" onclick="fecharObra()">×</button></div>
     <div class="modal-corpo" id="obraCorpo"></div>
+    <div style="border-top:1px solid var(--border);padding:18px 24px;">
+      <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">💬 Comentários</div>
+      <div id="listaComentarios" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;margin-bottom:12px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="novoComentario" placeholder="Escrever um comentário..." style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;color:var(--text);outline:none;" onkeydown="if(event.key==='Enter')enviarComentario()">
+        <button class="btn btn-p" onclick="enviarComentario()">Enviar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -333,7 +341,15 @@ async function sair(){ await db.auth.signOut(); location.reload(); }
 
 function souAdmin(){ return eu && ['admin','Gerente de Vendas','Diretor Comercial'].includes(eu.role); }
 
+let todosSellers=[];
+function nomeDoVendedor(id){
+  if(!id) return null;
+  const p=todosSellers.find(function(x){return x.id===id;});
+  return p ? (p.nickname||p.name) : null;
+}
 async function carregarTudo(){
+  const {data:sv}=await db.from('sellers').select('id,name,nickname');
+  todosSellers=sv||[];
   const {data:et}=await db.from('doc_etapas').select('*').order('numero');
   etapas=et||[];
   const {data:ob}=await db.from('doc_obras').select('*').eq('arquivada',false).order('criado',{ascending:false});
@@ -418,11 +434,13 @@ function montarCardKanban(obra, etapa){
       '<div class="kb-check-mini" onclick="event.stopPropagation();'+(editavel?'toggleEtapa(\''+obra.id+'\','+etapa.numero+')':'')+'"></div>'+
       '<span style="font-size:9.5px;color:var(--text3);">'+(editavel?'concluir':'aguardando')+'</span></div>';
   }
+  const nomeCorretor = nomeDoVendedor(obra.corretor_id);
   return '<div class="kb-card'+(atrasada?' atrasado':'')+(editavel?'':' travado')+'" '+
     (editavel?'draggable="true" data-obra="'+obra.id+'"':'')+
     ' onclick="abrirObra(\''+obra.id+'\')" title="Clique pra ver detalhes">'+
     '<div class="kb-card-nome">'+esc(obra.nome)+(atrasada?' <span class="kb-badge-atraso">ATRASADA</span>':'')+'</div>'+
     '<div class="kb-card-end">'+esc(obra.endereco||'—')+'</div>'+
+    (nomeCorretor?'<div style="font-size:9.5px;color:var(--accent);margin-bottom:6px;">👤 '+esc(nomeCorretor)+'</div>':'')+
     acoes+
   '</div>';
 }
@@ -479,7 +497,35 @@ async function abrirObra(id){
   const o=obras.find(function(x){return x.id===id;});
   $('obraTitulo').textContent=o.nome;
   renderTimeline(o);
+  $('novoComentario').value='';
+  await carregarComentarios(id);
   $('mdObra').classList.add('on');
+}
+async function carregarComentarios(obraId){
+  const {data}=await db.from('doc_comentarios').select('*').eq('obra_id',obraId).order('criado',{ascending:true});
+  const lista = data||[];
+  const el=$('listaComentarios');
+  if(!lista.length){ el.innerHTML='<p style="color:var(--text3);font-size:12.5px;">Nenhum comentário ainda.</p>'; return; }
+  el.innerHTML = lista.map(function(c){
+    const autor = nomeDoVendedor(c.autor_id) || '—';
+    const quando = new Date(c.criado).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 11px;">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:3px;">'+
+        '<span style="font-size:12px;font-weight:600;color:var(--accent);">'+esc(autor)+'</span>'+
+        '<span style="font-size:10.5px;color:var(--text3);">'+quando+'</span>'+
+      '</div>'+
+      '<div style="font-size:13px;">'+esc(c.texto)+'</div>'+
+    '</div>';
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+async function enviarComentario(){
+  const texto = $('novoComentario').value.trim();
+  if(!texto || !obraAbertaId) return;
+  const {error} = await db.from('doc_comentarios').insert({ obra_id: obraAbertaId, autor_id: eu.id, texto });
+  if(error){ alert('Não foi possível enviar: '+error.message); return; }
+  $('novoComentario').value='';
+  await carregarComentarios(obraAbertaId);
 }
 function fecharObra(){ $('mdObra').classList.remove('on'); obraAbertaId=null; }
 
