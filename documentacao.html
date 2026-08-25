@@ -129,6 +129,7 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
 .kb-card-end{font-size:10px;color:var(--text3);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .kb-card-acoes{display:flex;gap:5px;align-items:center;}
 .kb-check-mini{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;}
+.kb-check-mini.travado{opacity:.3;cursor:not-allowed;border-style:dashed;}
 .kb-check-mini.on{background:var(--green);border-color:var(--green);color:#062b12;}
 .kb-badge-atraso{background:rgba(239,68,68,.2);color:#ff8080;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;}
 .kanban-tv .kb-col{width:210px;min-height:200px;}
@@ -206,7 +207,7 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
     <div class="modal-corpo">
       <div style="font-size:12.5px;color:var(--text3);margin-bottom:16px;">
         Todo mundo que já tem login no CRM aparece aqui. Vincule a responsabilidade de cada pessoa
-        (Corretor, Carlos, Tamires, Gi ou Obras) — é esse nome que decide quais etapas ela pode marcar. Mais de uma pessoa pode ter a mesma responsabilidade — por exemplo, vários vinculados a "Obras".
+        (Corretor, Carlos, Tamires, Gi, Obras ou Financeiro) — é esse nome que decide quais etapas ela pode marcar. Mais de uma pessoa pode ter a mesma responsabilidade. O Financeiro vê todas as obras, mas só age aprovando a etapa 18.
         Corretores usam o mesmo acesso no CRM e na Documentação.
       </div>
       <div id="listaEquipe" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:320px;overflow-y:auto;"></div>
@@ -225,6 +226,8 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
             <option value="Tamires">Tamires</option>
             <option value="Gi">Gi</option>
             <option value="Obras">Obras</option>
+            <option value="Financeiro">Financeiro</option>
+            <option value="Financeiro">Financeiro</option>
           </select>
         </div>
         <button class="btn btn-p" style="width:100%;margin-top:12px" onclick="vincularEquipe()">Vincular acesso</button>
@@ -403,11 +406,13 @@ function montarCardKanban(obra, etapa){
   let acoes = '';
   if(etapa && etapa.requer_dois){
     const linha = (progresso[obra.id]||{})[etapa.numero] || {};
+    const podeP1 = podeConfirmarParte(obra, etapa, 1);
+    const podeP2 = podeConfirmarParte(obra, etapa, 2);
     const nomes = etapa.responsavel.split('/').map(function(s){return s.trim();});
     acoes = '<div class="kb-card-acoes">'+
-      '<div class="kb-check-mini'+(linha.confirmado_parte1?' on':'')+'" title="'+esc(nomes[0])+'" onclick="event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',1)">'+(linha.confirmado_parte1?'✓':'')+'</div>'+
-      '<div class="kb-check-mini'+(linha.confirmado_parte2?' on':'')+'" title="'+esc(nomes[1]||'')+'" onclick="event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',2)">'+(linha.confirmado_parte2?'✓':'')+'</div>'+
-      '<span style="font-size:9.5px;color:var(--text3);">confirmar</span></div>';
+      '<div class="kb-check-mini'+(linha.confirmado_parte1?' on':'')+(podeP1?'':' travado')+'" title="'+esc(nomes[0])+'" onclick="'+(podeP1?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',1)':'event.stopPropagation();')+'">'+(linha.confirmado_parte1?'✓':'')+'</div>'+
+      '<div class="kb-check-mini'+(linha.confirmado_parte2?' on':'')+(podeP2?'':' travado')+'" title="'+esc(nomes[1]||'')+(etapa.aprovacao_financeiro?' — aprovação financeira':'')+'" onclick="'+(podeP2?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',2)':'event.stopPropagation();')+'">'+(linha.confirmado_parte2?'✓':'')+'</div>'+
+      '<span style="font-size:9.5px;color:var(--text3);">'+(etapa.aprovacao_financeiro?(linha.confirmado_parte2?'aprovado':'aguarda aprovação'):'confirmar')+'</span></div>';
   } else if(etapa){
     acoes = '<div class="kb-card-acoes">'+
       '<div class="kb-check-mini" onclick="event.stopPropagation();'+(editavel?'toggleEtapa(\''+obra.id+'\','+etapa.numero+')':'')+'"></div>'+
@@ -478,7 +483,7 @@ async function abrirObra(id){
 }
 function fecharObra(){ $('mdObra').classList.remove('on'); obraAbertaId=null; }
 
-function souFinanceiro(){ return eu && eu.role==='Financeiro'; }
+function souFinanceiro(){ return eu && eu.doc_responsavel==='Financeiro'; }
 
 function podeEditar(obra, etapa){
   if(souAdmin()) return true;
@@ -518,11 +523,12 @@ function montarChecklistHtml(obra){
       const editavel = podeEditar(obra, e);
       if(e.requer_dois){
         const p1=linha.confirmado_parte1, p2=linha.confirmado_parte2;
+        const podeP1=podeConfirmarParte(obra,e,1), podeP2=podeConfirmarParte(obra,e,2);
         const nomes=e.responsavel.split('/').map(function(s){return s.trim();});
         html+='<div class="etapa'+(linha.concluida?' concluida':'')+'">'+
           '<div class="dupla">'+
-            '<div class="check'+(p1?' on':'')+(editavel?'':' travado')+'" title="'+esc(nomes[0])+'" onclick="'+(editavel?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+e.numero+',1)':'event.stopPropagation();')+'">'+(p1?'✓':'')+'</div>'+
-            '<div class="check'+(p2?' on':'')+(editavel?'':' travado')+'" title="'+esc(nomes[1]||'')+'" onclick="'+(editavel?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+e.numero+',2)':'event.stopPropagation();')+'">'+(p2?'✓':'')+'</div>'+
+            '<div class="check'+(p1?' on':'')+(podeP1?'':' travado')+'" title="'+esc(nomes[0])+'" onclick="'+(podeP1?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+e.numero+',1)':'event.stopPropagation();')+'">'+(p1?'✓':'')+'</div>'+
+            '<div class="check'+(p2?' on':'')+(podeP2?'':' travado')+'" title="'+esc(nomes[1]||'')+(e.aprovacao_financeiro?' (aprovação financeira)':'')+'" onclick="'+(podeP2?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+e.numero+',2)':'event.stopPropagation();')+'">'+(p2?'✓':'')+'</div>'+
           '</div>'+
           '<span class="etapa-titulo">'+e.numero+'. '+esc(e.titulo)+'</span>'+
           '<span class="etapa-tag">'+esc(e.responsavel)+'</span></div>';
@@ -623,7 +629,7 @@ document.addEventListener('keydown', function(e){
 
 // ===== EQUIPE: gerenciar quem tem acesso e qual responsabilidade representa =====
 let equipe=[];
-const RESPONSABILIDADES = ['Corretor','Carlos','Tamires','Gi','Obras'];
+const RESPONSABILIDADES = ['Corretor','Carlos','Tamires','Gi','Obras','Financeiro'];
 
 async function abrirEquipe(){
   await carregarEquipe();
