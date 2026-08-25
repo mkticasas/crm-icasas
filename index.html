@@ -1127,7 +1127,7 @@
       </div>
       <div class="form-row">
         <div class="form-group"><label>Cargo</label>
-          <select id="s-role" onchange="autoSetPermission()"><option>Vendedor</option><option>Vendedor Sênior</option><option>Gerente de Vendas</option><option>Diretor Comercial</option></select>
+          <select id="s-role" onchange="autoSetPermission()"><option>Vendedor</option><option>Vendedor Sênior</option><option>Gerente de Vendas</option><option>Diretor Comercial</option><option>Engenharia</option></select>
         </div>
         <div class="form-group"><label>Meta mensal (R$)</label><input type="number" id="s-goal" placeholder="0"></div>
       </div>
@@ -1786,7 +1786,9 @@ function populateSellerDropdowns(){
     const el=document.getElementById(id);if(!el)return;
     const prev=el.value;
     while(el.options.length>1)el.remove(1);
-    allSellers.filter(s=>s.status==='active').forEach(s=>el.add(new Option(s.nickname||s.name,s.id)));
+    // fora do filtro de vendedor: quem é Engenharia (não vende) e quem foi marcado como oculto (ex.: admin que só gerencia)
+    allSellers.filter(s=>s.status==='active' && s.role!=='Engenharia' && s.oculto_filtro_vendedor!==true)
+      .forEach(s=>el.add(new Option(s.nickname||s.name,s.id)));
     el.value=prev;
   });
 }

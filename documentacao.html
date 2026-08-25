@@ -206,7 +206,7 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
     <div class="modal-corpo">
       <div style="font-size:12.5px;color:var(--text3);margin-bottom:16px;">
         Todo mundo que já tem login no CRM aparece aqui. Vincule a responsabilidade de cada pessoa
-        (Corretor, Carlos, Tamires, Gi ou Lugner) — é esse nome que decide quais etapas ela pode marcar.
+        (Corretor, Carlos, Tamires, Gi ou Obras) — é esse nome que decide quais etapas ela pode marcar. Mais de uma pessoa pode ter a mesma responsabilidade — por exemplo, vários vinculados a "Obras".
         Corretores usam o mesmo acesso no CRM e na Documentação.
       </div>
       <div id="listaEquipe" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:320px;overflow-y:auto;"></div>
@@ -224,7 +224,7 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
             <option value="Carlos">Carlos</option>
             <option value="Tamires">Tamires</option>
             <option value="Gi">Gi</option>
-            <option value="Lugner">Lugner</option>
+            <option value="Obras">Obras</option>
           </select>
         </div>
         <button class="btn btn-p" style="width:100%;margin-top:12px" onclick="vincularEquipe()">Vincular acesso</button>
@@ -623,7 +623,7 @@ document.addEventListener('keydown', function(e){
 
 // ===== EQUIPE: gerenciar quem tem acesso e qual responsabilidade representa =====
 let equipe=[];
-const RESPONSABILIDADES = ['Corretor','Carlos','Tamires','Gi','Lugner'];
+const RESPONSABILIDADES = ['Corretor','Carlos','Tamires','Gi','Obras'];
 
 async function abrirEquipe(){
   await carregarEquipe();
