@@ -612,7 +612,8 @@ async function abrirEquipe(){
   $('mdEquipe').classList.add('on');
 }
 async function carregarEquipe(){
-  const {data}=await db.from('sellers').select('*').order('name');
+  // só mostra quem é da Construtora — o pessoal da Automação fica de fora daqui
+  const {data}=await db.from('sellers').select('*').eq('empresa','construtora').order('name');
   equipe=data||[];
 }
 function renderEquipe(){
