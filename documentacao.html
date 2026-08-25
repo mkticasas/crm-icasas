@@ -185,6 +185,10 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
 <div class="fundo" id="mdObra">
   <div class="modal-obra">
     <div class="modal-cab"><h3 id="obraTitulo">Obra</h3><button class="x" onclick="fecharObra()">×</button></div>
+    <div id="trocarCorretorWrap" class="oculto" style="padding:14px 24px 0;display:flex;align-items:center;gap:10px;">
+      <label style="font-size:12px;color:var(--text3);">Corretor responsável</label>
+      <select id="selCorretorObra" onchange="trocarCorretor()" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:7px 11px;color:var(--text);font-size:13px;flex:1;max-width:240px;"></select>
+    </div>
     <div class="modal-corpo" id="obraCorpo"></div>
     <div style="border-top:1px solid var(--border);padding:18px 24px;">
       <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">💬 Comentários</div>
@@ -530,7 +534,29 @@ async function abrirObra(id){
   renderTimeline(o);
   $('novoComentario').value='';
   await carregarComentarios(id);
+  // ===== admin pode trocar o corretor responsável pela obra =====
+  const wrapCorretor=$('trocarCorretorWrap');
+  if(souAdmin()){
+    const sel=$('selCorretorObra');
+    const corretores = todosSellers.filter(function(s){return s.doc_responsavel==='Corretor';});
+    sel.innerHTML = '<option value="">— nenhum —</option>' +
+      corretores.map(function(c){return '<option value="'+c.id+'">'+esc(c.nickname||c.name)+'</option>';}).join('');
+    sel.value = o.corretor_id || '';
+    wrapCorretor.classList.remove('oculto');
+  } else {
+    wrapCorretor.classList.add('oculto');
+  }
   $('mdObra').classList.add('on');
+}
+async function trocarCorretor(){
+  if(!obraAbertaId) return;
+  const novoId = $('selCorretorObra').value || null;
+  const {data, error} = await db.from('doc_obras').update({corretor_id: novoId}).eq('id', obraAbertaId).select();
+  if(error){ avisoDoc('Não foi possível trocar: '+error.message, true); return; }
+  if(!data || data.length===0){ avisoDoc('Você não tem permissão para trocar o corretor desta obra.', true); return; }
+  await carregarTudo();
+  desenhar();
+  avisoDoc('Corretor atualizado.');
 }
 async function carregarComentarios(obraId){
   const {data}=await db.from('doc_comentarios').select('*').eq('obra_id',obraId).order('criado',{ascending:true});
