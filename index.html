@@ -1014,6 +1014,10 @@
         <div class="form-group"><label>Telefone</label><input type="tel" id="p-phone" placeholder="(17) 99999-9999"></div>
         <div class="form-group"><label>E-mail</label><input type="email" id="p-email" placeholder="email@icasas.com.br"></div>
       </div>
+      <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2);cursor:pointer;margin:4px 0 14px;">
+        <input type="checkbox" id="s-oculto-filtro" style="width:auto;">
+        Não aparecer no filtro de vendedores (admin, financeiro, engenharia)
+      </label>
       <div class="form-group">
         <label>Cor de identificação</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;" id="profileColorPicker">
@@ -1127,7 +1131,7 @@
       </div>
       <div class="form-row">
         <div class="form-group"><label>Cargo</label>
-          <select id="s-role" onchange="autoSetPermission()"><option>Vendedor</option><option>Vendedor Sênior</option><option>Gerente de Vendas</option><option>Diretor Comercial</option><option>Engenharia</option></select>
+          <select id="s-role" onchange="autoSetPermission()"><option>Vendedor</option><option>Vendedor Sênior</option><option>Gerente de Vendas</option><option>Diretor Comercial</option><option>Engenharia</option><option>Financeiro</option></select>
         </div>
         <div class="form-group"><label>Meta mensal (R$)</label><input type="number" id="s-goal" placeholder="0"></div>
       </div>
@@ -1787,7 +1791,7 @@ function populateSellerDropdowns(){
     const prev=el.value;
     while(el.options.length>1)el.remove(1);
     // fora do filtro de vendedor: quem é Engenharia (não vende) e quem foi marcado como oculto (ex.: admin que só gerencia)
-    allSellers.filter(s=>s.status==='active' && s.role!=='Engenharia' && s.oculto_filtro_vendedor!==true)
+    allSellers.filter(s=>s.status==='active' && s.role!=='Engenharia' && s.role!=='Financeiro' && s.oculto_filtro_vendedor!==true)
       .forEach(s=>el.add(new Option(s.nickname||s.name,s.id)));
     el.value=prev;
   });
@@ -2184,6 +2188,7 @@ function openSellerModal(seller=null){
   document.getElementById('s-password').value='';
   document.getElementById('s-role').value=seller?(seller.role||'Vendedor'):'Vendedor';
   document.getElementById('s-status').value=seller?(seller.status||'active'):'active';
+  document.getElementById('s-oculto-filtro').checked = seller ? !!seller.oculto_filtro_vendedor : false;
   const canSeeAll = seller ? (seller.can_see_all_leads || ROLES_SEE_ALL.includes(seller.role)) : false;
   setTimeout(()=>setToggle(canSeeAll), 50);
   // ===== reset de senha (só faz sentido editando um vendedor já vinculado ao Auth) =====
@@ -2203,7 +2208,7 @@ async function saveSeller(){
   const id=document.getElementById('editSellerId').value;
   if(!document.getElementById('s-name').value.trim()){showToast('Nome é obrigatório.','error');return;}
   const pass=document.getElementById('s-password').value;
-  const data={name:document.getElementById('s-name').value.trim(),nickname:document.getElementById('s-nickname').value.trim(),phone:document.getElementById('s-phone').value.trim(),email:document.getElementById('s-email').value.trim(),role:document.getElementById('s-role').value,goal:parseFloat(document.getElementById('s-goal').value)||null,color:document.getElementById('s-color').value,status:document.getElementById('s-status').value,login:document.getElementById('s-login').value.trim(),can_see_all_leads:document.getElementById('s-can-see-all').checked,empresa:document.getElementById('s-empresa').value,can_see_all_companies:document.getElementById('s-can-see-companies').checked};
+  const data={name:document.getElementById('s-name').value.trim(),nickname:document.getElementById('s-nickname').value.trim(),phone:document.getElementById('s-phone').value.trim(),email:document.getElementById('s-email').value.trim(),role:document.getElementById('s-role').value,goal:parseFloat(document.getElementById('s-goal').value)||null,color:document.getElementById('s-color').value,status:document.getElementById('s-status').value,login:document.getElementById('s-login').value.trim(),can_see_all_leads:document.getElementById('s-can-see-all').checked,empresa:document.getElementById('s-empresa').value,can_see_all_companies:document.getElementById('s-can-see-companies').checked,oculto_filtro_vendedor:document.getElementById('s-oculto-filtro').checked};
   if(pass)data.password=pass;
   const{error}=id?await db.from('sellers').update(data).eq('id',id):await db.from('sellers').insert([data]);
   if(error){showToast('Erro: '+error.message,'error');return;}
