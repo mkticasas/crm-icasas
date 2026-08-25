@@ -494,6 +494,10 @@
       </span>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
+      <a href="documentacao.html" class="btn btn-ghost btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Documentação
+      </a>
       <button class="btn btn-primary btn-sm" onclick="openLeadModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Novo Lead
@@ -1157,7 +1161,18 @@
       </div>
       <div class="form-row">
         <div class="form-group"><label>Login (usuário)</label><input type="text" id="s-login" placeholder="ex: cris"></div>
-        <div class="form-group"><label>Senha</label><input type="password" id="s-password" placeholder="••••••••"></div>
+        <div class="form-group" id="s-senha-antiga-wrap" style="display:none;">
+          <label>Senha (não usada mais — login é pelo Supabase Auth)</label>
+          <input type="password" id="s-password" placeholder="••••••••" disabled>
+        </div>
+      </div>
+      <div class="form-group" id="s-reset-wrap" style="display:none;border-top:1px solid var(--border);padding-top:14px;margin-top:6px;">
+        <label>Redefinir senha de acesso (admin/gerente)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="s-nova-senha" placeholder="Nova senha (mín. 6 caracteres)" style="flex:1;">
+          <button type="button" class="btn btn-primary" id="s-reset-btn" onclick="redefinirSenhaVendedor()">Redefinir</button>
+        </div>
+        <div id="s-reset-msg" style="font-size:12.5px;margin-top:8px;display:none;"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Status</label>
@@ -1229,7 +1244,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-console.log('%cCRM versão 20/08 18:10','background:#3d7eff;color:#fff;padding:2px 8px;border-radius:4px');
+console.log('%cCRM versão 24/08 22:17','background:#3d7eff;color:#fff;padding:2px 8px;border-radius:4px');
 const SUPA_URL='https://mqdhavyaeujufhlqdlfg.supabase.co';
 const ROLES_SEE_ALL = ['Gerente de Vendas','Diretor Comercial'];
 
@@ -2125,6 +2140,40 @@ async function saveLead(){
   closeModal('leadModal');await loadLeads();renderDashboard();renderPipeline();
 }
 
+// ===== ADMIN: redefinir senha de outro vendedor, via Edge Function segura =====
+async function redefinirSenhaVendedor(){
+  const sellerId = document.getElementById('sellerModal').dataset.sellerId;
+  const novaSenha = document.getElementById('s-nova-senha').value;
+  const msg = document.getElementById('s-reset-msg');
+  const btn = document.getElementById('s-reset-btn');
+  msg.style.display='none';
+
+  if(!sellerId){ msg.textContent='Salve o vendedor primeiro.'; msg.style.color='var(--red)'; msg.style.display='block'; return; }
+  if(novaSenha.length<6){ msg.textContent='A senha precisa de pelo menos 6 caracteres.'; msg.style.color='var(--red)'; msg.style.display='block'; return; }
+
+  const {data:{session}} = await db.auth.getSession();
+  if(!session){ msg.textContent='Sua sessão expirou. Recarregue a página e entre de novo.'; msg.style.color='var(--red)'; msg.style.display='block'; return; }
+
+  btn.disabled=true; btn.textContent='Redefinindo...';
+  try{
+    const resp = await fetch(EDGE_BASE+'/admin-reset-senha', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+session.access_token },
+      body: JSON.stringify({ seller_id: sellerId, nova_senha: novaSenha })
+    });
+    const resultado = await resp.json();
+    if(!resp.ok){ throw new Error(resultado.error || 'Erro desconhecido'); }
+    msg.textContent = 'Senha redefinida! Já pode passar pra '+(resultado.name||'o vendedor')+' entrar com ela.';
+    msg.style.color='var(--green)'; msg.style.display='block';
+    document.getElementById('s-nova-senha').value='';
+  }catch(e){
+    msg.textContent = 'Não foi possível redefinir: '+e.message;
+    msg.style.color='var(--red)'; msg.style.display='block';
+  }finally{
+    btn.disabled=false; btn.textContent='Redefinir';
+  }
+}
+
 // MODAL SELLER
 function openSellerModal(seller=null){
   document.getElementById('editSellerId').value=seller?seller.id:'';
@@ -2135,6 +2184,11 @@ function openSellerModal(seller=null){
   document.getElementById('s-status').value=seller?(seller.status||'active'):'active';
   const canSeeAll = seller ? (seller.can_see_all_leads || ROLES_SEE_ALL.includes(seller.role)) : false;
   setTimeout(()=>setToggle(canSeeAll), 50);
+  // ===== reset de senha (só faz sentido editando um vendedor já vinculado ao Auth) =====
+  document.getElementById('s-reset-wrap').style.display = (seller && seller.auth_user_id) ? '' : 'none';
+  document.getElementById('s-nova-senha').value='';
+  document.getElementById('s-reset-msg').style.display='none';
+  document.getElementById('sellerModal').dataset.sellerId = seller ? seller.id : '';
   // ===== empresa e visão consolidada (novo) =====
   document.getElementById('s-empresa').value = seller ? (seller.empresa||EMPRESA_PADRAO) : (empresaAtiva!=='__todas'?empresaAtiva:EMPRESA_PADRAO);
   document.getElementById('s-can-see-companies').checked = seller ? !!seller.can_see_all_companies : false;
