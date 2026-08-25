@@ -353,7 +353,7 @@ function nomeDoVendedor(id){
   return p ? (p.nickname||p.name) : null;
 }
 async function carregarTudo(){
-  const {data:sv}=await db.from('sellers').select('id,name,nickname');
+  const {data:sv}=await db.from('sellers').select('*');
   todosSellers=sv||[];
   const {data:et}=await db.from('doc_etapas').select('*').order('numero');
   etapas=et||[];
