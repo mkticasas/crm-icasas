@@ -55,7 +55,13 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
 .busca{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:9px 13px;color:var(--text);outline:none;min-width:220px;}
 
 /* GRID DE OBRAS */
-.grid-obras{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.grid-obras{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px;align-items:start;}
+.obra-card-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.obra-card.atrasada{border-color:rgba(239,68,68,.4);}
+.checklist-card{margin-top:14px;max-height:520px;overflow-y:auto;padding-right:4px;}
+.checklist-card .bloco{margin-bottom:10px;}
+.checklist-card .bloco-cab{padding:8px 12px;font-size:11.5px;}
+.checklist-card .etapa{padding:8px 12px;font-size:12.5px;gap:9px;}
 .obra-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;cursor:pointer;transition:.15s;}
 .obra-card:hover{border-color:var(--border2);}
 .obra-card h3{font-size:15px;font-weight:600;margin-bottom:4px;}
@@ -134,6 +140,7 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
       <span id="realtimeDot" style="width:7px;height:7px;border-radius:50%;background:var(--text3);display:inline-block;"></span>
     </span>
     <div class="dir">
+      <button class="btn btn-ghost oculto" id="btnEquipe" style="padding:7px 14px;font-size:12.5px;" onclick="abrirEquipe()">👥 Equipe</button>
       <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;" onclick="abrirModoTV()">📺 Modo TV</button>
       <div class="avatar" id="avatar">–</div>
       <span class="sair" onclick="sair()">Sair</span>
@@ -167,6 +174,39 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
     </div>
   </div>
   <div id="tvGrid" style="display:grid;gap:18px;padding:28px 36px;overflow-y:auto;height:calc(100vh - 88px);"></div>
+</div>
+
+<div class="fundo" id="mdEquipe">
+  <div class="modal-obra" style="width:640px;">
+    <div class="modal-cab"><h3>Equipe · acesso à Documentação</h3><button class="x" onclick="document.getElementById('mdEquipe').classList.remove('on')">×</button></div>
+    <div class="modal-corpo">
+      <div style="font-size:12.5px;color:var(--text3);margin-bottom:16px;">
+        Todo mundo que já tem login no CRM aparece aqui. Vincule a responsabilidade de cada pessoa
+        (Corretor, Carlos, Tamires, Gi ou Lugner) — é esse nome que decide quais etapas ela pode marcar.
+        Corretores usam o mesmo acesso no CRM e na Documentação.
+      </div>
+      <div id="listaEquipe" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:320px;overflow-y:auto;"></div>
+
+      <div style="border-top:1px solid var(--border);padding-top:16px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Vincular novo acesso</div>
+        <div class="campo"><label>UUID do usuário (Authentication → Users no Supabase)</label><input type="text" id="eqUuid" style="width:100%" placeholder="cole aqui o UUID"></div>
+        <div class="campo"><label>Nome</label><input type="text" id="eqNome" style="width:100%"></div>
+        <div class="campo"><label>E-mail</label><input type="email" id="eqEmail" style="width:100%"></div>
+        <div class="campo">
+          <label>Responsabilidade nas etapas (pode deixar em branco por enquanto)</label>
+          <select id="eqResp" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 13px;color:var(--text);">
+            <option value="">— Definir depois —</option>
+            <option value="Corretor">Corretor</option>
+            <option value="Carlos">Carlos</option>
+            <option value="Tamires">Tamires</option>
+            <option value="Gi">Gi</option>
+            <option value="Lugner">Lugner</option>
+          </select>
+        </div>
+        <button class="btn btn-p" style="width:100%;margin-top:12px" onclick="vincularEquipe()">Vincular acesso</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="fundo" id="mdNova">
@@ -219,6 +259,7 @@ function entrarNoApp(){
   $('login').classList.add('oculto');
   $('app').classList.remove('oculto');
   $('avatar').textContent=(eu.nickname||eu.name||'?').charAt(0).toUpperCase();
+  if(souAdmin()) $('btnEquipe').classList.remove('oculto');
   carregarTudo();
   iniciarRealtime();
 }
@@ -300,14 +341,17 @@ function desenhar(){
   el.innerHTML=lista.map(function(o){
     const pr=progressoObra(o.id);
     const atrasada=estaAtrasada(o);
-    const etAtual=etapas.find(function(e){return e.bloco===o.bloco_atual;});
-    return '<div class="obra-card" onclick="abrirObra(\''+o.id+'\')">'+
-      '<h3>'+esc(o.nome)+'</h3>'+
-      '<div class="end">'+esc(o.endereco||'—')+'</div>'+
+    return '<div class="obra-card'+(atrasada?' atrasada':'')+'">'+
+      '<div class="obra-card-cab">'+
+        '<div><h3 style="cursor:pointer;" onclick="abrirObra(\''+o.id+'\')" title="Abrir em tela cheia">'+esc(o.nome)+' 🔍</h3><div class="end">'+esc(o.endereco||'—')+'</div></div>'+
+        '<div style="text-align:right;">'+
+          (atrasada?'<span class="pill pill-atraso">Atrasada</span><br>':'')+
+          '<span style="font-size:12px;color:var(--text3);">'+pr.feitas+' de '+pr.total+' ('+pr.pct+'%)</span>'+
+        '</div>'+
+      '</div>'+
       '<div class="obra-barra"><i style="width:'+pr.pct+'%"></i></div>'+
-      '<div class="obra-meta"><span>'+pr.feitas+' de '+pr.total+' etapas</span>'+
-      (atrasada?'<span class="pill pill-atraso">Atrasada</span>':'<span style="color:var(--text3)">'+esc(etAtual?etAtual.responsavel:'')+'</span>')+
-      '</div></div>';
+      '<div class="checklist-card">'+montarChecklistHtml(o)+'</div>'+
+      '</div>';
   }).join('');
 }
 function esc(s){return String(s||'').replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
@@ -337,11 +381,15 @@ function fecharObra(){ $('mdObra').classList.remove('on'); obraAbertaId=null; }
 function podeEditar(obra, etapa){
   if(souAdmin()) return true;
   if(obra.bloco_atual !== etapa.bloco) return false;
+  // doc_responsavel é a comparação exata (preenchida na tela de Equipe);
+  // sem ela, cai no nome por aproximação, como antes
+  if(eu.doc_responsavel) return etapa.responsavel.indexOf(eu.doc_responsavel)>=0;
   const meuNome=(eu.nickname||eu.name||'').toLowerCase();
   return etapa.responsavel.toLowerCase().indexOf(meuNome)>=0;
 }
 
-function renderTimeline(obra){
+// monta o HTML dos 8 blocos com as 43 etapas — usado tanto no card da grade quanto no modal
+function montarChecklistHtml(obra){
   const blocos=[...new Set(etapas.map(function(e){return e.bloco;}))].sort(function(a,b){return a-b;});
   const p = progresso[obra.id]||{};
   let html='';
@@ -359,21 +407,24 @@ function renderTimeline(obra){
         const nomes=e.responsavel.split('/').map(function(s){return s.trim();});
         html+='<div class="etapa'+(linha.concluida?' concluida':'')+'">'+
           '<div class="dupla">'+
-            '<div class="check'+(p1?' on':'')+(editavel?'':' travado')+'" title="'+esc(nomes[0])+'" onclick="'+(editavel?'confirmarParte(\''+obra.id+'\','+e.numero+',1)':'')+'">'+(p1?'✓':'')+'</div>'+
-            '<div class="check'+(p2?' on':'')+(editavel?'':' travado')+'" title="'+esc(nomes[1]||'')+'" onclick="'+(editavel?'confirmarParte(\''+obra.id+'\','+e.numero+',2)':'')+'">'+(p2?'✓':'')+'</div>'+
+            '<div class="check'+(p1?' on':'')+(editavel?'':' travado')+'" title="'+esc(nomes[0])+'" onclick="'+(editavel?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+e.numero+',1)':'event.stopPropagation();')+'">'+(p1?'✓':'')+'</div>'+
+            '<div class="check'+(p2?' on':'')+(editavel?'':' travado')+'" title="'+esc(nomes[1]||'')+'" onclick="'+(editavel?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+e.numero+',2)':'event.stopPropagation();')+'">'+(p2?'✓':'')+'</div>'+
           '</div>'+
           '<span class="etapa-titulo">'+e.numero+'. '+esc(e.titulo)+'</span>'+
           '<span class="etapa-tag">'+esc(e.responsavel)+'</span></div>';
       } else {
         html+='<div class="etapa'+(linha.concluida?' concluida':'')+'">'+
-          '<div class="check'+(linha.concluida?' on':'')+(editavel?'':' travado')+'" onclick="'+(editavel?'toggleEtapa(\''+obra.id+'\','+e.numero+')':'')+'">'+(linha.concluida?'✓':'')+'</div>'+
+          '<div class="check'+(linha.concluida?' on':'')+(editavel?'':' travado')+'" onclick="'+(editavel?'event.stopPropagation();toggleEtapa(\''+obra.id+'\','+e.numero+')':'event.stopPropagation();')+'">'+(linha.concluida?'✓':'')+'</div>'+
           '<span class="etapa-titulo">'+e.numero+'. '+esc(e.titulo)+'</span>'+
           '<span class="etapa-tag">'+esc(e.responsavel)+(e.prazo_dias?' · '+e.prazo_dias+'d':'')+'</span></div>';
       }
     });
     html+='</div></div>';
   });
-  $('obraCorpo').innerHTML=html;
+  return html;
+}
+function renderTimeline(obra){
+  $('obraCorpo').innerHTML = montarChecklistHtml(obra);
 }
 
 async function toggleEtapa(obraId, numero){
@@ -454,6 +505,68 @@ function renderTV(){
 document.addEventListener('keydown', function(e){
   if(e.key==='Escape' && !$('tv').classList.contains('oculto')) fecharModoTV();
 });
+
+// ===== EQUIPE: gerenciar quem tem acesso e qual responsabilidade representa =====
+let equipe=[];
+const RESPONSABILIDADES = ['Corretor','Carlos','Tamires','Gi','Lugner'];
+
+async function abrirEquipe(){
+  await carregarEquipe();
+  renderEquipe();
+  $('eqUuid').value=''; $('eqNome').value=''; $('eqEmail').value=''; $('eqResp').value='';
+  $('mdEquipe').classList.add('on');
+}
+async function carregarEquipe(){
+  const {data}=await db.from('sellers').select('*').order('name');
+  equipe=data||[];
+}
+function renderEquipe(){
+  const el=$('listaEquipe');
+  if(!equipe.length){ el.innerHTML='<p style="color:var(--text3);font-size:13px;">Ninguém vinculado ainda.</p>'; return; }
+  el.innerHTML = equipe.map(function(p){
+    const opcoes = ['<option value="">— sem responsabilidade —</option>'].concat(
+      RESPONSABILIDADES.map(function(r){
+        return '<option value="'+r+'"'+(p.doc_responsavel===r?' selected':'')+'>'+r+'</option>';
+      })
+    ).join('');
+    return '<div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">'+
+      '<div style="flex:1;min-width:0;">'+
+        '<div style="font-weight:600;font-size:13.5px;">'+esc(p.name)+'</div>'+
+        '<div style="font-size:11.5px;color:var(--text3);">'+esc(p.email||'sem e-mail')+
+        (p.role==='admin'?' · <span style="color:var(--accent);">admin</span>':'')+'</div>'+
+      '</div>'+
+      '<select onchange="atribuirResponsabilidade(\''+p.id+'\', this.value)" '+
+        'style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12.5px;">'+
+        opcoes+
+      '</select>'+
+    '</div>';
+  }).join('');
+}
+async function atribuirResponsabilidade(sellerId, resp){
+  const {error}=await db.from('sellers').update({doc_responsavel: resp||null}).eq('id', sellerId);
+  if(error){ alert('Erro: '+error.message); return; }
+  await carregarEquipe();
+  renderEquipe();
+}
+async function vincularEquipe(){
+  const uuid=$('eqUuid').value.trim();
+  const nome=$('eqNome').value.trim();
+  if(!uuid || !nome){ alert('Preencha ao menos o UUID e o nome.'); return; }
+  const {error}=await db.from('sellers').insert({
+    name: nome,
+    nickname: nome.split(' ')[0],
+    email: $('eqEmail').value.trim()||null,
+    auth_user_id: uuid,
+    doc_responsavel: $('eqResp').value||null,
+    role: 'Vendedor',
+    status: 'active',
+    empresa: 'construtora'
+  });
+  if(error){ alert('Erro: '+error.message); return; }
+  $('eqUuid').value=''; $('eqNome').value=''; $('eqEmail').value=''; $('eqResp').value='';
+  await carregarEquipe();
+  renderEquipe();
+}
 
 iniciarDb();
 </script>
