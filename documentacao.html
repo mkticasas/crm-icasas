@@ -115,14 +115,11 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
 .tv-rodape{display:flex;justify-content:space-between;font-size:13px;color:var(--text3);}
 .tv-badge-atraso{background:rgba(239,68,68,.18);color:#ff6b6b;padding:3px 12px;border-radius:20px;font-weight:700;font-size:12.5px;}
 /* ===== KANBAN DE ETAPAS (cada processo é uma coluna, obras atravessam) ===== */
-.kanban-doc{display:flex;gap:22px;overflow-x:auto;padding-bottom:20px;align-items:flex-start;}
-.kb-grupo{display:flex;flex-direction:column;flex-shrink:0;}
-.kb-grupo-titulo{text-align:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;letter-spacing:.4px;margin-bottom:8px;text-transform:uppercase;}
-.kb-colunas{display:flex;gap:8px;border:1.5px solid rgba(255,255,255,.16);border-radius:14px;padding:10px;background:rgba(255,255,255,.015);}
-.kb-col{width:168px;flex-shrink:0;background:var(--bg2);border-radius:10px;padding:8px;min-height:120px;}
+.kanban-doc{display:flex;gap:10px;overflow-x:auto;padding-bottom:20px;align-items:flex-start;}
+.kb-col{width:168px;flex-shrink:0;background:var(--bg2);border-radius:10px;padding:8px;min-height:120px;border-top:4px solid var(--cor-bloco,var(--border2));}
 .kb-col.alvo{outline:2px dashed var(--accent);outline-offset:-2px;}
 .kb-col-cab{font-size:10.5px;font-weight:700;color:var(--text2);margin-bottom:3px;line-height:1.3;}
-.kb-col-tag{font-size:9.5px;color:var(--text3);margin-bottom:8px;display:flex;justify-content:space-between;}
+.kb-col-tag{font-size:9.5px;font-weight:600;margin-bottom:8px;display:flex;justify-content:space-between;color:var(--cor-bloco,var(--text3));}
 .kb-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 9px;margin-bottom:7px;cursor:grab;font-size:11.5px;transition:.12s;}
 .kb-card:hover{border-color:var(--accent);}
 .kb-card.arrastando{opacity:.35;}
@@ -363,34 +360,33 @@ function estaAtrasada(obra){
   return dias > et.prazo_dias;
 }
 
+// uma cor por bloco de responsável — só pra diferenciar visualmente, sem separar em containers
+const CORES_BLOCO = ['#3d7eff','#a855f7','#f59e0b','#14b8a6','#3d7eff','#ec4899','#22c55e','#f59e0b'];
+function corDoBloco(bloco){ return CORES_BLOCO[(bloco-1) % CORES_BLOCO.length]; }
+
 function desenhar(){
   const q=($('busca').value||'').toLowerCase();
   const el=$('gridObras');
   const lista=obras.filter(function(o){ return !q || (o.nome+o.endereco).toLowerCase().indexOf(q)>=0; });
 
-  // agrupa as 43 etapas pelos blocos, na ordem de numero
   const ordenadas = etapas.slice().sort(function(a,b){return a.numero-b.numero;});
-  const blocos = [...new Set(ordenadas.map(function(e){return e.bloco;}))].sort(function(a,b){return a-b;});
 
-  el.innerHTML = blocos.map(function(bloco){
-    const doBloco = ordenadas.filter(function(e){return e.bloco===bloco;});
-    const nomeGrupo = doBloco[0].responsavel;
-    const colunas = doBloco.map(function(e){
-      const aqui = lista.filter(function(o){ return etapaAtualNumero(o.id)===e.numero; });
-      return '<div class="kb-col" data-etapa="'+e.numero+'">'+
-        '<div class="kb-col-cab">'+e.numero+'. '+esc(e.titulo)+'</div>'+
-        '<div class="kb-col-tag"><span>'+esc(e.responsavel)+'</span>'+(e.prazo_dias?'<span>'+e.prazo_dias+'d</span>':'')+'</div>'+
-        aqui.map(function(o){ return montarCardKanban(o, e); }).join('') +
-      '</div>';
-    }).join('');
-    return '<div class="kb-grupo"><div class="kb-grupo-titulo">'+esc(nomeGrupo)+'</div>'+
-      '<div class="kb-colunas">'+colunas+'</div></div>';
-  }).join('') + '<div class="kb-grupo"><div class="kb-grupo-titulo">Concluídas</div>'+
-    '<div class="kb-colunas"><div class="kb-col" data-etapa="fim" style="width:190px;">'+
+  const colunas = ordenadas.map(function(e){
+    const aqui = lista.filter(function(o){ return etapaAtualNumero(o.id)===e.numero; });
+    return '<div class="kb-col" data-etapa="'+e.numero+'" style="--cor-bloco:'+corDoBloco(e.bloco)+';">'+
+      '<div class="kb-col-cab">'+e.numero+'. '+esc(e.titulo)+'</div>'+
+      '<div class="kb-col-tag"><span>'+esc(e.responsavel)+'</span>'+(e.prazo_dias?'<span>'+e.prazo_dias+'d</span>':'')+'</div>'+
+      aqui.map(function(o){ return montarCardKanban(o, e); }).join('') +
+    '</div>';
+  }).join('');
+
+  const colunaFim = '<div class="kb-col" data-etapa="fim" style="width:190px;">'+
+    '<div class="kb-col-cab">✓ Concluídas</div><div class="kb-col-tag"><span></span></div>'+
     lista.filter(function(o){ return etapaAtualNumero(o.id)==null; })
          .map(function(o){ return montarCardKanban(o, null); }).join('') +
-    '</div></div></div>';
+  '</div>';
 
+  el.innerHTML = colunas + colunaFim;
   ativarDragDrop();
 }
 
