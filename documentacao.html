@@ -624,15 +624,37 @@ function renderTimeline(obra){
   $('obraCorpo').innerHTML = montarChecklistHtml(obra);
 }
 
+// aviso simples no canto da tela — usado quando o banco recusa silenciosamente
+function avisoDoc(msg, ruim){
+  let el=document.getElementById('docAviso');
+  if(!el){
+    el=document.createElement('div');
+    el.id='docAviso';
+    el.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border2);border-left:4px solid var(--green);border-radius:10px;padding:12px 20px;font-size:13.5px;z-index:200;box-shadow:0 8px 26px rgba(0,0,0,.45);';
+    document.body.appendChild(el);
+  }
+  el.style.borderLeftColor = ruim ? 'var(--red)' : 'var(--green)';
+  el.textContent = msg;
+  el.style.display='block';
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){el.style.display='none';}, 4000);
+}
+
 async function toggleEtapa(obraId, numero){
   const atual = (progresso[obraId]||{})[numero]||{};
   const novoValor = !atual.concluida;
-  const {error}=await db.from('doc_progresso').update({
+  const {data, error}=await db.from('doc_progresso').update({
     concluida: novoValor,
     concluida_por: novoValor ? eu.id : null,
     concluida_em: novoValor ? new Date().toISOString() : null
-  }).eq('obra_id', obraId).eq('etapa_numero', numero);
-  if(error){ alert('Não foi possível: '+error.message); return; }
+  }).eq('obra_id', obraId).eq('etapa_numero', numero).select();
+  if(error){ avisoDoc('Não foi possível: '+error.message, true); return; }
+  // Supabase não gera erro quando a política de segurança bloqueia — ele só devolve
+  // 0 linhas alteradas. Sem essa checagem, o clique falha em silêncio.
+  if(!data || data.length===0){
+    avisoDoc('Você não tem permissão para alterar esta etapa agora.', true);
+    return;
+  }
   await carregarTudo();
   const o=obras.find(function(x){return x.id===obraId;});
   renderTimeline(o);
@@ -644,12 +666,15 @@ async function confirmarParte(obraId, numero, parte){
   const outraParteOk = parte===1 ? atual.confirmado_parte2 : atual.confirmado_parte1;
   const dados = {};
   dados[campo] = !atual[campo];
-  // se as duas partes ficarem confirmadas, marca a etapa como concluída
   const aindaVaiConcluir = dados[campo] && outraParteOk;
   if(aindaVaiConcluir){ dados.concluida=true; dados.concluida_em=new Date().toISOString(); }
   else if(!dados[campo]){ dados.concluida=false; }
-  const {error}=await db.from('doc_progresso').update(dados).eq('obra_id',obraId).eq('etapa_numero',numero);
-  if(error){ alert('Não foi possível: '+error.message); return; }
+  const {data, error}=await db.from('doc_progresso').update(dados).eq('obra_id',obraId).eq('etapa_numero',numero).select();
+  if(error){ avisoDoc('Não foi possível: '+error.message, true); return; }
+  if(!data || data.length===0){
+    avisoDoc('Você não tem permissão para confirmar esta etapa agora.', true);
+    return;
+  }
   await carregarTudo();
   const o=obras.find(function(x){return x.id===obraId;});
   renderTimeline(o);
