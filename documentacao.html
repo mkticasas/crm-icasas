@@ -188,6 +188,7 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
     <div id="trocarCorretorWrap" class="oculto" style="padding:14px 24px 0;display:flex;align-items:center;gap:10px;">
       <label style="font-size:12px;color:var(--text3);">Corretor responsável</label>
       <select id="selCorretorObra" onchange="trocarCorretor()" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:7px 11px;color:var(--text);font-size:13px;flex:1;max-width:240px;"></select>
+      <button id="btnExcluirObra" class="oculto" onclick="excluirObra()" style="margin-left:auto;background:none;border:1px solid var(--red);color:var(--red);border-radius:var(--radius);padding:7px 14px;font-size:12.5px;cursor:pointer;">Excluir obra</button>
     </div>
     <div class="modal-corpo" id="obraCorpo"></div>
     <div style="border-top:1px solid var(--border);padding:18px 24px;">
@@ -536,6 +537,7 @@ async function abrirObra(id){
   await carregarComentarios(id);
   // ===== admin pode trocar o corretor responsável pela obra =====
   const wrapCorretor=$('trocarCorretorWrap');
+  const btnExcluir=$('btnExcluirObra');
   if(souAdmin()){
     const sel=$('selCorretorObra');
     const corretores = todosSellers.filter(function(s){return s.doc_responsavel==='Corretor';});
@@ -543,10 +545,24 @@ async function abrirObra(id){
       corretores.map(function(c){return '<option value="'+c.id+'">'+esc(c.nickname||c.name)+'</option>';}).join('');
     sel.value = o.corretor_id || '';
     wrapCorretor.classList.remove('oculto');
+    btnExcluir.classList.remove('oculto');
   } else {
     wrapCorretor.classList.add('oculto');
+    btnExcluir.classList.add('oculto');
   }
   $('mdObra').classList.add('on');
+}
+async function excluirObra(){
+  if(!obraAbertaId) return;
+  const o = obras.find(function(x){return x.id===obraAbertaId;});
+  const nome = o ? o.nome : 'esta obra';
+  if(!confirm('Excluir "'+nome+'"?\n\nIsso apaga todo o progresso e os comentários dela. Não tem como desfazer.')) return;
+  const {error} = await db.from('doc_obras').delete().eq('id', obraAbertaId);
+  if(error){ avisoDoc('Não foi possível excluir: '+error.message, true); return; }
+  fecharObra();
+  await carregarTudo();
+  desenhar();
+  avisoDoc('Obra excluída.');
 }
 async function trocarCorretor(){
   if(!obraAbertaId) return;
