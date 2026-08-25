@@ -508,17 +508,16 @@ function ativarDragDrop(){
       const ordenadas = etapas.slice().sort(function(a,b){return a.numero-b.numero;});
       const idxAtual = etapaAtual!=null ? ordenadas.findIndex(function(x){return x.numero===etapaAtual;}) : ordenadas.length;
 
-      // ADMIN pode arrastar para QUALQUER coluna anterior — o card "volta" e o checklist
-      // é reajustado de verdade (as etapas ficam desmarcadas), não só uma mudança visual
-      if(souAdmin() && etapaDestino!=='fim'){
-        const idxDestino = ordenadas.findIndex(function(x){return String(x.numero)===String(etapaDestino);});
-        if(idxDestino>=0 && idxDestino < idxAtual){
-          voltarParaEtapa(obraId, Number(etapaDestino));
-          return;
-        }
+      // ADMIN: pode soltar em QUALQUER coluna — pra frente ou pra trás, inclusive
+      // pulando etapas ou indo direto pra "Concluídas" — e o checklist é reajustado
+      // de verdade nos dois sentidos, não é só uma mudança visual
+      if(souAdmin()){
+        const destinoNumero = etapaDestino==='fim' ? null : Number(etapaDestino);
+        moverObraParaEtapa(obraId, destinoNumero);
+        return;
       }
 
-      // avanço normal: só aceita a coluna imediatamente seguinte — evita pular etapa sem querer
+      // não-admin: comportamento normal, só avança pra coluna imediatamente seguinte
       const proxima = ordenadas[idxAtual+1];
       const ehProxima = proxima && String(proxima.numero)===String(etapaDestino);
       const ehFim = etapaDestino==='fim' && !proxima;
@@ -530,28 +529,46 @@ function ativarDragDrop(){
   });
 }
 
-// admin arrastou pra uma coluna anterior: desmarca de verdade todas as etapas
-// entre o destino (inclusive) e a posição atual (exclusive) — sem isso, o card
-// não reapareceria lá, porque o sistema sempre mostra a obra na primeira etapa
-// ainda não concluída, e uma etapa "concluída" escondida não conta como voltada.
-async function voltarParaEtapa(obraId, etapaDestinoNumero){
+// ADMIN move o card pra qualquer coluna — pra trás (desmarca de verdade o que tinha
+// sido concluído) ou pra frente pulando etapas (marca tudo no caminho como concluído,
+// já preenchendo as confirmações de quem precisar de duas ou mais pessoas).
+// etapaDestinoNumero = null significa mandar direto pra "Concluídas".
+async function moverObraParaEtapa(obraId, etapaDestinoNumero){
   const ordenadas = etapas.slice().sort(function(a,b){return a.numero-b.numero;});
-  const idxDestino = ordenadas.findIndex(function(e){return e.numero===etapaDestinoNumero;});
+  const idxDestino = etapaDestinoNumero===null ? ordenadas.length : ordenadas.findIndex(function(e){return e.numero===etapaDestinoNumero;});
   const etapaAtualNum = etapaAtualNumero(obraId);
   const idxAtual = etapaAtualNum!=null ? ordenadas.findIndex(function(e){return e.numero===etapaAtualNum;}) : ordenadas.length;
-  const aDesmarcar = ordenadas.slice(idxDestino, idxAtual).map(function(e){return e.numero;});
-  if(!aDesmarcar.length) return;
+  if(idxDestino===idxAtual) return;
 
-  const {data, error} = await db.from('doc_progresso').update({
-    concluida:false, concluida_por:null, concluida_em:null,
-    confirmado_parte1:false, confirmado_parte2:false
-  }).eq('obra_id', obraId).in('etapa_numero', aDesmarcar).select();
-
-  if(error){ avisoDoc('Não foi possível voltar: '+error.message, true); return; }
-  if(!data || data.length===0){ avisoDoc('Você não tem permissão para voltar esta obra.', true); return; }
+  if(idxDestino < idxAtual){
+    // VOLTAR: desmarca de verdade da etapa destino (inclusive) até a atual (exclusive) —
+    // sem isso o card não reapareceria lá, porque o sistema sempre mostra a obra na
+    // primeira etapa ainda não concluída
+    const aDesmarcar = ordenadas.slice(idxDestino, idxAtual).map(function(e){return e.numero;});
+    const {data, error} = await db.from('doc_progresso').update({
+      concluida:false, concluida_por:null, concluida_em:null,
+      confirmado_parte1:false, confirmado_parte2:false, confirmacoes:{}
+    }).eq('obra_id', obraId).in('etapa_numero', aDesmarcar).select();
+    if(error){ avisoDoc('Não foi possível mover: '+error.message, true); return; }
+    if(!data || data.length===0){ avisoDoc('Você não tem permissão para mover esta obra.', true); return; }
+  } else {
+    // AVANÇAR pulando etapas: marca da atual (inclusive) até a destino (exclusive) como
+    // concluídas — nas etapas de múltiplos responsáveis, já marca todos como confirmados
+    const aMarcar = ordenadas.slice(idxAtual, idxDestino);
+    for(var i=0;i<aMarcar.length;i++){
+      var et = aMarcar[i];
+      var confs = {};
+      if(et.requer_dois){ nomesDaEtapa(et).forEach(function(n){confs[n]=true;}); }
+      var r = await db.from('doc_progresso').update({
+        concluida:true, concluida_por:eu.id, concluida_em:new Date().toISOString(), confirmacoes:confs
+      }).eq('obra_id', obraId).eq('etapa_numero', et.numero).select();
+      if(r.error){ avisoDoc('Não foi possível mover: '+r.error.message, true); return; }
+      if(!r.data || r.data.length===0){ avisoDoc('Você não tem permissão para mover esta obra.', true); return; }
+    }
+  }
   await carregarTudo();
   desenhar();
-  avisoDoc('Card voltado — checklist reajustado até essa etapa.');
+  avisoDoc('Card movido — checklist reajustado.');
 }
 function esc(s){return String(s||'').replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
 
