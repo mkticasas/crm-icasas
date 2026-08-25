@@ -446,11 +446,19 @@ function montarCardKanban(obra, etapa){
     const podeP1 = podeConfirmarParte(obra, etapa, 1);
     const podeP2 = podeConfirmarParte(obra, etapa, 2);
     const nomes = etapa.responsavel.split('/').map(function(s){return s.trim();});
-    acoes = '<div class="kb-card-acoes">'+
-      '<div class="kb-check-mini'+(linha.confirmado_parte1?' on':'')+(podeP1?'':' travado')+'" title="'+esc(nomes[0])+'" onclick="'+(podeP1?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',1)':'event.stopPropagation();')+'">'+(linha.confirmado_parte1?'✓':'')+'</div>'+
-      '<div class="kb-check-mini'+(linha.confirmado_parte2?' on':'')+(podeP2?'':' travado')+'" title="'+esc(nomes[1]||'')+(etapa.aprovacao_financeiro?' — aprovação financeira':'')+'" onclick="'+(podeP2?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',2)':'event.stopPropagation();')+'">'+(linha.confirmado_parte2?'✓':'')+'</div>'+
-      '<span style="font-size:9.5px;color:var(--text3);">'+(etapa.aprovacao_financeiro?(linha.confirmado_parte2?'aprovado':'aguarda aprovação'):'confirmar')+'</span>'+
-      '<span style="margin-left:auto;">'+tagDias+'</span></div>';
+    // o nome de cada responsável fica ESCRITO embaixo do checkbox — não só no tooltip,
+    // porque em tela pequena/touch o tooltip não aparece e as duas caixinhas ficam idênticas
+    acoes = '<div class="kb-card-acoes" style="align-items:flex-start;flex-wrap:wrap;">'+
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'+
+        '<div class="kb-check-mini'+(linha.confirmado_parte1?' on':'')+(podeP1?'':' travado')+'" onclick="'+(podeP1?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',1)':'event.stopPropagation();')+'">'+(linha.confirmado_parte1?'✓':'')+'</div>'+
+        '<span style="font-size:8.5px;color:'+(podeP1?'var(--text2)':'var(--text3)')+';white-space:nowrap;">'+esc(nomes[0])+'</span>'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'+
+        '<div class="kb-check-mini'+(linha.confirmado_parte2?' on':'')+(podeP2?'':' travado')+'" onclick="'+(podeP2?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',2)':'event.stopPropagation();')+'">'+(linha.confirmado_parte2?'✓':'')+'</div>'+
+        '<span style="font-size:8.5px;color:'+(podeP2?'var(--text2)':'var(--text3)')+';white-space:nowrap;">'+esc(nomes[1]||'')+'</span>'+
+      '</div>'+
+      '<span style="font-size:9.5px;color:var(--text3);align-self:center;">'+(etapa.aprovacao_financeiro?(linha.confirmado_parte2?'aprovado':'aguarda aprovação'):'')+'</span>'+
+      '<span style="margin-left:auto;align-self:center;">'+tagDias+'</span></div>';
   } else if(etapa){
     acoes = '<div class="kb-card-acoes">'+
       '<div class="kb-check-mini" onclick="event.stopPropagation();'+(editavel?'toggleEtapa(\''+obra.id+'\','+etapa.numero+')':'')+'"></div>'+
