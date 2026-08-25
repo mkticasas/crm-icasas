@@ -114,6 +114,26 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
 .tv-barra{height:100%;background:var(--accent);border-radius:6px;transition:width .5s;}
 .tv-rodape{display:flex;justify-content:space-between;font-size:13px;color:var(--text3);}
 .tv-badge-atraso{background:rgba(239,68,68,.18);color:#ff6b6b;padding:3px 12px;border-radius:20px;font-weight:700;font-size:12.5px;}
+/* ===== KANBAN DE ETAPAS (cada processo é uma coluna, obras atravessam) ===== */
+.kanban-doc{display:flex;gap:22px;overflow-x:auto;padding-bottom:20px;align-items:flex-start;}
+.kb-grupo{display:flex;flex-direction:column;flex-shrink:0;}
+.kb-grupo-titulo{text-align:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;letter-spacing:.4px;margin-bottom:8px;text-transform:uppercase;}
+.kb-colunas{display:flex;gap:8px;border:1.5px solid rgba(255,255,255,.16);border-radius:14px;padding:10px;background:rgba(255,255,255,.015);}
+.kb-col{width:168px;flex-shrink:0;background:var(--bg2);border-radius:10px;padding:8px;min-height:120px;}
+.kb-col.alvo{outline:2px dashed var(--accent);outline-offset:-2px;}
+.kb-col-cab{font-size:10.5px;font-weight:700;color:var(--text2);margin-bottom:3px;line-height:1.3;}
+.kb-col-tag{font-size:9.5px;color:var(--text3);margin-bottom:8px;display:flex;justify-content:space-between;}
+.kb-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 9px;margin-bottom:7px;cursor:grab;font-size:11.5px;transition:.12s;}
+.kb-card:hover{border-color:var(--accent);}
+.kb-card.arrastando{opacity:.35;}
+.kb-card.travado{cursor:not-allowed;opacity:.55;}
+.kb-card.atrasado{border-color:rgba(239,68,68,.6);}
+.kb-card-nome{font-weight:600;margin-bottom:2px;}
+.kb-card-end{font-size:10px;color:var(--text3);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kb-card-acoes{display:flex;gap:5px;align-items:center;}
+.kb-check-mini{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;}
+.kb-check-mini.on{background:var(--green);border-color:var(--green);color:#062b12;}
+.kb-badge-atraso{background:rgba(239,68,68,.2);color:#ff8080;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;}
 ::-webkit-scrollbar{width:6px;height:6px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
@@ -153,7 +173,7 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
       <input type="text" class="busca" id="busca" placeholder="Buscar por nome ou endereço" oninput="desenhar()">
       <button class="btn btn-p" style="margin-left:auto;white-space:nowrap;" onclick="abrirNovaObra()">+ Nova obra</button>
     </div>
-    <div class="grid-obras" id="gridObras"></div>
+    <div class="kanban-doc" id="gridObras"></div>
   </div>
 </div>
 
@@ -325,10 +345,20 @@ function progressoObra(obraId){
   const feitas=Object.values(p).filter(function(x){return x.concluida;}).length;
   return {feitas, total: etapas.length, pct: etapas.length?Math.round(feitas/etapas.length*100):0};
 }
+// a etapa atual de uma obra é a primeira (em ordem numérica) ainda não concluída
+function etapaAtualNumero(obraId){
+  const p = progresso[obraId]||{};
+  const ordenadas = etapas.slice().sort(function(a,b){return a.numero-b.numero;});
+  for(var i=0;i<ordenadas.length;i++){
+    if(!p[ordenadas[i].numero] || !p[ordenadas[i].numero].concluida) return ordenadas[i].numero;
+  }
+  return null; // todas concluídas
+}
 function estaAtrasada(obra){
-  const et=etapas.find(function(e){return e.bloco===obra.bloco_atual;});
+  const num = etapaAtualNumero(obra.id);
+  if(num==null) return false;
+  const et = etapas.find(function(e){return e.numero===num;});
   if(!et||!et.prazo_dias) return false;
-  // usa a data de criação da obra como referência simplificada de prazo do bloco atual
   const dias=(Date.now()-new Date(obra.atualizado).getTime())/86400000;
   return dias > et.prazo_dias;
 }
@@ -337,22 +367,89 @@ function desenhar(){
   const q=($('busca').value||'').toLowerCase();
   const el=$('gridObras');
   const lista=obras.filter(function(o){ return !q || (o.nome+o.endereco).toLowerCase().indexOf(q)>=0; });
-  if(!lista.length){ el.innerHTML='<p style="color:var(--text3);grid-column:1/-1;">Nenhuma obra ainda.</p>'; return; }
-  el.innerHTML=lista.map(function(o){
-    const pr=progressoObra(o.id);
-    const atrasada=estaAtrasada(o);
-    return '<div class="obra-card'+(atrasada?' atrasada':'')+'">'+
-      '<div class="obra-card-cab">'+
-        '<div><h3 style="cursor:pointer;" onclick="abrirObra(\''+o.id+'\')" title="Abrir em tela cheia">'+esc(o.nome)+' 🔍</h3><div class="end">'+esc(o.endereco||'—')+'</div></div>'+
-        '<div style="text-align:right;">'+
-          (atrasada?'<span class="pill pill-atraso">Atrasada</span><br>':'')+
-          '<span style="font-size:12px;color:var(--text3);">'+pr.feitas+' de '+pr.total+' ('+pr.pct+'%)</span>'+
-        '</div>'+
-      '</div>'+
-      '<div class="obra-barra"><i style="width:'+pr.pct+'%"></i></div>'+
-      '<div class="checklist-card">'+montarChecklistHtml(o)+'</div>'+
+
+  // agrupa as 43 etapas pelos blocos, na ordem de numero
+  const ordenadas = etapas.slice().sort(function(a,b){return a.numero-b.numero;});
+  const blocos = [...new Set(ordenadas.map(function(e){return e.bloco;}))].sort(function(a,b){return a-b;});
+
+  el.innerHTML = blocos.map(function(bloco){
+    const doBloco = ordenadas.filter(function(e){return e.bloco===bloco;});
+    const nomeGrupo = doBloco[0].responsavel;
+    const colunas = doBloco.map(function(e){
+      const aqui = lista.filter(function(o){ return etapaAtualNumero(o.id)===e.numero; });
+      return '<div class="kb-col" data-etapa="'+e.numero+'">'+
+        '<div class="kb-col-cab">'+e.numero+'. '+esc(e.titulo)+'</div>'+
+        '<div class="kb-col-tag"><span>'+esc(e.responsavel)+'</span>'+(e.prazo_dias?'<span>'+e.prazo_dias+'d</span>':'')+'</div>'+
+        aqui.map(function(o){ return montarCardKanban(o, e); }).join('') +
       '</div>';
-  }).join('');
+    }).join('');
+    return '<div class="kb-grupo"><div class="kb-grupo-titulo">'+esc(nomeGrupo)+'</div>'+
+      '<div class="kb-colunas">'+colunas+'</div></div>';
+  }).join('') + '<div class="kb-grupo"><div class="kb-grupo-titulo">Concluídas</div>'+
+    '<div class="kb-colunas"><div class="kb-col" data-etapa="fim" style="width:190px;">'+
+    lista.filter(function(o){ return etapaAtualNumero(o.id)==null; })
+         .map(function(o){ return montarCardKanban(o, null); }).join('') +
+    '</div></div></div>';
+
+  ativarDragDrop();
+}
+
+function montarCardKanban(obra, etapa){
+  const atrasada = estaAtrasada(obra);
+  const editavel = etapa ? podeEditar(obra, etapa) : false;
+  let acoes = '';
+  if(etapa && etapa.requer_dois){
+    const linha = (progresso[obra.id]||{})[etapa.numero] || {};
+    const nomes = etapa.responsavel.split('/').map(function(s){return s.trim();});
+    acoes = '<div class="kb-card-acoes">'+
+      '<div class="kb-check-mini'+(linha.confirmado_parte1?' on':'')+'" title="'+esc(nomes[0])+'" onclick="event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',1)">'+(linha.confirmado_parte1?'✓':'')+'</div>'+
+      '<div class="kb-check-mini'+(linha.confirmado_parte2?' on':'')+'" title="'+esc(nomes[1]||'')+'" onclick="event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',2)">'+(linha.confirmado_parte2?'✓':'')+'</div>'+
+      '<span style="font-size:9.5px;color:var(--text3);">confirmar</span></div>';
+  } else if(etapa){
+    acoes = '<div class="kb-card-acoes">'+
+      '<div class="kb-check-mini" onclick="event.stopPropagation();'+(editavel?'toggleEtapa(\''+obra.id+'\','+etapa.numero+')':'')+'"></div>'+
+      '<span style="font-size:9.5px;color:var(--text3);">'+(editavel?'concluir':'aguardando')+'</span></div>';
+  }
+  return '<div class="kb-card'+(atrasada?' atrasado':'')+(editavel?'':' travado')+'" '+
+    (editavel?'draggable="true" data-obra="'+obra.id+'"':'')+
+    ' onclick="abrirObra(\''+obra.id+'\')" title="Clique pra ver detalhes">'+
+    '<div class="kb-card-nome">'+esc(obra.nome)+(atrasada?' <span class="kb-badge-atraso">ATRASADA</span>':'')+'</div>'+
+    '<div class="kb-card-end">'+esc(obra.endereco||'—')+'</div>'+
+    acoes+
+  '</div>';
+}
+
+// arrastar o card pra próxima coluna = concluir a etapa atual (empurra pra próxima automaticamente)
+function ativarDragDrop(){
+  document.querySelectorAll('.kb-card[draggable="true"]').forEach(function(card){
+    card.addEventListener('dragstart', function(e){
+      e.dataTransfer.setData('obra', card.dataset.obra);
+      card.classList.add('arrastando');
+    });
+    card.addEventListener('dragend', function(){ card.classList.remove('arrastando'); });
+  });
+  document.querySelectorAll('.kb-col').forEach(function(col){
+    col.addEventListener('dragover', function(e){ e.preventDefault(); col.classList.add('alvo'); });
+    col.addEventListener('dragleave', function(){ col.classList.remove('alvo'); });
+    col.addEventListener('drop', function(e){
+      e.preventDefault(); col.classList.remove('alvo');
+      const obraId = e.dataTransfer.getData('obra');
+      const obra = obras.find(function(o){return o.id===obraId;});
+      if(!obra) return;
+      const etapaAtual = etapaAtualNumero(obraId);
+      const etapaDestino = col.dataset.etapa;
+      // só aceita soltar exatamente na coluna seguinte — evita pular etapa sem querer
+      const ordenadas = etapas.slice().sort(function(a,b){return a.numero-b.numero;});
+      const idxAtual = ordenadas.findIndex(function(x){return x.numero===etapaAtual;});
+      const proxima = ordenadas[idxAtual+1];
+      const ehProxima = proxima && String(proxima.numero)===String(etapaDestino);
+      const ehFim = etapaDestino==='fim' && !proxima;
+      if(!ehProxima && !ehFim){ return; }
+      const etapaObj = ordenadas[idxAtual];
+      if(etapaObj.requer_dois){ return; } // dupla confirmação não avança por arraste, só pelos checks
+      toggleEtapa(obraId, etapaAtual);
+    });
+  });
 }
 function esc(s){return String(s||'').replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
 
@@ -380,7 +477,9 @@ function fecharObra(){ $('mdObra').classList.remove('on'); obraAbertaId=null; }
 
 function podeEditar(obra, etapa){
   if(souAdmin()) return true;
-  if(obra.bloco_atual !== etapa.bloco) return false;
+  // só a etapa em que a obra está EXATAMENTE agora pode ser marcada —
+  // calculado ao vivo, não depende do bloco_atual salvo na obra
+  if(etapaAtualNumero(obra.id) !== etapa.numero) return false;
   // doc_responsavel é a comparação exata (preenchida na tela de Equipe);
   // sem ela, cai no nome por aproximação, como antes
   if(eu.doc_responsavel) return etapa.responsavel.indexOf(eu.doc_responsavel)>=0;
