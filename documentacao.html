@@ -448,21 +448,22 @@ function montarCardKanban(obra, etapa){
   let acoes = '';
   if(etapa && etapa.requer_dois){
     const linha = (progresso[obra.id]||{})[etapa.numero] || {};
-    const podeP1 = podeConfirmarParte(obra, etapa, 1);
-    const podeP2 = podeConfirmarParte(obra, etapa, 2);
-    const nomes = etapa.responsavel.split('/').map(function(s){return s.trim();});
-    // o nome de cada responsável fica ESCRITO embaixo do checkbox — não só no tooltip,
-    // porque em tela pequena/touch o tooltip não aparece e as duas caixinhas ficam idênticas
+    const confs = linha.confirmacoes || {};
+    const nomes = nomesDaEtapa(etapa);
+    // gera um checkbox pra CADA responsável da etapa — funciona com 2, 3 ou 4 pessoas,
+    // não é mais fixo em duas colunas
+    const blocos = nomes.map(function(nome, idx){
+      const pode = podeConfirmarParte(obra, etapa, idx+1);
+      const on = !!confs[nome];
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'+
+        '<div class="kb-check-mini'+(on?' on':'')+(pode?'':' travado')+'" onclick="'+(pode?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+','+(idx+1)+')':'event.stopPropagation();')+'">'+(on?'✓':'')+'</div>'+
+        '<span style="font-size:8.5px;color:'+(pode?'var(--text2)':'var(--text3)')+';white-space:nowrap;">'+esc(nome)+'</span>'+
+      '</div>';
+    }).join('');
+    const ultimoConfirmado = !!confs[nomes[nomes.length-1]];
     acoes = '<div class="kb-card-acoes" style="align-items:flex-start;flex-wrap:wrap;">'+
-      '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'+
-        '<div class="kb-check-mini'+(linha.confirmado_parte1?' on':'')+(podeP1?'':' travado')+'" onclick="'+(podeP1?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',1)':'event.stopPropagation();')+'">'+(linha.confirmado_parte1?'✓':'')+'</div>'+
-        '<span style="font-size:8.5px;color:'+(podeP1?'var(--text2)':'var(--text3)')+';white-space:nowrap;">'+esc(nomes[0])+'</span>'+
-      '</div>'+
-      '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'+
-        '<div class="kb-check-mini'+(linha.confirmado_parte2?' on':'')+(podeP2?'':' travado')+'" onclick="'+(podeP2?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+etapa.numero+',2)':'event.stopPropagation();')+'">'+(linha.confirmado_parte2?'✓':'')+'</div>'+
-        '<span style="font-size:8.5px;color:'+(podeP2?'var(--text2)':'var(--text3)')+';white-space:nowrap;">'+esc(nomes[1]||'')+'</span>'+
-      '</div>'+
-      '<span style="font-size:9.5px;color:var(--text3);align-self:center;">'+(etapa.aprovacao_financeiro?(linha.confirmado_parte2?'aprovado':'aguarda aprovação'):'')+'</span>'+
+      blocos+
+      '<span style="font-size:9.5px;color:var(--text3);align-self:center;">'+(etapa.aprovacao_financeiro?(ultimoConfirmado?'aprovado':'aguarda aprovação'):'')+'</span>'+
       '<span style="margin-left:auto;align-self:center;">'+tagDias+'</span></div>';
   } else if(etapa){
     acoes = '<div class="kb-card-acoes">'+
@@ -471,12 +472,16 @@ function montarCardKanban(obra, etapa){
       '<span style="margin-left:auto;">'+tagDias+'</span></div>';
   }
   const nomeCorretor = nomeDoVendedor(obra.corretor_id);
+  const dataCriacao = obra.criado ? new Date(obra.criado).toLocaleDateString('pt-BR') : null;
   return '<div class="kb-card'+(atrasada?' atrasado':'')+(editavel?'':' travado')+'" '+
     (editavel?'draggable="true" data-obra="'+obra.id+'"':'')+
     ' onclick="abrirObra(\''+obra.id+'\')" title="Clique pra ver detalhes">'+
     '<div class="kb-card-nome">'+esc(obra.nome)+(atrasada?' <span class="kb-badge-atraso">ATRASADA</span>':'')+'</div>'+
     '<div class="kb-card-end">'+esc(obra.endereco||'—')+'</div>'+
-    (nomeCorretor?'<div style="font-size:9.5px;color:var(--accent);margin-bottom:6px;">👤 '+esc(nomeCorretor)+'</div>':'')+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'+
+      (nomeCorretor?'<span style="font-size:9.5px;color:var(--accent);">👤 '+esc(nomeCorretor)+'</span>':'<span></span>')+
+      (dataCriacao?'<span style="font-size:9px;color:var(--text3);">📅 '+dataCriacao+'</span>':'')+
+    '</div>'+
     acoes+
   '</div>';
 }
@@ -500,9 +505,20 @@ function ativarDragDrop(){
       if(!obra) return;
       const etapaAtual = etapaAtualNumero(obraId);
       const etapaDestino = col.dataset.etapa;
-      // só aceita soltar exatamente na coluna seguinte — evita pular etapa sem querer
       const ordenadas = etapas.slice().sort(function(a,b){return a.numero-b.numero;});
-      const idxAtual = ordenadas.findIndex(function(x){return x.numero===etapaAtual;});
+      const idxAtual = etapaAtual!=null ? ordenadas.findIndex(function(x){return x.numero===etapaAtual;}) : ordenadas.length;
+
+      // ADMIN pode arrastar para QUALQUER coluna anterior — o card "volta" e o checklist
+      // é reajustado de verdade (as etapas ficam desmarcadas), não só uma mudança visual
+      if(souAdmin() && etapaDestino!=='fim'){
+        const idxDestino = ordenadas.findIndex(function(x){return String(x.numero)===String(etapaDestino);});
+        if(idxDestino>=0 && idxDestino < idxAtual){
+          voltarParaEtapa(obraId, Number(etapaDestino));
+          return;
+        }
+      }
+
+      // avanço normal: só aceita a coluna imediatamente seguinte — evita pular etapa sem querer
       const proxima = ordenadas[idxAtual+1];
       const ehProxima = proxima && String(proxima.numero)===String(etapaDestino);
       const ehFim = etapaDestino==='fim' && !proxima;
@@ -512,6 +528,30 @@ function ativarDragDrop(){
       toggleEtapa(obraId, etapaAtual);
     });
   });
+}
+
+// admin arrastou pra uma coluna anterior: desmarca de verdade todas as etapas
+// entre o destino (inclusive) e a posição atual (exclusive) — sem isso, o card
+// não reapareceria lá, porque o sistema sempre mostra a obra na primeira etapa
+// ainda não concluída, e uma etapa "concluída" escondida não conta como voltada.
+async function voltarParaEtapa(obraId, etapaDestinoNumero){
+  const ordenadas = etapas.slice().sort(function(a,b){return a.numero-b.numero;});
+  const idxDestino = ordenadas.findIndex(function(e){return e.numero===etapaDestinoNumero;});
+  const etapaAtualNum = etapaAtualNumero(obraId);
+  const idxAtual = etapaAtualNum!=null ? ordenadas.findIndex(function(e){return e.numero===etapaAtualNum;}) : ordenadas.length;
+  const aDesmarcar = ordenadas.slice(idxDestino, idxAtual).map(function(e){return e.numero;});
+  if(!aDesmarcar.length) return;
+
+  const {data, error} = await db.from('doc_progresso').update({
+    concluida:false, concluida_por:null, concluida_em:null,
+    confirmado_parte1:false, confirmado_parte2:false
+  }).eq('obra_id', obraId).in('etapa_numero', aDesmarcar).select();
+
+  if(error){ avisoDoc('Não foi possível voltar: '+error.message, true); return; }
+  if(!data || data.length===0){ avisoDoc('Você não tem permissão para voltar esta obra.', true); return; }
+  await carregarTudo();
+  desenhar();
+  avisoDoc('Card voltado — checklist reajustado até essa etapa.');
 }
 function esc(s){return String(s||'').replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
 
@@ -615,12 +655,18 @@ function podeEditar(obra, etapa){
 // para etapas de dupla confirmação (8, 9, 18...): decide quem pode marcar CADA lado.
 // numParte é 1 ou 2. Quando a etapa exige aprovação do financeiro, o lado 2
 // é liberado só por quem tem esse papel — não pelo nome, igual as outras.
+// funciona pra qualquer quantidade de responsáveis (2, 3 ou 4) — não é mais fixo em duas partes
+function nomesDaEtapa(etapa){
+  return etapa.responsavel.split('/').map(function(s){return s.trim();});
+}
 function podeConfirmarParte(obra, etapa, numParte){
   if(souAdmin()) return true;
   if(etapaAtualNumero(obra.id) !== etapa.numero) return false;
-  if(etapa.aprovacao_financeiro && numParte===2) return souFinanceiro();
-  const nomes = etapa.responsavel.split('/').map(function(s){return s.trim();});
+  const nomes = nomesDaEtapa(etapa);
   const alvo = (nomes[numParte-1]||'').toLowerCase();
+  // a aprovação financeira é sempre a ÚLTIMA posição do texto do responsável
+  // (ex.: "Obras / Duda" — Duda é sempre a última parte)
+  if(etapa.aprovacao_financeiro && numParte===nomes.length) return souFinanceiro();
   if(eu.doc_responsavel) return alvo.indexOf(eu.doc_responsavel.toLowerCase())>=0;
   const meuNome=(eu.nickname||eu.name||'').toLowerCase();
   return alvo.indexOf(meuNome)>=0;
@@ -641,14 +687,15 @@ function montarChecklistHtml(obra){
       const linha = p[e.numero] || {};
       const editavel = podeEditar(obra, e);
       if(e.requer_dois){
-        const p1=linha.confirmado_parte1, p2=linha.confirmado_parte2;
-        const podeP1=podeConfirmarParte(obra,e,1), podeP2=podeConfirmarParte(obra,e,2);
-        const nomes=e.responsavel.split('/').map(function(s){return s.trim();});
+        const confs = linha.confirmacoes || {};
+        const nomes = nomesDaEtapa(e);
+        const checks = nomes.map(function(nome, idx){
+          const pode = podeConfirmarParte(obra,e,idx+1);
+          const on = !!confs[nome];
+          return '<div class="check'+(on?' on':'')+(pode?'':' travado')+'" title="'+esc(nome)+(e.aprovacao_financeiro&&idx===nomes.length-1?' (aprovação financeira)':'')+'" onclick="'+(pode?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+e.numero+','+(idx+1)+')':'event.stopPropagation();')+'">'+(on?'✓':'')+'</div>';
+        }).join('');
         html+='<div class="etapa'+(linha.concluida?' concluida':'')+'">'+
-          '<div class="dupla">'+
-            '<div class="check'+(p1?' on':'')+(podeP1?'':' travado')+'" title="'+esc(nomes[0])+'" onclick="'+(podeP1?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+e.numero+',1)':'event.stopPropagation();')+'">'+(p1?'✓':'')+'</div>'+
-            '<div class="check'+(p2?' on':'')+(podeP2?'':' travado')+'" title="'+esc(nomes[1]||'')+(e.aprovacao_financeiro?' (aprovação financeira)':'')+'" onclick="'+(podeP2?'event.stopPropagation();confirmarParte(\''+obra.id+'\','+e.numero+',2)':'event.stopPropagation();')+'">'+(p2?'✓':'')+'</div>'+
-          '</div>'+
+          '<div class="dupla">'+checks+'</div>'+
           '<span class="etapa-titulo">'+e.numero+'. '+esc(e.titulo)+'</span>'+
           '<span class="etapa-tag">'+esc(e.responsavel)+'</span></div>';
       } else {
@@ -702,15 +749,19 @@ async function toggleEtapa(obraId, numero){
   renderTimeline(o);
 }
 
+// funciona pra qualquer quantidade de responsáveis — grava num JSON {nome: true/false}
+// em vez de colunas fixas confirmado_parte1/parte2, que só aguentavam duas pessoas
 async function confirmarParte(obraId, numero, parte){
-  const campo = parte===1 ? 'confirmado_parte1' : 'confirmado_parte2';
+  const etapa = etapas.find(function(e){return e.numero===numero;});
+  const nomes = nomesDaEtapa(etapa);
+  const nomeParte = nomes[parte-1];
   const atual = (progresso[obraId]||{})[numero]||{};
-  const outraParteOk = parte===1 ? atual.confirmado_parte2 : atual.confirmado_parte1;
-  const dados = {};
-  dados[campo] = !atual[campo];
-  const aindaVaiConcluir = dados[campo] && outraParteOk;
-  if(aindaVaiConcluir){ dados.concluida=true; dados.concluida_em=new Date().toISOString(); }
-  else if(!dados[campo]){ dados.concluida=false; }
+  const confAtuais = Object.assign({}, atual.confirmacoes||{});
+  confAtuais[nomeParte] = !confAtuais[nomeParte];
+  const todasConfirmadas = nomes.every(function(n){return confAtuais[n];});
+  const dados = { confirmacoes: confAtuais };
+  if(todasConfirmadas){ dados.concluida=true; dados.concluida_em=new Date().toISOString(); }
+  else { dados.concluida=false; }
   const {data, error}=await db.from('doc_progresso').update(dados).eq('obra_id',obraId).eq('etapa_numero',numero).select();
   if(error){ avisoDoc('Não foi possível: '+error.message, true); return; }
   if(!data || data.length===0){
