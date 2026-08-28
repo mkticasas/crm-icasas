@@ -649,10 +649,17 @@
 
   <!-- SELLERS -->
   <div class="page" id="page-sellers">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label style="font-size:12.5px;color:var(--text3);">Agrupar por</label>
+        <select id="sellersAgrupamento" onchange="renderSellers()" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;color:var(--text);font-size:13px;">
+          <option value="empresa">Empresa</option>
+          <option value="cargo">Cargo</option>
+        </select>
+      </div>
       <button class="btn btn-primary" onclick="openSellerModal()">+ Novo Vendedor</button>
     </div>
-    <div class="sellers-grid" id="sellersGrid"><div class="loading" style="grid-column:span 3;">Carregando...</div></div>
+    <div id="sellersGrid"><div class="loading">Carregando...</div></div>
   </div>
 
   <!-- TAGS MANAGEMENT -->
@@ -1973,35 +1980,60 @@ async function onDrop(e,newStage){
 }
 
 // SELLERS
+// desenha um vendedor — exatamente o card de antes, sem mudar nada nele
+function montarCardVendedor(s){
+  const leads=allLeads.filter(l=>l.seller_id==s.id);
+  const won=leads.filter(l=>l.stage==='won').length;
+  const rev=leads.filter(l=>l.stage==='won').reduce((a,l)=>a+(parseFloat(l.value)||0),0);
+  const goal=parseFloat(s.goal)||0,prog=goal>0?Math.min(Math.round((rev/goal)*100),100):0;
+  return `<div class="seller-card">
+    <div class="seller-header">
+      <div class="avatar-lg" style="background:${s.color||'#3d7eff'}">${initials(s.nickname||s.name)}</div>
+      <div style="flex:1"><div class="seller-name">${s.name}</div>
+      <div class="seller-role">${s.role||'Vendedor'} <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${s.status==='active'?'var(--green)':'var(--red)'};margin-left:6px;vertical-align:2px;"></span></div>
+      ${s.login?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">Login: ${s.login}</div>`:''}
+      ${s.can_see_all_leads?`<div style="font-size:10px;color:var(--accent);margin-top:3px;">👁 Vê todos os leads</div>`:''}
+      ${s.can_see_all_companies?`<div style="font-size:10px;color:#ed8036;margin-top:3px;">🏢 Vê as duas empresas</div>`:''}
+      ${s.empresa?`<div style="font-size:10px;color:${empresaInfo(s.empresa).cor};margin-top:3px;">${empresaInfo(s.empresa).nome}</div>`:''}
+      ${s.oculto_filtro_vendedor?`<div style="font-size:10px;color:var(--text3);margin-top:3px;">🚫 Fora do rodízio de leads</div>`:''}
+      </div>
+    </div>
+    <div class="seller-stats">
+      <div class="seller-stat"><div class="seller-stat-label">Leads</div><div class="seller-stat-value">${leads.length}</div></div>
+      <div class="seller-stat"><div class="seller-stat-label">Fechados</div><div class="seller-stat-value" style="color:var(--green)">${won}</div></div>
+      <div class="seller-stat" style="grid-column:span 2"><div class="seller-stat-label">Receita</div><div class="seller-stat-value">R$ ${rev.toLocaleString('pt-BR')}</div></div>
+    </div>
+    ${goal>0?`<div style="margin-top:10px;"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px;"><span>Meta</span><span>${prog}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${prog}%;background:${s.color||'#3d7eff'}"></div></div></div>`:''}
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="editSeller('${s.id}')">Editar</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteSeller('${s.id}')">Excluir</button>
+    </div>
+  </div>`;
+}
+
 function renderSellers(){
   const grid=document.getElementById('sellersGrid');
-  if(!allSellers.length){grid.innerHTML='<div style="grid-column:span 3"><div class="empty-state"><p>Nenhum vendedor cadastrado.</p><button class="btn btn-primary" onclick="openSellerModal()">Cadastrar Vendedor</button></div></div>';return;}
-  grid.innerHTML=allSellers.map(s=>{
-    const leads=allLeads.filter(l=>l.seller_id==s.id);
-    const won=leads.filter(l=>l.stage==='won').length;
-    const rev=leads.filter(l=>l.stage==='won').reduce((a,l)=>a+(parseFloat(l.value)||0),0);
-    const goal=parseFloat(s.goal)||0,prog=goal>0?Math.min(Math.round((rev/goal)*100),100):0;
-    return `<div class="seller-card">
-      <div class="seller-header">
-        <div class="avatar-lg" style="background:${s.color||'#3d7eff'}">${initials(s.nickname||s.name)}</div>
-        <div style="flex:1"><div class="seller-name">${s.name}</div>
-        <div class="seller-role">${s.role||'Vendedor'} <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${s.status==='active'?'var(--green)':'var(--red)'};margin-left:6px;vertical-align:2px;"></span></div>
-        ${s.login?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">Login: ${s.login}</div>`:''}
-        ${s.can_see_all_leads?`<div style="font-size:10px;color:var(--accent);margin-top:3px;">👁 Vê todos os leads</div>`:''}
-        ${s.can_see_all_companies?`<div style="font-size:10px;color:#ed8036;margin-top:3px;">🏢 Vê as duas empresas</div>`:''}
-        ${s.empresa?`<div style="font-size:10px;color:${empresaInfo(s.empresa).cor};margin-top:3px;">${empresaInfo(s.empresa).nome}</div>`:''}
-        </div>
+  if(!allSellers.length){grid.innerHTML='<div class="empty-state"><p>Nenhum vendedor cadastrado.</p><button class="btn btn-primary" onclick="openSellerModal()">Cadastrar Vendedor</button></div>';return;}
+
+  const modo = (document.getElementById('sellersAgrupamento')||{}).value || 'empresa';
+  const chaveDoGrupo = modo==='cargo' ? (s=>s.role||'Vendedor') : (s=>empresaInfo(s.empresa||'automacao').nome);
+
+  // agrupa mantendo a ordem de primeira aparição
+  const grupos = new Map();
+  allSellers.forEach(function(s){
+    const chave = chaveDoGrupo(s);
+    if(!grupos.has(chave)) grupos.set(chave, []);
+    grupos.get(chave).push(s);
+  });
+
+  grid.innerHTML = Array.from(grupos.entries()).map(function([nomeGrupo, pessoas]){
+    return `<div style="margin-bottom:26px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;">${nomeGrupo}</span>
+        <span style="font-size:11.5px;color:var(--text3);background:var(--bg3);padding:2px 9px;border-radius:20px;">${pessoas.length}</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
       </div>
-      <div class="seller-stats">
-        <div class="seller-stat"><div class="seller-stat-label">Leads</div><div class="seller-stat-value">${leads.length}</div></div>
-        <div class="seller-stat"><div class="seller-stat-label">Fechados</div><div class="seller-stat-value" style="color:var(--green)">${won}</div></div>
-        <div class="seller-stat" style="grid-column:span 2"><div class="seller-stat-label">Receita</div><div class="seller-stat-value">R$ ${rev.toLocaleString('pt-BR')}</div></div>
-      </div>
-      ${goal>0?`<div style="margin-top:10px;"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px;"><span>Meta</span><span>${prog}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${prog}%;background:${s.color||'#3d7eff'}"></div></div></div>`:''}
-      <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="editSeller('${s.id}')">Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteSeller('${s.id}')">Excluir</button>
-      </div>
+      <div class="sellers-grid">${pessoas.map(montarCardVendedor).join('')}</div>
     </div>`;
   }).join('');
 }
