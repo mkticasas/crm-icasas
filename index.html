@@ -3253,6 +3253,14 @@ function showPage(page){
       document.getElementById('r-empresa').value = minhaEmpresa ? minhaEmpresa() : empresaAtiva;
     }
     atualizarEtapasRelatorio();
+    // sempre que abrir a aba, o período volta pro padrão de 1 mês (hoje até 1 mês atrás) —
+    // assim já entra mostrando algo relevante, sem precisar configurar nada
+    const hoje=new Date();
+    const umMesAtras=new Date(); umMesAtras.setMonth(umMesAtras.getMonth()-1);
+    const paraInput=function(d){ return d.toISOString().slice(0,10); };
+    document.getElementById('r-date-from').value=paraInput(umMesAtras);
+    document.getElementById('r-date-to').value=paraInput(hoje);
+    previewReport();
   }
   if(page==='integrations')loadWebhooks();
   if(page==='tags')renderTagsPage();
