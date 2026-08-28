@@ -1993,8 +1993,7 @@ function montarCardVendedor(s){
       <div class="seller-role">${s.role||'Vendedor'} <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${s.status==='active'?'var(--green)':'var(--red)'};margin-left:6px;vertical-align:2px;"></span></div>
       ${s.login?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">Login: ${s.login}</div>`:''}
       ${s.can_see_all_leads?`<div style="font-size:10px;color:var(--accent);margin-top:3px;">👁 Vê todos os leads</div>`:''}
-      ${s.can_see_all_companies?`<div style="font-size:10px;color:#ed8036;margin-top:3px;">🏢 Vê as duas empresas</div>`:''}
-      ${s.empresa?`<div style="font-size:10px;color:${empresaInfo(s.empresa).cor};margin-top:3px;">${empresaInfo(s.empresa).nome}</div>`:''}
+      ${s.can_see_all_companies?`<div style="font-size:10px;color:#ed8036;margin-top:3px;">🏢 Todas as empresas</div>`:(s.empresa?`<div style="font-size:10px;color:${empresaInfo(s.empresa).cor};margin-top:3px;">${empresaInfo(s.empresa).nome}</div>`:'')}
       ${s.oculto_filtro_vendedor?`<div style="font-size:10px;color:var(--text3);margin-top:3px;">🚫 Fora do rodízio de leads</div>`:''}
       </div>
     </div>
@@ -2011,6 +2010,18 @@ function montarCardVendedor(s){
   </div>`;
 }
 
+function secaoVendedores(nomeGrupo, pessoas, destaque){
+  if(!pessoas.length) return '';
+  return `<div style="margin-bottom:26px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;${destaque?'color:var(--accent);':''}">${nomeGrupo}</span>
+      <span style="font-size:11.5px;color:var(--text3);background:var(--bg3);padding:2px 9px;border-radius:20px;">${pessoas.length}</span>
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>
+    <div class="sellers-grid">${pessoas.map(montarCardVendedor).join('')}</div>
+  </div>`;
+}
+
 function renderSellers(){
   const grid=document.getElementById('sellersGrid');
   if(!allSellers.length){grid.innerHTML='<div class="empty-state"><p>Nenhum vendedor cadastrado.</p><button class="btn btn-primary" onclick="openSellerModal()">Cadastrar Vendedor</button></div>';return;}
@@ -2018,24 +2029,26 @@ function renderSellers(){
   const modo = (document.getElementById('sellersAgrupamento')||{}).value || 'empresa';
   const chaveDoGrupo = modo==='cargo' ? (s=>s.role||'Vendedor') : (s=>empresaInfo(s.empresa||'automacao').nome);
 
-  // agrupa mantendo a ordem de primeira aparição
+  // Dev e Administração sempre aparecem primeiro, separados das empresas —
+  // são pessoas que administram o sistema, não vendedores operacionais
+  const dev = allSellers.filter(function(s){ return s.categoria_interna==='Dev'; });
+  const admin = allSellers.filter(function(s){ return s.role==='admin' && s.categoria_interna!=='Dev'; });
+  const restante = allSellers.filter(function(s){ return s.categoria_interna!=='Dev' && s.role!=='admin'; });
+
+  let html = secaoVendedores('⚙️ Dev', dev, true) + secaoVendedores('🛡️ Administração', admin, true);
+
+  // agrupa o restante mantendo a ordem de primeira aparição
   const grupos = new Map();
-  allSellers.forEach(function(s){
+  restante.forEach(function(s){
     const chave = chaveDoGrupo(s);
     if(!grupos.has(chave)) grupos.set(chave, []);
     grupos.get(chave).push(s);
   });
-
-  grid.innerHTML = Array.from(grupos.entries()).map(function([nomeGrupo, pessoas]){
-    return `<div style="margin-bottom:26px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;">${nomeGrupo}</span>
-        <span style="font-size:11.5px;color:var(--text3);background:var(--bg3);padding:2px 9px;border-radius:20px;">${pessoas.length}</span>
-        <div style="flex:1;height:1px;background:var(--border);"></div>
-      </div>
-      <div class="sellers-grid">${pessoas.map(montarCardVendedor).join('')}</div>
-    </div>`;
+  html += Array.from(grupos.entries()).map(function([nomeGrupo, pessoas]){
+    return secaoVendedores(nomeGrupo, pessoas, false);
   }).join('');
+
+  grid.innerHTML = html;
 }
 
 // REPORTS
