@@ -1528,6 +1528,7 @@ async function trocarEmpresa(){
   sel.disabled=true;
   const board=document.getElementById('pipelineBoard');
   if(board)board.style.opacity='.45';
+  populateSellerDropdowns();  // refaz os filtros de vendedor pra empresa nova
   await loadLeads();          // espera os dados chegarem
   redesenharPaginaAtual();    // e só então redesenha a tela em que o usuário está
   if(board)board.style.opacity='1';
@@ -1790,9 +1791,14 @@ function populateSellerDropdowns(){
     const el=document.getElementById(id);if(!el)return;
     const prev=el.value;
     while(el.options.length>1)el.remove(1);
-    // fora do filtro de vendedor: quem é Engenharia (não vende) e quem foi marcado como oculto (ex.: admin que só gerencia)
-    allSellers.filter(s=>s.status==='active' && s.role!=='Engenharia' && s.role!=='Financeiro' && s.oculto_filtro_vendedor!==true)
-      .forEach(s=>el.add(new Option(s.nickname||s.name,s.id)));
+    allSellers.filter(function(s){
+      // fora do filtro sempre: quem é Engenharia/Financeiro (não vende) e quem foi marcado como oculto
+      if(s.status!=='active' || s.role==='Engenharia' || s.role==='Financeiro' || s.oculto_filtro_vendedor===true) return false;
+      // além disso, só mostra vendedor da empresa que está sendo visualizada agora —
+      // em '__todas' (visão consolidada do admin) mostra todo mundo
+      if(empresaAtiva!=='__todas' && s.empresa!==empresaAtiva) return false;
+      return true;
+    }).forEach(function(s){ el.add(new Option(s.nickname||s.name,s.id)); });
     el.value=prev;
   });
 }
