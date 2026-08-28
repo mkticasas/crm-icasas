@@ -683,13 +683,15 @@
     <div class="card" style="margin-bottom:20px;">
       <div class="card-title">Filtros do Relatório</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
-        <div class="filter-group"><label>Estágio</label>
-          <select id="r-stage">
-            <option value="">Todos</option><option value="new">Novo Lead</option><option value="contact">Contato Realizado</option>
-            <option value="proposal">Proposta Enviada</option><option value="negotiation">Em Negociação</option>
-            <option value="won">Fechado - Ganho</option><option value="lost">Lead Perdido</option>
+        <div class="filter-group" id="r-empresa-wrap" style="display:none;">
+          <label>Empresa</label>
+          <select id="r-empresa" onchange="atualizarEtapasRelatorio()">
+            <option value="__todas">Todas</option>
+            <option value="automacao">iCasas Automação</option>
+            <option value="construtora">iCasas Construtora</option>
           </select>
         </div>
+        <div class="filter-group"><label>Estágio</label><select id="r-stage"><option value="">Todos</option></select></div>
         <div class="filter-group"><label>Vendedor</label><select id="r-seller"><option value="">Todos</option></select></div>
         <div class="filter-group"><label>Origem</label>
           <select id="r-origin"><option value="">Todas</option><option>Instagram</option><option>Facebook</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Feirão</option><option>Outros</option></select>
@@ -698,6 +700,10 @@
         <div class="filter-group"><label>Até</label><input type="date" id="r-date-to"></div>
         <div style="display:flex;gap:8px;margin-top:16px;">
           <button class="btn btn-ghost btn-sm" onclick="previewReport()">Visualizar</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportCSVReport()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
           <button class="btn btn-green btn-sm" onclick="exportPDF()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Exportar PDF
@@ -705,12 +711,26 @@
         </div>
       </div>
     </div>
+
+    <!-- KPIs do relatório filtrado -->
+    <div class="metrics-grid" style="margin-bottom:20px;">
+      <div class="metric-card blue"><div class="metric-label">Total de Leads</div><div class="metric-value" id="rk-total">—</div><div class="metric-sub">no filtro atual</div></div>
+      <div class="metric-card green"><div class="metric-label">Vendas Fechadas</div><div class="metric-value" id="rk-revenue">—</div><div class="metric-sub" id="rk-won-count">0 negócios</div></div>
+      <div class="metric-card purple"><div class="metric-label">Ticket Médio</div><div class="metric-value" id="rk-ticket">—</div><div class="metric-sub">por venda fechada</div></div>
+      <div class="metric-card amber"><div class="metric-label">Taxa de Conversão</div><div class="metric-value" id="rk-rate">—</div><div class="metric-sub">fechados / total</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">Distribuição por Estágio</div>
+      <div style="height:220px;"><canvas id="reportStageChart"></canvas></div>
+    </div>
+
     <div class="card">
       <div class="card-title"><span id="reportCount">—</span><span id="reportTotal" style="font-size:13px;color:var(--green);font-weight:500;font-family:'DM Sans',sans-serif;"></span></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Nome</th><th>Telefone</th><th>Origem</th><th>Vendedor</th><th>Estágio</th><th>Valor</th><th>Data</th></tr></thead>
-          <tbody id="reportTable"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3);">Use os filtros acima e clique em Visualizar.</td></tr></tbody>
+          <thead><tr><th>Nome</th><th>Telefone</th><th>Empresa</th><th>Origem</th><th>Vendedor</th><th>Estágio</th><th>Valor</th><th>Data</th></tr></thead>
+          <tbody id="reportTable"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3);">Use os filtros acima e clique em Visualizar.</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1793,19 +1813,24 @@ async function loadLeads(){
   if(pid==='pipeline'&&typeof renderPipeline==='function')renderPipeline();
   if(pid==='dashboard'&&typeof renderDashboard==='function')renderDashboard();
 }
+// critério único de "quem realmente vende" — usado nos filtros e no ranking do dashboard,
+// pra nunca mais divergir entre os dois lugares
+function vendedoresReais(filtrarPorEmpresa){
+  return allSellers.filter(function(s){
+    // fora sempre: quem é Engenharia/Financeiro (não vende) e quem foi marcado como oculto (Dev, Admin)
+    if(s.status!=='active' || s.role==='Engenharia' || s.role==='Financeiro' || s.oculto_filtro_vendedor===true) return false;
+    // opcionalmente, só quem é da empresa em visualização agora — '__todas' mostra todo mundo
+    if(filtrarPorEmpresa && empresaAtiva!=='__todas' && s.empresa!==empresaAtiva) return false;
+    return true;
+  });
+}
+
 function populateSellerDropdowns(){
   ['l-seller','f-seller','pf-seller','r-seller'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const prev=el.value;
     while(el.options.length>1)el.remove(1);
-    allSellers.filter(function(s){
-      // fora do filtro sempre: quem é Engenharia/Financeiro (não vende) e quem foi marcado como oculto
-      if(s.status!=='active' || s.role==='Engenharia' || s.role==='Financeiro' || s.oculto_filtro_vendedor===true) return false;
-      // além disso, só mostra vendedor da empresa que está sendo visualizada agora —
-      // em '__todas' (visão consolidada do admin) mostra todo mundo
-      if(empresaAtiva!=='__todas' && s.empresa!==empresaAtiva) return false;
-      return true;
-    }).forEach(function(s){ el.add(new Option(s.nickname||s.name,s.id)); });
+    vendedoresReais(true).forEach(function(s){ el.add(new Option(s.nickname||s.name,s.id)); });
     el.value=prev;
   });
 }
@@ -1833,8 +1858,9 @@ function renderCharts(){
 }
 function renderSellerRanking(){
   const el=document.getElementById('sellerRanking');
-  if(!allSellers.length){el.innerHTML='<div class="empty-state"><p>Nenhum vendedor cadastrado.</p></div>';return;}
-  const stats=allSellers.map(s=>{const leads=allLeads.filter(l=>l.seller_id==s.id);return{s,leads:leads.length,won:leads.filter(l=>l.stage==='won').length};}).sort((a,b)=>b.won-a.won);
+  const vendedores=vendedoresReais(true);
+  if(!vendedores.length){el.innerHTML='<div class="empty-state"><p>Nenhum vendedor cadastrado.</p></div>';return;}
+  const stats=vendedores.map(s=>{const leads=allLeads.filter(l=>l.seller_id==s.id);return{s,leads:leads.length,won:leads.filter(l=>l.stage==='won').length};}).sort((a,b)=>b.won-a.won);
   const mx=Math.max(...stats.map(x=>x.won),1);
   el.innerHTML=stats.map(({s,leads,won})=>`<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><div class="avatar-sm" style="background:${s.color||'#3d7eff'}">${initials(s.nickname||s.name)}</div><span style="font-size:13px;">${s.nickname||s.name}</span></div><span style="font-size:12px;color:var(--text3);">${won} fechados · ${leads} leads</span></div><div class="progress-bar"><div class="progress-fill" style="width:${Math.round((won/mx)*100)}%;background:${s.color||'#3d7eff'}"></div></div></div>`).join('');
 }
@@ -2052,27 +2078,74 @@ function renderSellers(){
 }
 
 // REPORTS
+// preenche o select de Estágio do relatório de acordo com a empresa escolhida ALI —
+// independente da empresa ativa geral do sistema, pra permitir olhar métricas de qualquer empresa
+function atualizarEtapasRelatorio(){
+  const sel=document.getElementById('r-stage'); if(!sel) return;
+  const empresaFiltro=(document.getElementById('r-empresa')||{}).value || '__todas';
+  const st = empresaFiltro==='__todas' ? STAGE_INFO : (STAGES_POR_EMPRESA[empresaFiltro]||STAGES);
+  const atual=sel.value;
+  sel.innerHTML='<option value="">Todos</option>'+Object.entries(st).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+  if(st[atual]) sel.value=atual;
+}
+
 function getReportLeads(){
+  const empresaFiltro=(document.getElementById('r-empresa')||{}).value || '__todas';
   const stage=document.getElementById('r-stage').value,seller=document.getElementById('r-seller').value;
   const origin=document.getElementById('r-origin').value,from=document.getElementById('r-date-from').value,to=document.getElementById('r-date-to').value;
   return allLeads.filter(l=>{
+    if(empresaFiltro!=='__todas'&&l.empresa!==empresaFiltro)return false;
     if(stage&&l.stage!==stage)return false;if(seller&&l.seller_id!=seller)return false;if(origin&&l.origin!==origin)return false;
     if(from&&new Date(l.created_at)<new Date(from))return false;if(to&&new Date(l.created_at)>new Date(to+'T23:59:59'))return false;return true;
   });
 }
+
+let reportStageChart=null;
+function renderReportChart(data){
+  if(typeof Chart==='undefined') return; // Chart.js ainda não carregou (ex.: rede lenta) — não trava o resto do relatório
+  const empresaFiltro=(document.getElementById('r-empresa')||{}).value || '__todas';
+  const st = empresaFiltro==='__todas' ? STAGE_INFO : (STAGES_POR_EMPRESA[empresaFiltro]||STAGES);
+  const counts={}; Object.keys(st).forEach(s=>counts[s]=0);
+  data.forEach(l=>{ if(counts[l.stage]!==undefined) counts[l.stage]++; });
+  const canvas=document.getElementById('reportStageChart'); if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  if(reportStageChart) reportStageChart.destroy();
+  reportStageChart=new Chart(ctx,{type:'bar',data:{
+    labels:Object.values(st).map(s=>s.label),
+    datasets:[{data:Object.values(counts),backgroundColor:'#3d7eff33',borderColor:'#3d7eff',borderWidth:1.5,borderRadius:6}]
+  },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#5a6070',font:{size:10}}},
+             y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#5a6070',stepSize:1}}}}});
+}
+
 function previewReport(){
   const data=getReportLeads();
-  const total=data.filter(l=>l.stage==='won').reduce((a,l)=>a+(parseFloat(l.value)||0),0);
+  const fechados=data.filter(l=>l.stage==='won');
+  const totalRev=fechados.reduce((a,l)=>a+(parseFloat(l.value)||0),0);
+  const ticket=fechados.length>0?totalRev/fechados.length:0;
+  const taxa=data.length>0?Math.round((fechados.length/data.length)*100):0;
+
   document.getElementById('reportCount').textContent=`${data.length} lead${data.length!==1?'s':''}`;
-  document.getElementById('reportTotal').textContent=total>0?' · R$ '+total.toLocaleString('pt-BR')+' em vendas fechadas':'';
+  document.getElementById('reportTotal').textContent=totalRev>0?' · R$ '+totalRev.toLocaleString('pt-BR')+' em vendas fechadas':'';
+  document.getElementById('rk-total').textContent=data.length;
+  document.getElementById('rk-revenue').textContent='R$ '+totalRev.toLocaleString('pt-BR');
+  document.getElementById('rk-won-count').textContent=fechados.length+' negócio'+(fechados.length!==1?'s':'');
+  document.getElementById('rk-ticket').textContent='R$ '+ticket.toLocaleString('pt-BR',{maximumFractionDigits:0});
+  document.getElementById('rk-rate').textContent=taxa+'%';
+
+  renderReportChart(data);
+
   const tbody=document.getElementById('reportTable');
-  if(!data.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3);">Nenhum resultado.</td></tr>';return;}
+  if(!data.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3);">Nenhum resultado.</td></tr>';return;}
   tbody.innerHTML=data.map(l=>{
     const s=allSellers.find(s=>s.id==l.seller_id);
     const stage=STAGE_INFO[l.stage]||STAGE_INFO.new;
+    const emp=empresaInfo(l.empresa||'automacao');
     return `<tr onclick="openDetail('${l.id}')" style="cursor:pointer;">
       <td style="color:var(--text);font-weight:500;">${l.name||'—'}</td>
-      <td>${l.phone||'—'}</td><td>${l.origin||'—'}</td>
+      <td>${l.phone||'—'}</td>
+      <td><span style="color:${emp.cor};font-size:12px;">${emp.nome}</span></td>
+      <td>${l.origin||'—'}</td>
       <td>${s?s.nickname||s.name:'—'}</td>
       <td><span class="badge ${stage.badge}">${stage.label}</span></td>
       <td>${l.value?'R$ '+parseFloat(l.value).toLocaleString('pt-BR'):'—'}</td>
@@ -2080,22 +2153,51 @@ function previewReport(){
     </tr>`;
   }).join('');
 }
+
+function exportCSVReport(){
+  const data=getReportLeads();
+  if(!data.length){showToast('Nenhum dado para exportar.','error');return;}
+  const linhas=[['Nome','Telefone','Email','Empresa','Origem','Vendedor','Estágio','Valor','Data']];
+  data.forEach(l=>{
+    const s=allSellers.find(s=>s.id==l.seller_id);
+    const emp=empresaInfo(l.empresa||'automacao');
+    linhas.push([
+      l.name||'', l.phone||'', l.email||'', emp.nome, l.origin||'',
+      s?(s.nickname||s.name):'', STAGE_INFO[l.stage]?.label||'',
+      l.value?parseFloat(l.value).toFixed(2).replace('.',','):'',
+      l.created_at?new Date(l.created_at).toLocaleDateString('pt-BR'):''
+    ]);
+  });
+  const csv='\uFEFF'+linhas.map(l=>l.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='relatorio-leads-'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('CSV exportado!','success');
+}
 function exportPDF(){
   const data=getReportLeads();
   if(!data.length){showToast('Nenhum dado para exportar.','error');return;}
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'landscape'});
   const now=new Date().toLocaleDateString('pt-BR');
+  const empresaFiltro=(document.getElementById('r-empresa')||{}).value || '__todas';
+  const tituloEmpresa = empresaFiltro==='__todas' ? 'Todas as empresas' : empresaInfo(empresaFiltro).nome;
   doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text('iCasas CRM — Relatório de Leads',14,16);
-  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(120);doc.text(`Gerado em ${now} · ${data.length} leads`,14,23);
-  const totalRev=data.filter(l=>l.stage==='won').reduce((a,l)=>a+(parseFloat(l.value)||0),0);
-  if(totalRev>0)doc.text(`Total em vendas fechadas: R$ ${totalRev.toLocaleString('pt-BR')}`,14,29);
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(120);
+  doc.text(`Gerado em ${now} · ${tituloEmpresa} · ${data.length} leads`,14,23);
+  const fechados=data.filter(l=>l.stage==='won');
+  const totalRev=fechados.reduce((a,l)=>a+(parseFloat(l.value)||0),0);
+  const taxa=data.length>0?Math.round((fechados.length/data.length)*100):0;
+  if(totalRev>0)doc.text(`Vendas fechadas: R$ ${totalRev.toLocaleString('pt-BR')} · Taxa de conversão: ${taxa}%`,14,29);
   doc.autoTable({
     startY:35,
-    head:[['Nome','Telefone','Origem','Vendedor','Estágio','Valor','Data']],
+    head:[['Nome','Telefone','Empresa','Origem','Vendedor','Estágio','Valor','Data']],
     body:data.map(l=>{
       const s=allSellers.find(s=>s.id==l.seller_id);
-      return[l.name||'—',l.phone||'—',l.origin||'—',s?s.nickname||s.name:'—',STAGE_INFO[l.stage]?.label||'—',l.value?'R$ '+parseFloat(l.value).toLocaleString('pt-BR'):'—',l.created_at?new Date(l.created_at).toLocaleDateString('pt-BR'):'—'];
+      const emp=empresaInfo(l.empresa||'automacao');
+      return[l.name||'—',l.phone||'—',emp.nome,l.origin||'—',s?s.nickname||s.name:'—',STAGE_INFO[l.stage]?.label||'—',l.value?'R$ '+parseFloat(l.value).toLocaleString('pt-BR'):'—',l.created_at?new Date(l.created_at).toLocaleDateString('pt-BR'):'—'];
     }),
     styles:{fontSize:9,cellPadding:4},
     headStyles:{fillColor:[61,126,255],textColor:255,fontStyle:'bold'},
@@ -3143,7 +3245,15 @@ function showPage(page){
   document.getElementById('pageTitle').textContent=titles[page]||page;
   if(page==='dashboard')renderDashboard();
   if(page==='pipeline')renderPipeline();
-  if(page==='reports')populateSellerDropdowns();
+  if(page==='reports'){
+    populateSellerDropdowns();
+    const wrapEmp=document.getElementById('r-empresa-wrap');
+    if(wrapEmp) wrapEmp.style.display = podeVerTodasEmpresas() ? '' : 'none';
+    if(!podeVerTodasEmpresas() && document.getElementById('r-empresa')){
+      document.getElementById('r-empresa').value = minhaEmpresa ? minhaEmpresa() : empresaAtiva;
+    }
+    atualizarEtapasRelatorio();
+  }
   if(page==='integrations')loadWebhooks();
   if(page==='tags')renderTagsPage();
 }
