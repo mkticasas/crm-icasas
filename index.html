@@ -3643,8 +3643,10 @@ function confirmarCrop(){
 async function enviarFotoIndicador(blob){
   const preview = document.getElementById('ind-foto-preview');
   preview.innerHTML = '<span style="font-size:11px;">Enviando...</span>';
-  const nomeBase = cropFileNome.replace(/[^a-zA-Z0-9._-]/g,'_').replace(/\.[^.]+$/,'');
-  const path = Date.now()+'_'+nomeBase+'.jpg';
+  // nome do arquivo simplificado ao máximo (só timestamp + um sufixo aleatório) —
+  // nomes gerados por celular/IA costumam ter espaço, vírgula, ponto no meio, o que
+  // já causou problema antes; assim elimina qualquer risco de caractere inválido
+  const path = Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.jpg';
   const {error} = await db.storage.from(INDICADOR_FOTO_BUCKET).upload(path, blob, {contentType:'image/jpeg'});
   if(error){ showToast('Erro ao enviar foto: '+error.message,'error'); preview.innerHTML='👤'; return; }
   const {data:urlData} = db.storage.from(INDICADOR_FOTO_BUCKET).getPublicUrl(path);
