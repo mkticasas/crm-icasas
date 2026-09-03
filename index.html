@@ -1094,7 +1094,6 @@
             <option>Site</option>
             <option>Feirão</option>
             <option>Google</option>
-            <option>Indicação</option>
             <option>Outros</option>
           </select>
         </div>
@@ -1112,11 +1111,11 @@
         </div>
       </div>
       <div class="form-row">
+        <div class="form-group" id="l-empresa-group" style="display:none;"><label>Empresa</label>
+          <select id="l-empresa" onchange="atualizarVendedoresDoFormulario()"><option value="automacao">iCasas Automação</option><option value="construtora">iCasas Construtora</option></select>
+        </div>
         <div class="form-group" id="l-seller-group"><label>Vendedor responsável *</label><select id="l-seller"><option value="">Selecionar...</option></select></div>
         <div class="form-group" id="l-seller-fixed" style="display:none;"><label>Vendedor responsável</label><div style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);" id="l-seller-name">—</div></div>
-        <div class="form-group" id="l-empresa-group" style="display:none;"><label>Empresa</label>
-          <select id="l-empresa"><option value="automacao">iCasas Automação</option><option value="construtora">iCasas Construtora</option></select>
-        </div>
         <div class="form-group"><label>Estágio</label>
           <select id="l-stage"><option value="new">Novo Lead</option><option value="contact">Contato Realizado</option><option value="proposal">Proposta Enviada</option><option value="negotiation">Em Negociação</option><option value="won">Fechado - Ganho</option><option value="lost">Lead Perdido</option><option value="standby">Standby</option><option value="not_going">Não vai fazer</option></select>
         </div>
@@ -1840,6 +1839,25 @@ function populateSellerDropdowns(){
   });
 }
 
+// filtra o vendedor do formulário de lead pela empresa ESCOLHIDA ali dentro
+// (diferente de empresaAtiva, que é a empresa em visualização no resto do sistema)
+function atualizarVendedoresDoFormulario(){
+  const sel=document.getElementById('l-seller');
+  if(!sel) return;
+  const empSel=document.getElementById('l-empresa');
+  const empresaEscolhida = (empSel && document.getElementById('l-empresa-group').style.display!=='none')
+    ? empSel.value
+    : (empresaAtiva!=='__todas' ? empresaAtiva : minhaEmpresa());
+  const prev=sel.value;
+  while(sel.options.length>1) sel.remove(1);
+  allSellers.filter(function(s){
+    if(s.status!=='active' || s.role==='Engenharia' || s.role==='Financeiro' || s.oculto_filtro_vendedor===true) return false;
+    return s.empresa===empresaEscolhida;
+  }).forEach(function(s){ sel.add(new Option(s.nickname||s.name, s.id)); });
+  // mantém quem já estava selecionado, se ainda estiver na lista nova; senão limpa
+  sel.value = Array.from(sel.options).some(function(o){return o.value===prev;}) ? prev : '';
+}
+
 // DASHBOARD
 function renderDashboard(){
   const total=allLeads.length,won=allLeads.filter(l=>l.stage==='won').length,neg=allLeads.filter(l=>l.stage==='negotiation').length;
@@ -2229,9 +2247,12 @@ function openLeadModal(lead=null){
     document.getElementById('l-empresa').value = lead ? (lead.empresa||EMPRESA_PADRAO)
       : (empresaAtiva!=='__todas' ? empresaAtiva : minhaEmpresa());
   }
+  // vendedor sempre filtrado pela empresa que ficou definida acima
+  atualizarVendedoresDoFormulario();
   // Origem
   document.getElementById('l-origin').value=lead?(lead.origin||''):'';
-  const isRef=lead?(!!(lead.referral_name)||!!(lead.indicado_por_id))&&lead.origin==='Indicação':false;
+  // indicação não depende mais da origem — é sinalizada só pelo nome/indicador preenchido
+  const isRef=lead?(!!(lead.referral_name)||!!(lead.indicado_por_id)):false;
   document.getElementById('l-is-referral').checked=isRef;
   document.getElementById('l-referral-name').value=lead?(lead.referral_name||''):'';
   document.getElementById('l-referral-wrap').style.display=isRef?'block':'none';
@@ -2265,12 +2286,10 @@ function openLeadModal(lead=null){
 function toggleReferral(){
   const cb=document.getElementById('l-is-referral');
   const wrap=document.getElementById('l-referral-wrap');
-  const originSelect=document.getElementById('l-origin');
   wrap.style.display=cb.checked?'block':'none';
-  if(cb.checked){
-    originSelect.value='Indicação';
-    carregarIndicadores();
-  }
+  // indicação agora é uma informação separada da origem — a pessoa pode ter vindo
+  // pelo Instagram E ter sido indicada por alguém, as duas coisas juntas fazem sentido
+  if(cb.checked) carregarIndicadores();
 }
 
 function escHtml(s){ return String(s||'').replace(/[<>&]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]; }); }
