@@ -1216,11 +1216,18 @@
         <div class="form-group"><label>Nome completo *</label><input type="text" id="ind-nome" placeholder="Ex: João da Silva"></div>
         <div class="form-group"><label>Telefone</label><input type="tel" id="ind-telefone" placeholder="(17) 99999-9999"></div>
       </div>
-      <p style="font-size:12px;color:var(--text3);">Cadastre aqui clientes que já compraram casa antes do Clube iCasas existir, pra eles poderem participar do programa de indicação normalmente.</p>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-top:4px;cursor:pointer;">
+        <input type="checkbox" id="ind-ativo" checked style="width:16px;height:16px;">
+        Ativo no Clube (desmarque pra pausar sem apagar o histórico — útil em rescisão de contrato)
+      </label>
+      <p style="font-size:12px;color:var(--text3);margin-top:10px;">Cadastre aqui clientes que já compraram casa antes do Clube iCasas existir, pra eles poderem participar do programa de indicação normalmente.</p>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('indicadorModal')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveIndicador()">Salvar</button>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn btn-danger btn-sm" id="ind-btn-excluir" style="display:none;" onclick="deleteIndicador()">Excluir</button>
+      <div style="display:flex;gap:10px;margin-left:auto;">
+        <button class="btn btn-ghost" onclick="closeModal('indicadorModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveIndicador()">Salvar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3484,16 +3491,19 @@ async function renderIndicacoes(){
 async function openIndicadorModal(id){
   document.getElementById('editIndicadorId').value = id||'';
   document.getElementById('indicadorModalTitle').textContent = id?'Editar Indicador':'Novo Indicador';
+  document.getElementById('ind-btn-excluir').style.display = id ? '' : 'none';
   document.getElementById('ind-nome').value='';
   document.getElementById('ind-telefone').value='';
   document.getElementById('ind-foto-url').value='';
   document.getElementById('ind-foto-preview').innerHTML='👤';
+  document.getElementById('ind-ativo').checked = true;
   if(id){
     const {data} = await db.from('indicadores').select('*').eq('id',id).single();
     if(data){
       document.getElementById('ind-nome').value = data.nome||'';
       document.getElementById('ind-telefone').value = data.telefone||'';
       document.getElementById('ind-foto-url').value = data.foto_url||'';
+      document.getElementById('ind-ativo').checked = data.ativo!==false;
       if(data.foto_url) document.getElementById('ind-foto-preview').innerHTML = '<img src="'+data.foto_url+'" style="width:100%;height:100%;object-fit:cover;">';
     }
   }
@@ -3522,7 +3532,7 @@ async function saveIndicador(){
     nome:nome,
     telefone: document.getElementById('ind-telefone').value.trim()||null,
     foto_url: document.getElementById('ind-foto-url').value||null,
-    empresa:'construtora', ativo:true
+    empresa:'construtora', ativo:document.getElementById('ind-ativo').checked
   };
   const {error, data:saved} = id
     ? await db.from('indicadores').update(data).eq('id',id).select()
@@ -3530,6 +3540,21 @@ async function saveIndicador(){
   if(error){ showToast('Erro: '+error.message,'error'); return; }
   if(!saved||saved.length===0){ showToast('Não foi possível salvar — verifique suas permissões.','error'); return; }
   showToast(id?'Indicador atualizado!':'Indicador cadastrado!','success');
+  closeModal('indicadorModal');
+  renderIndicacoes();
+}
+
+// pra rescisão de contrato: remove o indicador do Clube. Como as indicações que ele já
+// gerou apontam pra ele (on delete cascade), o histórico de pontos dele some junto —
+// avisamos isso claramente antes de confirmar.
+async function deleteIndicador(){
+  const id = document.getElementById('editIndicadorId').value;
+  if(!id) return;
+  const nome = document.getElementById('ind-nome').value || 'este indicador';
+  if(!confirm('Excluir "'+nome+'" do Clube iCasas?\n\nIsso remove ele do ranking e apaga o histórico de pontos que ele já tinha ganhado. Não tem como desfazer.\n\nSe for só uma pausa temporária, considere editar e desmarcar como ativo em vez de excluir.')) return;
+  const {error} = await db.from('indicadores').delete().eq('id',id);
+  if(error){ showToast('Erro: '+error.message,'error'); return; }
+  showToast('Indicador excluído.','success');
   closeModal('indicadorModal');
   renderIndicacoes();
 }
