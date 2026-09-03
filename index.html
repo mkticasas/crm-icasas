@@ -1187,7 +1187,13 @@
         <div id="l-attach-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;"></div>
       </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('leadModal')">Cancelar</button><button class="btn btn-primary" onclick="saveLead()">Salvar Lead</button></div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn btn-danger btn-sm" id="l-btn-excluir" style="display:none;" onclick="deleteLead()">Excluir cliente</button>
+      <div style="display:flex;gap:10px;margin-left:auto;">
+        <button class="btn btn-ghost" onclick="closeModal('leadModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveLead()">Salvar Lead</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1197,6 +1203,15 @@
     <div class="modal-header"><div class="modal-title" id="indicadorModalTitle">Novo Indicador</div><button class="modal-close" onclick="closeModal('indicadorModal')">×</button></div>
     <div class="modal-body">
       <input type="hidden" id="editIndicadorId">
+      <input type="hidden" id="ind-foto-url">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;">
+        <div id="ind-foto-preview" style="width:64px;height:64px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text3);overflow:hidden;flex-shrink:0;">👤</div>
+        <div>
+          <input type="file" id="ind-foto-input" accept="image/*" style="display:none;" onchange="uploadFotoIndicador(this.files[0])">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('ind-foto-input').click()">Escolher foto</button>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;">Aparece no site público do Clube iCasas</div>
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group"><label>Nome completo *</label><input type="text" id="ind-nome" placeholder="Ex: João da Silva"></div>
         <div class="form-group"><label>Telefone</label><input type="tel" id="ind-telefone" placeholder="(17) 99999-9999"></div>
@@ -2299,6 +2314,7 @@ function exportPDF(){
 // MODAL LEAD
 function openLeadModal(lead=null){
   document.getElementById('editLeadId').value=lead?lead.id:'';
+  document.getElementById('l-btn-excluir').style.display = lead ? '' : 'none';
   document.getElementById('leadModalTitle').textContent=lead?'Editar Lead':'Novo Lead';
   [['l-name','name'],['l-phone','phone'],['l-address','address'],['l-notes','notes'],['l-value','value']].forEach(([id,k])=>document.getElementById(id).value=lead?(lead[k]||''):'');
   preencherEtapas(lead?(lead.stage||'new'):'new');
@@ -2579,6 +2595,20 @@ async function deleteCurrentLead(){
   const{error}=await db.from('leads').delete().eq('id',currentDetailLead.id);
   if(error){showToast('Erro: '+error.message,'error');return;}
   showToast('Lead excluído.','success');closeDetail();
+  await loadLeads();renderDashboard();renderPipeline();
+}
+
+// mesmo atalho, só que direto do modal de edição — útil pra rescisão de contrato,
+// sem precisar sair e abrir a tela de detalhe primeiro
+async function deleteLead(){
+  const id=document.getElementById('editLeadId').value;
+  if(!id) return;
+  const nome=document.getElementById('l-name').value||'este cliente';
+  if(!confirm('Excluir "'+nome+'"?\n\nIsso remove o cliente e todo o histórico dele do CRM. Não tem como desfazer.')) return;
+  const{error}=await db.from('leads').delete().eq('id',id);
+  if(error){showToast('Erro: '+error.message,'error');return;}
+  showToast('Cliente excluído.','success');
+  closeModal('leadModal');
   await loadLeads();renderDashboard();renderPipeline();
 }
 
@@ -3413,8 +3443,11 @@ async function renderIndicacoes(){
   } else {
     tbody.innerHTML = lista.map(function(i){
       const pct = Math.round((i.pontosCiclo/10)*100);
+      const avatarHtml = i.foto_url
+        ? '<img src="'+i.foto_url+'" style="width:28px;height:28px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;">'
+        : '<span style="display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--bg3);align-items:center;justify-content:center;font-size:11px;color:var(--text3);vertical-align:middle;margin-right:8px;">👤</span>';
       return '<tr>'+
-        '<td style="color:var(--text);font-weight:500;">'+escHtml(i.nome)+'</td>'+
+        '<td style="color:var(--text);font-weight:500;">'+avatarHtml+escHtml(i.nome)+'</td>'+
         '<td>'+escHtml(i.telefone||'—')+'</td>'+
         '<td style="font-weight:600;color:var(--text);">'+i.pontos+'</td>'+
         '<td><div style="display:flex;align-items:center;gap:8px;">'+
@@ -3451,21 +3484,44 @@ async function openIndicadorModal(id){
   document.getElementById('indicadorModalTitle').textContent = id?'Editar Indicador':'Novo Indicador';
   document.getElementById('ind-nome').value='';
   document.getElementById('ind-telefone').value='';
+  document.getElementById('ind-foto-url').value='';
+  document.getElementById('ind-foto-preview').innerHTML='👤';
   if(id){
     const {data} = await db.from('indicadores').select('*').eq('id',id).single();
     if(data){
       document.getElementById('ind-nome').value = data.nome||'';
       document.getElementById('ind-telefone').value = data.telefone||'';
+      document.getElementById('ind-foto-url').value = data.foto_url||'';
+      if(data.foto_url) document.getElementById('ind-foto-preview').innerHTML = '<img src="'+data.foto_url+'" style="width:100%;height:100%;object-fit:cover;">';
     }
   }
   document.getElementById('indicadorModal').classList.add('open');
+}
+
+const INDICADOR_FOTO_BUCKET = 'indicadores-fotos';
+async function uploadFotoIndicador(file){
+  if(!file) return;
+  if(file.size > 5*1024*1024){ showToast('Imagem muito grande — máximo 5MB.','error'); return; }
+  const preview = document.getElementById('ind-foto-preview');
+  preview.innerHTML = '<span style="font-size:11px;">Enviando...</span>';
+  const path = Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const {error} = await db.storage.from(INDICADOR_FOTO_BUCKET).upload(path, file);
+  if(error){ showToast('Erro ao enviar foto: '+error.message,'error'); preview.innerHTML='👤'; return; }
+  const {data:urlData} = db.storage.from(INDICADOR_FOTO_BUCKET).getPublicUrl(path);
+  document.getElementById('ind-foto-url').value = urlData.publicUrl;
+  preview.innerHTML = '<img src="'+urlData.publicUrl+'" style="width:100%;height:100%;object-fit:cover;">';
 }
 
 async function saveIndicador(){
   const id = document.getElementById('editIndicadorId').value;
   const nome = document.getElementById('ind-nome').value.trim();
   if(!nome){ showToast('Nome é obrigatório.','error'); return; }
-  const data = { nome:nome, telefone: document.getElementById('ind-telefone').value.trim()||null, empresa:'construtora', ativo:true };
+  const data = {
+    nome:nome,
+    telefone: document.getElementById('ind-telefone').value.trim()||null,
+    foto_url: document.getElementById('ind-foto-url').value||null,
+    empresa:'construtora', ativo:true
+  };
   const {error, data:saved} = id
     ? await db.from('indicadores').update(data).eq('id',id).select()
     : await db.from('indicadores').insert([data]).select();
