@@ -41,7 +41,7 @@ a{color:inherit;text-decoration:none;}
 .hero-inner{max-width:620px;margin:0;}
 .hero .selo{display:inline-flex;align-items:center;gap:8px;background:rgba(61,126,255,.12);border:1px solid rgba(61,126,255,.3);color:var(--accent2);font-size:12px;font-weight:600;padding:7px 15px;border-radius:30px;margin-bottom:24px;}
 .hero .selo .dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
-.hero h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,4.6vw,52px);line-height:1.1;margin-bottom:20px;}
+.hero h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(28px,4.6vw,52px);line-height:1.15;margin-bottom:20px;}
 .hero h1 span{background:linear-gradient(90deg,var(--accent2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;}
 .hero p{font-size:16px;color:var(--text2);line-height:1.65;margin-bottom:32px;max-width:480px;}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 26px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;border:none;transition:.2s;}
@@ -118,7 +118,7 @@ a{color:inherit;text-decoration:none;}
 
 /* SECAO CONTATO — como "FALE CONOSCO" da referencia */
 .contato{background:var(--bg2);border-top:1px solid var(--border);}
-.contato-inner{max-width:1180px;margin:0 auto;padding:90px 6vw;display:flex;gap:60px;flex-wrap:wrap;}
+.contato-inner{max-width:1180px;margin:0 auto;padding:90px 6vw;display:flex;gap:60px;flex-wrap:wrap;align-items:center;}
 .contato-info{flex:1;min-width:280px;}
 .contato-info .tag{font-size:12px;font-weight:700;color:var(--accent2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:block;}
 .contato-info h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(24px,3.4vw,34px);margin-bottom:14px;}
@@ -174,7 +174,7 @@ a{color:inherit;text-decoration:none;}
 <section class="hero">
   <div class="wrap hero-inner">
     <div class="selo"><span class="dot"></span>Programa de indicação iCasas Construtora</div>
-    <h1>Indique. A casa <span>sai do papel.</span> Você ganha.</h1>
+    <h1>Indique. A casa <span>sai do papel.</span><br>Você ganha.</h1>
     <p>Cada indicação sua que virar contrato fechado coloca dinheiro no seu bolso e te aproxima de prêmios exclusivos do Clube iCasas.</p>
     <a href="#premios" class="btn btn-primary">Ver prêmios</a>
   </div>
@@ -264,17 +264,17 @@ a{color:inherit;text-decoration:none;}
 <section class="contato" id="contato">
   <div class="contato-inner">
     <div class="contato-info">
-      <span class="tag">Fale conosco</span>
+      <span class="tag">É cliente iCasas? Então fale conosco</span>
       <h2>Quer participar do Clube iCasas?</h2>
       <p>Deixa seu contato que a gente te explica tudo e já cadastra sua primeira indicação.</p>
       <div class="contato-linha">📞 (17) 99999-9999</div>
       <div class="contato-linha">✉️ contato@icasas.com.br</div>
     </div>
     <div class="contato-form">
-      <div class="campo"><label>Nome</label><input type="text" placeholder="Seu nome"></div>
-      <div class="campo"><label>Telefone</label><input type="text" placeholder="(17) 90000-0000"></div>
-      <div class="campo"><label>Quem você quer indicar?</label><textarea placeholder="Nome e telefone da pessoa"></textarea></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;">Enviar indicação</button>
+      <div class="campo"><label>Nome</label><input type="text" id="ct-nome" placeholder="Seu nome"></div>
+      <div class="campo"><label>Telefone</label><input type="text" id="ct-telefone" placeholder="(17) 90000-0000"></div>
+      <div class="campo"><label>Quem você quer indicar?</label><textarea id="ct-indicado" placeholder="Nome e telefone da pessoa"></textarea></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="enviarIndicacaoWhatsApp()">Enviar indicação</button>
     </div>
   </div>
 </section>
@@ -293,6 +293,27 @@ a{color:inherit;text-decoration:none;}
 </div>
 
 <script>
+const WHATSAPP_CLUBE = '5500000000000'; // troque pelo número real antes de publicar
+
+function enviarIndicacaoWhatsApp(){
+  const nome=(document.getElementById('ct-nome').value||'').trim();
+  const telefone=(document.getElementById('ct-telefone').value||'').trim();
+  const indicado=(document.getElementById('ct-indicado').value||'').trim();
+  if(!nome || !telefone){
+    alert('Preenche seu nome e telefone antes de enviar.');
+    return;
+  }
+  const linhas=[
+    'Olá! Quero participar do Clube iCasas.',
+    '',
+    'Meu nome: '+nome,
+    'Meu telefone: '+telefone
+  ];
+  if(indicado) linhas.push('', 'Quero indicar: '+indicado);
+  const mensagem = encodeURIComponent(linhas.join('\n'));
+  window.open('https://wa.me/'+WHATSAPP_CLUBE+'?text='+mensagem, '_blank');
+}
+
 // ===== SLIDER =====
 let slideAtual = 0;
 const totalSlides = document.querySelectorAll('.slide').length;
