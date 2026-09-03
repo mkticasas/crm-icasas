@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clube iCasas · Indique e Ganhe</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iQ2FtYWRhXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+CiAgPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDMwLjQuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDIuMS40IEJ1aWxkIDIyNikgIC0tPgogIDxkZWZzPgogICAgPHN0eWxlPgogICAgICAuc3QwIHsKICAgICAgICBmaWxsOiAjNTdhYzZlOwogICAgICB9CgogICAgICAuc3QxIHsKICAgICAgICBmaWxsOiAjZWQ4MDM2OwogICAgICB9CgogICAgICAuc3QyIHsKICAgICAgICBmaWxsOiAjZmZmOwogICAgICB9CgogICAgICAuc3QzIHsKICAgICAgICBmaWxsOiAjNGNhOGQ4OwogICAgICB9CiAgICA8L3N0eWxlPgogIDwvZGVmcz4KICA8cGF0aCBjbGFzcz0ic3QyIiBkPSJNMjM4LjQ0LDMxMC44OGMtMy4yNC0xLjMtNi45Ni0uNDktOS41NywyLjU3LTEwLjUsMTIuMzItMjcuMjIsMTUuODYtNDAuOTIsOS4xNS0xNC4xMi02LjkzLTIxLjE4LTIxLjU4LTE4Ljg1LTM3LjE1LDIuMDktMTMuOTksMTAuNTItMjQuNDQsMjQuMTUtMjguMzEsMTMuNTMtMy44NSwyNi45NC4zNCwzNS45NiwxMS4zNywyLjg3LDMuNSw4LjExLDMuNzYsMTEuMTcsMS4xMSwzLjEzLTIuNzIsMy4yLTcuNTIuNDctMTAuODgtMTEuNjgtMTQuNDEtMjkuNTQtMTkuOTgtNDcuNTYtMTYuNzYtMjYuODIsNC43OC00NC4yNCwyOC4zNi00MC44MSw1NS4zMywyLjc2LDIxLjY4LDE4LjQsMzguMjYsNDAuMTQsNDIuMjEsMTMuMzQsMi40MiwyNi4zMi41NCwzNy44MS02Ljg4LDQuOTYtMy4yLDkuNjUtNy4yMywxMS45NC0xMi44NywxLjU2LTMuODItLjg3LTcuNjUtMy45My04Ljg4WiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0zMTAuNDgsMjkwLjAxYy0uMTQtMTIuODItOS45LTIxLjY2LTIyLjA0LTIzLjc4LTEyLjg1LTIuMjUtMjUuNjMuOS0zNC4zNywxMC41OS0yLjksMy4yLTIuNzMsNy4zNC0uMSwxMCwyLjc1LDIuNzYsNy4wNiwyLjU3LDEwLjAyLS4wOSw1Ljk4LTUuMzcsMTMuOTktOC42NywyMS45NC01Ljk4LDcuNDgsMi41NiwxMC4xNywxMC43Niw4LjQ2LDE4LjM0bC0yMC42OC4wM2MtMTMuMDQuMDItMjUuOTEsNi41My0yNS4xMSwyMi4wNi40OCw5LjQzLDYuNzQsMTUuNjUsMTUuMTMsMTcuOTUsMTAuNzEsMi45NSwyMS42MSwxLjgzLDMwLjk1LTUuOTEsMi4wNCw1LjM0LDQuOTksNy45MSw5LjY0LDcuMjIsNC4wMS0uNTksNi42My0zLjgyLDYuNTgtOC41MmwtLjQxLTQxLjkyWk0yOTIuMzgsMzIwLjIyYy01LjIyLDcuMi0xNC44Miw5LjgxLTIyLjY4LDYuNDYtMy42MS0xLjU0LTUuNTQtNS4yNy01LjAxLTguNiwxLjY0LTEwLjU1LDE5LjE2LTYuMywyOS4wNy03LjE5LDIuMDIsMi4yMy41NSw2LjY3LTEuMzgsOS4zM1oiLz4KICA8cGF0aCBjbGFzcz0ic3QyIiBkPSJNNDMwLjEzLDI3MC40N2MtMTQuNzktOC43Mi0zMy43Ny01Ljk4LTQ1LjQ2LDYuNDEtMi45OSwzLjE2LTIuMzcsNy43Ny4xOSwxMC4wOSwyLjU3LDIuMzEsNi43NywyLjYxLDkuNjctLjA5LDYuMDEtNS41NiwxNC4yMy04Ljk1LDIyLjQ0LTYuMDEsNy4xMywyLjU2LDEwLjI5LDExLjI2LDcuODgsMTguMDNsLTIxLjY2LjI4Yy0xMy4zLjE3LTI0LjgsOC4yMi0yNC4wOCwyMS45NC40NSw4LjQ4LDYuMzIsMTUuNDgsMTUuMzcsMTguMDUsMTEuMTksMy4yLDIxLjYxLDEuMTcsMzEtNS42OCwyLjA2LDUuNDQsNS4xMSw3LjM5LDkuMjYsNy4wMyw0LjAyLS4zNiw2Ljk0LTMuNTksNi45My04LjA4bC0uMDMtMjMuNzVjLS4wMy0xMi42NCwxLjk1LTMwLjI2LTExLjUtMzguMjFaTTQyNS40NSwzMTQuMzZjLTIuNTIsMTEuNjYtMTUuNzcsMTcuMDMtMjUuOTgsMTEuODUtMy40Mi0xLjc0LTQuNTMtNS43OS0zLjc4LTkuMTIuNjYtMy4wMiwzLjg5LTUuNTEsNy42NS01LjkyLDMuNzEtLjQxLDE5LjUtMS4wNywyMS42NC4yMS41NS4zMy44MSwxLjQyLjQ3LDIuOTlaIi8+CiAgPHBhdGggY2xhc3M9InN0MiIgZD0iTTQ5Ny42OCwzMzQuMjhjNy44Mi02LjUxLDkuMzctMTguMjUsMy45LTI2LjQtMi45LTQuMzItNy4xOC02LjkxLTExLjczLTguOWwtMTYuMzktNy4xN2MtMi44Ni0xLjI1LTQuODQtNC00LjMzLTYuNzQuNDktMi42NCwyLjg0LTQuNTQsNS43NS01LjIzLDEzLjczLTMuMjQsMjEuMjcsMTIuNDIsMjcuNTQsNC4zNCwxLjgtMi4zMiwyLjUyLTYuNDQtLjA2LTkuMDEtOS43Ny05LjcyLTIzLjc3LTEyLjE3LTM2LjQxLTcuMTUtNy44MiwzLjEtMTIuMzksOS44Ny0xMi42OCwxNy43OC0uODksMjQuNTYsMzcuNTgsMjEuMjUsMzUuNjQsMzQuNDQtLjQ0LDIuOTYtMy4wNCw1LjE1LTYuMzgsNi4wMi0xNi40Nyw0LjMyLTIyLjM3LTE0LjYzLTMwLjU4LTcuMy0yLjAyLDEuOC0zLjUsNS45Mi0xLjI3LDkuMDEsOS45NSwxMy44MSwzNC4yNSwxNi45NSw0Ny4wMSw2LjMzWiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0zNjEuNTUsMzAwLjEybC0xOC45OS04LjQxYy0yLjg3LTEuMjctNC41NC0zLjg0LTQuMDctNi43My40MS0yLjUxLDIuODYtNC40OSw1LjkyLTUuMTgsMTMuNjUtMy4wNywyMC42MywxMi4xMiwyNy4xMSw0LjUxLDIuMTQtMi41MSwyLjUyLTYuNzktLjI4LTkuNTItOS41NC05LjI3LTI0LjA2LTExLjgxLTM2LjM4LTYuNy03LjYyLDMuMTYtMTIuMTIsMTAuMDctMTIuMjksMTcuNzItLjE4LDcuOTUsNC4wNCwxNS4xNCwxMS41OCwxOC40N2wxOS41OSw4LjY2YzIuOTksMS4zMiw0Ljk4LDQuMzUsNC41OSw3LjE1LS40MiwzLjAxLTMuMDMsNS4wOS02LjI0LDYuMDQtMTYuNDgsNC45LTIyLjctMTUuMTQtMzEuMTgtNi45MS0yLjQ4LDIuNDEtMy4xNSw2Ljg1LS4xNywxMC4wOSw5LjcyLDEwLjU2LDI1Ljk5LDE0LjIsMzkuNzksOC44Miw4LjY1LTMuMzcsMTMuMjctMTAuNzgsMTMuNDYtMTguNjYuMjEtOC41OS00LjQ1LTE1Ljc5LTEyLjQ2LTE5LjM0WiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0xMzQuMjcsMjY1LjU1Yy00LjE1LS4wMy03Ljk5LDIuOTktOCw3LjcybC0uMSw1OC42M2MwLDQuNjUsMi40LDguMDEsNi40Nyw4LjQ5LDQuMzEuNTEsOC40OC0xLjQ5LDkuMDEtNi43M3YtNjEuMjhjLS4yOC0zLjktMy41Ni02LjgxLTcuMzgtNi44NFoiLz4KICA8Y2lyY2xlIGNsYXNzPSJzdDIiIGN4PSIxMzQuMTQiIGN5PSIyNDEuMDQiIHI9IjEwLjMxIi8+CiAgPHBhdGggY2xhc3M9InN0MiIgZD0iTTM3MS42NiwxNzcuODdjLTQuNTQsNC43Ny0xMi4yOCwyLjk5LTE3LjE1LTEuMjFsLTExMy42OS05OC4yNWMtOS4xNC03LjkxLTIyLjg1LTguMTctMzIuMTgtLjEyTDM0LjcyLDIyOC4yOWMtMy4zMiwyLjg3LTUuNTEsNS45NC02Ljc1LDkuOS0xLjY2LDUuMjcsMS42OSwxMC4zNSw3LjI3LDExLjMzLDEwLjc0LDEuODcsMjYuNzctLjA3LDM1LjMyLjg4LDQuNzUuNTQsOC43OSwzLjk3LDkuMDUsOS4wNS45MiwxNy45NC0uMSwzNS44Ny0uMDUsNTMuODQuMDMsMTIuMy42MSwyNC42LjYsMzYuODksMCw3LjU5LDAsMTUuMTksMCwyMi43OCwwLC43MSwwLDEuNDIsMCwyLjEzdjM3LjAzYzAsMTIuMTksNC42OCwyMi4wNiwxNy44OSwyMi45NiwxNy43NiwxLjE5LDM1LjE1LjE0LDUzLjA0LS4zNiwyLjU3LS4wNyw1Ljk0LDEuMDUsNi43NSwzLjQ3LDEuNCw0LjE2LDEuMTQsOS4wNy0uNTUsMTMuMDQtLjY0LDEuNTUtMy40MiwxLjg4LTQuOTIsMS45bC0zMy4xOC41LTI0LjE2LjFjLTguOTguMDMtMTcuMjktMi4yMy0yMy43My05LjI4LTUuOTQtNi40Ni0xMC40My0xNC40OS0xMS4zMS0yMy42Ni0xLjUtMTUuNTEtLjk3LTMwLjYxLS45OC00NS43bC0uMDMtMzcuOTcuMDMtMzcuOThjMC02Ljg3LS42NC0xMy44MiwwLTIwLjcxLS40My0xLjguNS0zLjktMS4wNy01LjUxLTYuNjctNi44MS0zOC44NSw1LjExLTQ4LjM4LTIwLjIxLTUuMDgtMTMuNTEtMS4zNS0yOC4wNyw5Ljk4LTM3Ljg0TDE5NC40Myw2My45MWMxNy40NS0xNS4wNiw0Mi45Ni0xNS4yLDYwLjM3LS4xNGwxMTQuNTksOTkuMDZjNC4xNSwzLjU5LDYuMTMsMTEuMDIsMi4yOCwxNS4wNFoiLz4KICA8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMjUyLjkzLDM4Mi41Yy00Ljk1LjU3LTguOTIsNC4yMS04LjkyLDkuOTlsLS4wNyw1OC41N2MwLDYuMiw1Ljc5LDkuOTgsMTEuMjEsOS40OSw1LjczLS41Miw5LjAyLTUuMTcsOC45Ny0xMS42NWwtLjQ2LTU3LjU3Yy0uMDUtNi01LjUtOS40NC0xMC43My04Ljg0WiIvPgogIDxwYXRoIGNsYXNzPSJzdDMiIGQ9Ik0yMjEuOTEsMzgyLjU1Yy01LjIyLjk1LTguNDEsNC44Mi04LjM5LDEwLjcybC4xNCw1OC42NGMuMDEsNS45LDYuMzUsOS4xMiwxMS4yMSw4LjU2LDUuNjktLjY1LDguODktNS4yLDguODItMTEuNjZsLS42LTU4LjA3Yy0uMDYtNi4xMy02LjI5LTkuMDgtMTEuMTgtOC4xOVoiLz4KICA8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTkyLjI1LDM4Mi40N2MtNS4wNC41Ny05LjA2LDQuMDgtOS4wOCw5LjkybC0uMjUsNTYuMDNjLS4wMyw2Ljg4LDMuMTUsMTEuOTYsMTAuMTcsMTIuMTEsNi4wNy4xMywxMC4yNC00LjUzLDEwLjE3LTExLjY1bC0uNTctNTguMDNjLS4wNi01Ljc2LTUuNjItOC45Mi0xMC40My04LjM4WiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik00ODIuMzMsNDA2LjUxYy0xMC41NCwwLTE5LjA3LDguNTMtMTkuMDcsMTkuMDVzOC41MywxOS4wNywxOS4wNywxOS4wNywxOS4wNy04LjUzLDE5LjA3LTE5LjA3LTguNTUtMTkuMDUtMTkuMDctMTkuMDVaTTQ4Mi4xOSw0MzkuNzhjLTcuNjMtLjA3LTE0LjQ3LTUuNzItMTQuNzItMTMuNzMtLjI2LTguNTIsNi42OC0xNC41OCwxNC43Mi0xNC42Niw3LjctLjA3LDE1LjU1LDUuOTEsMTUuMDMsMTUuMDMtLjQ3LDguMzQtOC4wNSwxMy40NC0xNS4wMywxMy4zN1oiLz4KICA8cGF0aCBjbGFzcz0ic3QyIiBkPSJNMzEzLjEyLDQyNS40N2MtLjguNjQtLjg1LDMuODcuNDgsMy45bDkuNTguMjVjLS40NSw1LjI4LTQuNjIsOC42NS05LjU0LDkuNzktNy4zOCwxLjcxLTE1LjA3LTEuODktMTcuMjYtOC44My0yLjE5LTYuOTYuNDYtMTQuNzEsNi45Mi0xNy43OCw2LjU5LTMuMTMsMTQuMjUtMS4xNiwxOC4yOSw0Ljk3LDEuMjEuMjcsMy42NC0xLjcyLDMuNDItMi44MS0yLjU1LTUuNS04Ljk4LTcuOTItMTQuOTQtOC4wNS0xMC44Ni0uMjQtMTguNjYsNy41Ny0xOC45OSwxOC4xOS0uMzYsMTEuNjgsOC4zMiwxOS43LDE5Ljg2LDE5LjIsMTAuNDgtLjQ2LDE4LjA3LTguNjIsMTYuNTktMTkuMTktNS4xMS4zLTEwLjEtLjM5LTE0LjQuMzdaIi8+CiAgPHBhdGggY2xhc3M9InN0MiIgZD0iTTM1NC42NSw0MjcuMDFjMy41Mi0uMTcsNi4zNC0uNjcsOC4yMi0yLjg1LDEuNjgtMS45MiwyLjMtNC42MSwyLjExLTcuNDMtLjM2LTUuMTYtMy44OS04Ljg4LTkuMjEtOC44NmwtMTEuMjYuMDd2MzYuMDdjMS41NC4yNCwyLjg1LjIxLDQuMjMuMDMuNTUtNS44LS42NC0xMS4xMS41OS0xNi44MWwxMi45MiwxNi40NGMxLjc2LjUyLDMuNjYuOTgsNS42MSwwbC0xMy4yMS0xNi42N1pNMzQ4Ljg4LDQyMi41bC0uMDItMTAuMjFjMy40OS0uMTYsNi44MS0uNTcsOS45MSwxLjM1LDEuNzYsMS4wOSwyLjQyLDUuMi41OSw2Ljk0LTIuODcsMi43Ni03LDEuOS0xMC40OCwxLjkyWiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik00MDkuNzMsNDA4LjQzbC0uMDIsMjMuMzVjMCw4LjE1LTYuNDMsMTIuODctMTQuMywxMi40NC00LjAyLS4yMS03LjkxLS44OC0xMC41Mi0zLjc1LTIuNDQtMi42OC0zLjQtNi40OC0zLjM1LTEwLjE0bC4wOS0yMi40NGMxLjI4LjA3LDIuNTctLjE5LDQuMzIuMTJsLjA3LDIzLjE4Yy4wMyw1Ljg0LDQuNzIsOSwxMC4yMSw4LjY5LDUuMTYtLjMxLDguOTUtMy4yOCw4Ljk4LTguNzRsLjE2LTIyLjcxYy45OC0uODgsMy4zMy0uODYsNC4zNywwWiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik00NDIuNiw0MDguNDhjLTQuNjUtMS4yNC05LjM2LS4yOS0xNC4zNS0uNTl2MzYuMjZjMS4yOC0uMDcsMi41Ny4yMSw0LjMtLjE0bC4wNS0xNi4yOWMzLjg3LS4xOSw3LjYuNjQsMTEuMTEtLjk4LDMuOC0xLjc0LDUuMjUtNS43OSw1LjA0LTkuNzItLjE5LTMuNDUtMi03LjQzLTYuMTUtOC41M1pNNDQyLjc5LDQyMS45N2MtMy41MiwxLjUtNi42NywxLjc0LTEwLjIxLDEuMzZ2LTExLjA0YzMuNzEtLjM2LDcuMTItLjEyLDEwLjI5LDEuNjYsMS43MywyLjM3LDEuODMsNS40NC0uMDksOC4wMVoiLz4KPC9zdmc+">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0a0c10;--bg2:#12151c;--bg3:#1a1e28;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --text:#f2f4f8;--text2:#9aa1b0;--text3:#5f6572;
+  --accent:#3d7eff;--accent2:#7db1ff;--gold:#f5b942;--silver:#c4c9d4;--bronze:#d98a4f;
+  --green:#22c55e;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;}
+a{color:inherit;text-decoration:none;}
+.wrap{max-width:1180px;margin:0 auto;padding:0 6vw;}
+
+/* HEADER — logo + nav central + botoes de acao, como a referencia */
+.header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 6vw;background:rgba(10,12,16,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);}
+.header .marca{display:flex;align-items:center;gap:9px;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:.3px;}
+.header .marca img{height:26px;}
+.header nav{display:flex;gap:26px;}
+.header nav a{font-size:12.5px;font-weight:600;color:var(--text2);letter-spacing:.4px;transition:.2s;}
+.header nav a:hover{color:var(--text);}
+.header .acoes{display:flex;gap:10px;}
+.header .acoes a{font-size:12px;font-weight:700;padding:9px 16px;border-radius:8px;letter-spacing:.3px;}
+.acao-fantasma{border:1px solid var(--border2);color:var(--text);}
+.acao-cheia{background:var(--accent);color:#fff;}
+
+/* HERO — banner grande, como a referencia */
+.hero{min-height:92vh;display:flex;align-items:center;position:relative;padding:110px 6vw 60px;background:
+  radial-gradient(circle at 15% 25%, rgba(61,126,255,.18), transparent 45%),
+  radial-gradient(circle at 85% 75%, rgba(245,185,66,.12), transparent 45%),
+  var(--bg);border-bottom:1px solid var(--border);}
+.hero-inner{max-width:620px;}
+.hero .selo{display:inline-flex;align-items:center;gap:8px;background:rgba(61,126,255,.12);border:1px solid rgba(61,126,255,.3);color:var(--accent2);font-size:12px;font-weight:600;padding:7px 15px;border-radius:30px;margin-bottom:24px;}
+.hero .selo .dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+.hero h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,4.6vw,52px);line-height:1.1;margin-bottom:20px;}
+.hero h1 span{background:linear-gradient(90deg,var(--accent2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero p{font-size:16px;color:var(--text2);line-height:1.65;margin-bottom:32px;max-width:480px;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 26px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;border:none;transition:.2s;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent2);}
+
+/* SECAO: icone + texto curto + CTA, como o bloco "CONHECA" da referencia */
+.intro{padding:70px 6vw;border-bottom:1px solid var(--border);}
+.intro-inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:40px;flex-wrap:wrap;}
+.intro-icone{width:64px;height:64px;border-radius:16px;background:rgba(61,126,255,.12);border:1px solid rgba(61,126,255,.3);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;}
+.intro-texto{flex:1;min-width:260px;}
+.intro-texto p{font-size:16.5px;color:var(--text2);line-height:1.6;}
+.intro .btn-fantasma{border:1px solid var(--border2);padding:12px 22px;border-radius:9px;font-weight:700;font-size:13px;white-space:nowrap;}
+
+/* SECAO PADRAO */
+.secao{padding:90px 6vw;max-width:1180px;margin:0 auto;}
+.secao-titulo{text-align:center;margin-bottom:52px;}
+.secao-titulo .tag{font-size:12px;font-weight:700;color:var(--accent2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:block;}
+.secao-titulo h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(24px,3.6vw,36px);}
+.secao-titulo p{color:var(--text2);margin-top:10px;font-size:14.5px;}
+
+/* SLIDER DE PREMIOS */
+.slider-wrap{position:relative;max-width:900px;margin:0 auto;}
+.slider-viewport{overflow:hidden;border-radius:20px;}
+.slider-track{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1);}
+.slide{min-width:100%;padding:54px 8vw;text-align:center;}
+.slide.premio-a{background:linear-gradient(135deg,#153a7a,#0a1f42);}
+.slide.premio-b{background:linear-gradient(135deg,#7a5613,#3d2b0a);}
+.slide-icone{font-size:48px;margin-bottom:16px;}
+.slide h3{font-family:'Syne',sans-serif;font-size:clamp(22px,3.2vw,32px);font-weight:800;margin-bottom:10px;}
+.slide p{font-size:14.5px;color:rgba(255,255,255,.75);max-width:440px;margin:0 auto;line-height:1.6;}
+.slide .valor{display:inline-block;margin-top:18px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;background:rgba(255,255,255,.14);padding:8px 18px;border-radius:30px;}
+.slider-nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.2);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;z-index:5;}
+.slider-prev{left:-12px;} .slider-next{right:-12px;}
+.slider-dots{display:flex;justify-content:center;gap:8px;margin-top:18px;}
+.slider-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);cursor:pointer;}
+.slider-dot.ativo{background:var(--accent2);width:20px;border-radius:5px;}
+
+/* SECAO ESTILO "CONCIERGE" — bloco visual + texto lado a lado */
+.concierge{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.concierge-inner{max-width:1180px;margin:0 auto;padding:90px 6vw;display:flex;align-items:center;gap:60px;flex-wrap:wrap;}
+.concierge-visual{flex:1;min-width:280px;aspect-ratio:4/3;border-radius:20px;background:linear-gradient(135deg,rgba(61,126,255,.16),rgba(245,185,66,.10));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:64px;}
+.concierge-texto{flex:1;min-width:280px;}
+.concierge-texto .tag{font-size:12px;font-weight:700;color:var(--accent2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;display:block;}
+.concierge-texto h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(22px,3.2vw,32px);margin-bottom:16px;}
+.concierge-texto p{color:var(--text2);font-size:15px;line-height:1.7;margin-bottom:24px;}
+
+/* RANKING — fotos circulares como a secao "Gestao" da referencia */
+.podio{display:flex;align-items:flex-end;justify-content:center;gap:16px;margin-bottom:40px;}
+.podio-item{flex:1;max-width:160px;text-align:center;}
+.podio-avatar{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin:0 auto 10px;color:#0a0c10;}
+.podio-1 .podio-avatar{background:var(--gold);width:72px;height:72px;font-size:25px;}
+.podio-2 .podio-avatar{background:var(--silver);}
+.podio-3 .podio-avatar{background:var(--bronze);}
+.podio-nome{font-weight:700;font-size:13.5px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.podio-pontos{font-size:12px;color:var(--text2);}
+.podio-base{background:var(--bg3);border:1px solid var(--border);border-radius:12px 12px 0 0;margin-top:12px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;color:var(--text3);}
+.podio-1 .podio-base{height:70px;font-size:28px;border-color:rgba(245,185,66,.35);}
+.podio-2 .podio-base{height:50px;font-size:23px;}
+.podio-3 .podio-base{height:36px;font-size:21px;}
+
+.lista{display:flex;flex-direction:column;gap:10px;max-width:680px;margin:0 auto;}
+.linha{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:15px 18px;display:flex;align-items:center;gap:14px;}
+.pos{width:26px;text-align:center;font-family:'Syne',sans-serif;font-weight:700;color:var(--text3);flex-shrink:0;}
+.info{flex:1;min-width:0;}
+.nome{font-weight:600;font-size:14.5px;margin-bottom:6px;}
+.barra-wrap{height:7px;background:var(--bg2);border-radius:5px;overflow:hidden;}
+.barra{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:5px;transition:width .5s;}
+.lado{text-align:right;flex-shrink:0;}
+.pontos-num{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;}
+.pontos-label{font-size:10.5px;color:var(--text3);}
+.premio-badge{display:inline-block;font-size:10.5px;font-weight:700;background:rgba(245,185,66,.15);color:var(--gold);padding:2px 9px;border-radius:20px;margin-top:4px;}
+.vazio{text-align:center;padding:50px 20px;color:var(--text3);}
+
+/* SECAO CONTATO — como "FALE CONOSCO" da referencia */
+.contato{background:var(--bg2);border-top:1px solid var(--border);}
+.contato-inner{max-width:1180px;margin:0 auto;padding:90px 6vw;display:flex;gap:60px;flex-wrap:wrap;}
+.contato-info{flex:1;min-width:280px;}
+.contato-info .tag{font-size:12px;font-weight:700;color:var(--accent2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:block;}
+.contato-info h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(24px,3.4vw,34px);margin-bottom:14px;}
+.contato-info p{color:var(--text2);font-size:15px;line-height:1.7;margin-bottom:20px;}
+.contato-linha{font-size:14px;color:var(--text2);margin-bottom:8px;display:flex;gap:8px;align-items:center;}
+.contato-form{flex:1;min-width:280px;background:var(--bg3);border:1px solid var(--border);border-radius:18px;padding:32px;}
+.campo{margin-bottom:16px;}
+.campo label{display:block;font-size:12.5px;color:var(--text2);margin-bottom:6px;}
+.campo input,.campo textarea{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:9px;padding:11px 13px;color:var(--text);font-family:inherit;font-size:14px;}
+.campo textarea{resize:vertical;min-height:80px;}
+
+/* RODAPE — como a referencia, com contato e apps */
+.rodape{border-top:1px solid var(--border);}
+.rodape-inner{max-width:1180px;margin:0 auto;padding:50px 6vw 30px;display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;}
+.rodape-marca{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:10px;}
+.rodape-col p{font-size:12.5px;color:var(--text3);line-height:1.8;}
+.rodape-baixo{text-align:center;padding:18px 20px;font-size:11.5px;color:var(--text3);border-top:1px solid var(--border);}
+
+@media(max-width:820px){
+  .header nav{display:none;}
+  .intro-inner{flex-direction:column;text-align:center;}
+  .concierge-inner{flex-direction:column;}
+  .slider-prev{left:6px;} .slider-next{right:6px;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="marca"><img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iQ2FtYWRhXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+CiAgPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDMwLjQuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDIuMS40IEJ1aWxkIDIyNikgIC0tPgogIDxkZWZzPgogICAgPHN0eWxlPgogICAgICAuc3QwIHsKICAgICAgICBmaWxsOiAjNTdhYzZlOwogICAgICB9CgogICAgICAuc3QxIHsKICAgICAgICBmaWxsOiAjZWQ4MDM2OwogICAgICB9CgogICAgICAuc3QyIHsKICAgICAgICBmaWxsOiAjZmZmOwogICAgICB9CgogICAgICAuc3QzIHsKICAgICAgICBmaWxsOiAjNGNhOGQ4OwogICAgICB9CiAgICA8L3N0eWxlPgogIDwvZGVmcz4KICA8cGF0aCBjbGFzcz0ic3QyIiBkPSJNMjM4LjQ0LDMxMC44OGMtMy4yNC0xLjMtNi45Ni0uNDktOS41NywyLjU3LTEwLjUsMTIuMzItMjcuMjIsMTUuODYtNDAuOTIsOS4xNS0xNC4xMi02LjkzLTIxLjE4LTIxLjU4LTE4Ljg1LTM3LjE1LDIuMDktMTMuOTksMTAuNTItMjQuNDQsMjQuMTUtMjguMzEsMTMuNTMtMy44NSwyNi45NC4zNCwzNS45NiwxMS4zNywyLjg3LDMuNSw4LjExLDMuNzYsMTEuMTcsMS4xMSwzLjEzLTIuNzIsMy4yLTcuNTIuNDctMTAuODgtMTEuNjgtMTQuNDEtMjkuNTQtMTkuOTgtNDcuNTYtMTYuNzYtMjYuODIsNC43OC00NC4yNCwyOC4zNi00MC44MSw1NS4zMywyLjc2LDIxLjY4LDE4LjQsMzguMjYsNDAuMTQsNDIuMjEsMTMuMzQsMi40MiwyNi4zMi41NCwzNy44MS02Ljg4LDQuOTYtMy4yLDkuNjUtNy4yMywxMS45NC0xMi44NywxLjU2LTMuODItLjg3LTcuNjUtMy45My04Ljg4WiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0zMTAuNDgsMjkwLjAxYy0uMTQtMTIuODItOS45LTIxLjY2LTIyLjA0LTIzLjc4LTEyLjg1LTIuMjUtMjUuNjMuOS0zNC4zNywxMC41OS0yLjksMy4yLTIuNzMsNy4zNC0uMSwxMCwyLjc1LDIuNzYsNy4wNiwyLjU3LDEwLjAyLS4wOSw1Ljk4LTUuMzcsMTMuOTktOC42NywyMS45NC01Ljk4LDcuNDgsMi41NiwxMC4xNywxMC43Niw4LjQ2LDE4LjM0bC0yMC42OC4wM2MtMTMuMDQuMDItMjUuOTEsNi41My0yNS4xMSwyMi4wNi40OCw5LjQzLDYuNzQsMTUuNjUsMTUuMTMsMTcuOTUsMTAuNzEsMi45NSwyMS42MSwxLjgzLDMwLjk1LTUuOTEsMi4wNCw1LjM0LDQuOTksNy45MSw5LjY0LDcuMjIsNC4wMS0uNTksNi42My0zLjgyLDYuNTgtOC41MmwtLjQxLTQxLjkyWk0yOTIuMzgsMzIwLjIyYy01LjIyLDcuMi0xNC44Miw5LjgxLTIyLjY4LDYuNDYtMy42MS0xLjU0LTUuNTQtNS4yNy01LjAxLTguNiwxLjY0LTEwLjU1LDE5LjE2LTYuMywyOS4wNy03LjE5LDIuMDIsMi4yMy41NSw2LjY3LTEuMzgsOS4zM1oiLz4KICA8cGF0aCBjbGFzcz0ic3QyIiBkPSJNNDMwLjEzLDI3MC40N2MtMTQuNzktOC43Mi0zMy43Ny01Ljk4LTQ1LjQ2LDYuNDEtMi45OSwzLjE2LTIuMzcsNy43Ny4xOSwxMC4wOSwyLjU3LDIuMzEsNi43NywyLjYxLDkuNjctLjA5LDYuMDEtNS41NiwxNC4yMy04Ljk1LDIyLjQ0LTYuMDEsNy4xMywyLjU2LDEwLjI5LDExLjI2LDcuODgsMTguMDNsLTIxLjY2LjI4Yy0xMy4zLjE3LTI0LjgsOC4yMi0yNC4wOCwyMS45NC40NSw4LjQ4LDYuMzIsMTUuNDgsMTUuMzcsMTguMDUsMTEuMTksMy4yLDIxLjYxLDEuMTcsMzEtNS42OCwyLjA2LDUuNDQsNS4xMSw3LjM5LDkuMjYsNy4wMyw0LjAyLS4zNiw2Ljk0LTMuNTksNi45My04LjA4bC0uMDMtMjMuNzVjLS4wMy0xMi42NCwxLjk1LTMwLjI2LTExLjUtMzguMjFaTTQyNS40NSwzMTQuMzZjLTIuNTIsMTEuNjYtMTUuNzcsMTcuMDMtMjUuOTgsMTEuODUtMy40Mi0xLjc0LTQuNTMtNS43OS0zLjc4LTkuMTIuNjYtMy4wMiwzLjg5LTUuNTEsNy42NS01LjkyLDMuNzEtLjQxLDE5LjUtMS4wNywyMS42NC4yMS41NS4zMy44MSwxLjQyLjQ3LDIuOTlaIi8+CiAgPHBhdGggY2xhc3M9InN0MiIgZD0iTTQ5Ny42OCwzMzQuMjhjNy44Mi02LjUxLDkuMzctMTguMjUsMy45LTI2LjQtMi45LTQuMzItNy4xOC02LjkxLTExLjczLTguOWwtMTYuMzktNy4xN2MtMi44Ni0xLjI1LTQuODQtNC00LjMzLTYuNzQuNDktMi42NCwyLjg0LTQuNTQsNS43NS01LjIzLDEzLjczLTMuMjQsMjEuMjcsMTIuNDIsMjcuNTQsNC4zNCwxLjgtMi4zMiwyLjUyLTYuNDQtLjA2LTkuMDEtOS43Ny05LjcyLTIzLjc3LTEyLjE3LTM2LjQxLTcuMTUtNy44MiwzLjEtMTIuMzksOS44Ny0xMi42OCwxNy43OC0uODksMjQuNTYsMzcuNTgsMjEuMjUsMzUuNjQsMzQuNDQtLjQ0LDIuOTYtMy4wNCw1LjE1LTYuMzgsNi4wMi0xNi40Nyw0LjMyLTIyLjM3LTE0LjYzLTMwLjU4LTcuMy0yLjAyLDEuOC0zLjUsNS45Mi0xLjI3LDkuMDEsOS45NSwxMy44MSwzNC4yNSwxNi45NSw0Ny4wMSw2LjMzWiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0zNjEuNTUsMzAwLjEybC0xOC45OS04LjQxYy0yLjg3LTEuMjctNC41NC0zLjg0LTQuMDctNi43My40MS0yLjUxLDIuODYtNC40OSw1LjkyLTUuMTgsMTMuNjUtMy4wNywyMC42MywxMi4xMiwyNy4xMSw0LjUxLDIuMTQtMi41MSwyLjUyLTYuNzktLjI4LTkuNTItOS41NC05LjI3LTI0LjA2LTExLjgxLTM2LjM4LTYuNy03LjYyLDMuMTYtMTIuMTIsMTAuMDctMTIuMjksMTcuNzItLjE4LDcuOTUsNC4wNCwxNS4xNCwxMS41OCwxOC40N2wxOS41OSw4LjY2YzIuOTksMS4zMiw0Ljk4LDQuMzUsNC41OSw3LjE1LS40MiwzLjAxLTMuMDMsNS4wOS02LjI0LDYuMDQtMTYuNDgsNC45LTIyLjctMTUuMTQtMzEuMTgtNi45MS0yLjQ4LDIuNDEtMy4xNSw2Ljg1LS4xNywxMC4wOSw5LjcyLDEwLjU2LDI1Ljk5LDE0LjIsMzkuNzksOC44Miw4LjY1LTMuMzcsMTMuMjctMTAuNzgsMTMuNDYtMTguNjYuMjEtOC41OS00LjQ1LTE1Ljc5LTEyLjQ2LTE5LjM0WiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0xMzQuMjcsMjY1LjU1Yy00LjE1LS4wMy03Ljk5LDIuOTktOCw3LjcybC0uMSw1OC42M2MwLDQuNjUsMi40LDguMDEsNi40Nyw4LjQ5LDQuMzEuNTEsOC40OC0xLjQ5LDkuMDEtNi43M3YtNjEuMjhjLS4yOC0zLjktMy41Ni02LjgxLTcuMzgtNi44NFoiLz4KICA8Y2lyY2xlIGNsYXNzPSJzdDIiIGN4PSIxMzQuMTQiIGN5PSIyNDEuMDQiIHI9IjEwLjMxIi8+CiAgPHBhdGggY2xhc3M9InN0MiIgZD0iTTM3MS42NiwxNzcuODdjLTQuNTQsNC43Ny0xMi4yOCwyLjk5LTE3LjE1LTEuMjFsLTExMy42OS05OC4yNWMtOS4xNC03LjkxLTIyLjg1LTguMTctMzIuMTgtLjEyTDM0LjcyLDIyOC4yOWMtMy4zMiwyLjg3LTUuNTEsNS45NC02Ljc1LDkuOS0xLjY2LDUuMjcsMS42OSwxMC4zNSw3LjI3LDExLjMzLDEwLjc0LDEuODcsMjYuNzctLjA3LDM1LjMyLjg4LDQuNzUuNTQsOC43OSwzLjk3LDkuMDUsOS4wNS45MiwxNy45NC0uMSwzNS44Ny0uMDUsNTMuODQuMDMsMTIuMy42MSwyNC42LjYsMzYuODksMCw3LjU5LDAsMTUuMTksMCwyMi43OCwwLC43MSwwLDEuNDIsMCwyLjEzdjM3LjAzYzAsMTIuMTksNC42OCwyMi4wNiwxNy44OSwyMi45NiwxNy43NiwxLjE5LDM1LjE1LjE0LDUzLjA0LS4zNiwyLjU3LS4wNyw1Ljk0LDEuMDUsNi43NSwzLjQ3LDEuNCw0LjE2LDEuMTQsOS4wNy0uNTUsMTMuMDQtLjY0LDEuNTUtMy40MiwxLjg4LTQuOTIsMS45bC0zMy4xOC41LTI0LjE2LjFjLTguOTguMDMtMTcuMjktMi4yMy0yMy43My05LjI4LTUuOTQtNi40Ni0xMC40My0xNC40OS0xMS4zMS0yMy42Ni0xLjUtMTUuNTEtLjk3LTMwLjYxLS45OC00NS43bC0uMDMtMzcuOTcuMDMtMzcuOThjMC02Ljg3LS42NC0xMy44MiwwLTIwLjcxLS40My0xLjguNS0zLjktMS4wNy01LjUxLTYuNjctNi44MS0zOC44NSw1LjExLTQ4LjM4LTIwLjIxLTUuMDgtMTMuNTEtMS4zNS0yOC4wNyw5Ljk4LTM3Ljg0TDE5NC40Myw2My45MWMxNy40NS0xNS4wNiw0Mi45Ni0xNS4yLDYwLjM3LS4xNGwxMTQuNTksOTkuMDZjNC4xNSwzLjU5LDYuMTMsMTEuMDIsMi4yOCwxNS4wNFoiLz4KICA8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMjUyLjkzLDM4Mi41Yy00Ljk1LjU3LTguOTIsNC4yMS04LjkyLDkuOTlsLS4wNyw1OC41N2MwLDYuMiw1Ljc5LDkuOTgsMTEuMjEsOS40OSw1LjczLS41Miw5LjAyLTUuMTcsOC45Ny0xMS42NWwtLjQ2LTU3LjU3Yy0uMDUtNi01LjUtOS40NC0xMC43My04Ljg0WiIvPgogIDxwYXRoIGNsYXNzPSJzdDMiIGQ9Ik0yMjEuOTEsMzgyLjU1Yy01LjIyLjk1LTguNDEsNC44Mi04LjM5LDEwLjcybC4xNCw1OC42NGMuMDEsNS45LDYuMzUsOS4xMiwxMS4yMSw4LjU2LDUuNjktLjY1LDguODktNS4yLDguODItMTEuNjZsLS42LTU4LjA3Yy0uMDYtNi4xMy02LjI5LTkuMDgtMTEuMTgtOC4xOVoiLz4KICA8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTkyLjI1LDM4Mi40N2MtNS4wNC41Ny05LjA2LDQuMDgtOS4wOCw5LjkybC0uMjUsNTYuMDNjLS4wMyw2Ljg4LDMuMTUsMTEuOTYsMTAuMTcsMTIuMTEsNi4wNy4xMywxMC4yNC00LjUzLDEwLjE3LTExLjY1bC0uNTctNTguMDNjLS4wNi01Ljc2LTUuNjItOC45Mi0xMC40My04LjM4WiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik00ODIuMzMsNDA2LjUxYy0xMC41NCwwLTE5LjA3LDguNTMtMTkuMDcsMTkuMDVzOC41MywxOS4wNywxOS4wNywxOS4wNywxOS4wNy04LjUzLDE5LjA3LTE5LjA3LTguNTUtMTkuMDUtMTkuMDctMTkuMDVaTTQ4Mi4xOSw0MzkuNzhjLTcuNjMtLjA3LTE0LjQ3LTUuNzItMTQuNzItMTMuNzMtLjI2LTguNTIsNi42OC0xNC41OCwxNC43Mi0xNC42Niw3LjctLjA3LDE1LjU1LDUuOTEsMTUuMDMsMTUuMDMtLjQ3LDguMzQtOC4wNSwxMy40NC0xNS4wMywxMy4zN1oiLz4KICA8cGF0aCBjbGFzcz0ic3QyIiBkPSJNMzEzLjEyLDQyNS40N2MtLjguNjQtLjg1LDMuODcuNDgsMy45bDkuNTguMjVjLS40NSw1LjI4LTQuNjIsOC42NS05LjU0LDkuNzktNy4zOCwxLjcxLTE1LjA3LTEuODktMTcuMjYtOC44My0yLjE5LTYuOTYuNDYtMTQuNzEsNi45Mi0xNy43OCw2LjU5LTMuMTMsMTQuMjUtMS4xNiwxOC4yOSw0Ljk3LDEuMjEuMjcsMy42NC0xLjcyLDMuNDItMi44MS0yLjU1LTUuNS04Ljk4LTcuOTItMTQuOTQtOC4wNS0xMC44Ni0uMjQtMTguNjYsNy41Ny0xOC45OSwxOC4xOS0uMzYsMTEuNjgsOC4zMiwxOS43LDE5Ljg2LDE5LjIsMTAuNDgtLjQ2LDE4LjA3LTguNjIsMTYuNTktMTkuMTktNS4xMS4zLTEwLjEtLjM5LTE0LjQuMzdaIi8+CiAgPHBhdGggY2xhc3M9InN0MiIgZD0iTTM1NC42NSw0MjcuMDFjMy41Mi0uMTcsNi4zNC0uNjcsOC4yMi0yLjg1LDEuNjgtMS45MiwyLjMtNC42MSwyLjExLTcuNDMtLjM2LTUuMTYtMy44OS04Ljg4LTkuMjEtOC44NmwtMTEuMjYuMDd2MzYuMDdjMS41NC4yNCwyLjg1LjIxLDQuMjMuMDMuNTUtNS44LS42NC0xMS4xMS41OS0xNi44MWwxMi45MiwxNi40NGMxLjc2LjUyLDMuNjYuOTgsNS42MSwwbC0xMy4yMS0xNi42N1pNMzQ4Ljg4LDQyMi41bC0uMDItMTAuMjFjMy40OS0uMTYsNi44MS0uNTcsOS45MSwxLjM1LDEuNzYsMS4wOSwyLjQyLDUuMi41OSw2Ljk0LTIuODcsMi43Ni03LDEuOS0xMC40OCwxLjkyWiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik00MDkuNzMsNDA4LjQzbC0uMDIsMjMuMzVjMCw4LjE1LTYuNDMsMTIuODctMTQuMywxMi40NC00LjAyLS4yMS03LjkxLS44OC0xMC41Mi0zLjc1LTIuNDQtMi42OC0zLjQtNi40OC0zLjM1LTEwLjE0bC4wOS0yMi40NGMxLjI4LjA3LDIuNTctLjE5LDQuMzIuMTJsLjA3LDIzLjE4Yy4wMyw1Ljg0LDQuNzIsOSwxMC4yMSw4LjY5LDUuMTYtLjMxLDguOTUtMy4yOCw4Ljk4LTguNzRsLjE2LTIyLjcxYy45OC0uODgsMy4zMy0uODYsNC4zNywwWiIvPgogIDxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik00NDIuNiw0MDguNDhjLTQuNjUtMS4yNC05LjM2LS4yOS0xNC4zNS0uNTl2MzYuMjZjMS4yOC0uMDcsMi41Ny4yMSw0LjMtLjE0bC4wNS0xNi4yOWMzLjg3LS4xOSw3LjYuNjQsMTEuMTEtLjk4LDMuOC0xLjc0LDUuMjUtNS43OSw1LjA0LTkuNzItLjE5LTMuNDUtMi03LjQzLTYuMTUtOC41M1pNNDQyLjc5LDQyMS45N2MtMy41MiwxLjUtNi42NywxLjc0LTEwLjIxLDEuMzZ2LTExLjA0YzMuNzEtLjM2LDcuMTItLjEyLDEwLjI5LDEuNjYsMS43MywyLjM3LDEuODMsNS40NC0uMDksOC4wMVoiLz4KPC9zdmc+" alt="iCasas">CLUBE ICASAS</div>
+  <nav>
+    <a href="#sobre">O programa</a>
+    <a href="#premios">Prêmios</a>
+    <a href="#como-funciona">Como funciona</a>
+    <a href="#ranking">Ranking</a>
+    <a href="#contato">Contato</a>
+  </nav>
+  <div class="acoes">
+    <a href="#contato" class="acao-fantasma">Falar com a gente</a>
+    <a href="#premios" class="acao-cheia">Ver prêmios</a>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="wrap hero-inner">
+    <div class="selo"><span class="dot"></span>Programa de indicação iCasas Construtora</div>
+    <h1>Indique. A casa <span>sai do papel.</span> Você ganha.</h1>
+    <p>Cada indicação sua que virar contrato fechado coloca dinheiro no seu bolso e te aproxima de prêmios exclusivos do Clube iCasas.</p>
+    <a href="#premios" class="btn btn-primary">Ver prêmios</a>
+  </div>
+</section>
+
+<section class="intro" id="sobre">
+  <div class="intro-inner">
+    <div class="intro-icone">🏠</div>
+    <div class="intro-texto">
+      <p>O Clube iCasas é o programa que reconhece quem confia e indica a iCasas Construtora pra quem está pensando em construir ou comprar terreno. Cada indicação vira ponto, cada ponto vira dinheiro.</p>
+    </div>
+    <a href="#como-funciona" class="btn-fantasma">Como funciona</a>
+  </div>
+</section>
+
+<section class="secao" id="como-funciona">
+  <div class="secao-titulo">
+    <span class="tag">Simples assim</span>
+    <h2>Três passos entre indicar e ganhar</h2>
+  </div>
+  <div class="intro-inner" style="justify-content:center;gap:60px;">
+    <div class="intro-texto" style="text-align:center;max-width:220px;">
+      <div class="intro-icone" style="margin:0 auto 16px;">1️⃣</div>
+      <p><b style="color:var(--text)">Você indica</b><br>Manda o contato de quem está pensando em construir.</p>
+    </div>
+    <div class="intro-texto" style="text-align:center;max-width:220px;">
+      <div class="intro-icone" style="margin:0 auto 16px;">2️⃣</div>
+      <p><b style="color:var(--text)">Fecha contrato</b><br>O sistema contabiliza sozinho, sem burocracia.</p>
+    </div>
+    <div class="intro-texto" style="text-align:center;max-width:220px;">
+      <div class="intro-icone" style="margin:0 auto 16px;">3️⃣</div>
+      <p><b style="color:var(--text)">Você ganha</b><br>R$ 1.000 na hora, e prêmios a cada 10 indicações.</p>
+    </div>
+  </div>
+</section>
+
+<section class="secao" id="premios">
+  <div class="secao-titulo">
+    <span class="tag">O que você ganha</span>
+    <h2>Prêmios do Clube iCasas</h2>
+  </div>
+  <div class="slider-wrap">
+    <div class="slider-viewport">
+      <div class="slider-track" id="sliderTrack">
+        <div class="slide premio-a">
+          <div class="slide-icone">💰</div>
+          <h3>R$ 1.000 por indicação</h3>
+          <p>Toda vez que alguém que você indicou fecha contrato conosco, o valor cai direto pra você. Sem limite de quantas vezes você pode ganhar.</p>
+          <span class="valor">1 indicação fechada = 1 ponto = R$ 1.000</span>
+        </div>
+        <div class="slide premio-b">
+          <div class="slide-icone">📱</div>
+          <h3>iPhone a cada 10 pontos</h3>
+          <p>Quando você completa 10 indicações fechadas, além de todo o dinheiro já recebido, ainda leva um iPhone novo pra casa.</p>
+          <span class="valor">10 pontos = 1 iPhone</span>
+        </div>
+      </div>
+    </div>
+    <div class="slider-nav slider-prev" onclick="moverSlide(-1)">‹</div>
+    <div class="slider-nav slider-next" onclick="moverSlide(1)">›</div>
+  </div>
+  <div class="slider-dots" id="sliderDots"></div>
+</section>
+
+<section class="concierge">
+  <div class="concierge-inner">
+    <div class="concierge-visual">🤝</div>
+    <div class="concierge-texto">
+      <span class="tag">Sem complicação</span>
+      <h2>Você indica, a gente cuida do resto</h2>
+      <p>Assim que você manda o contato, nossa equipe assume: atendimento, projeto, aprovação e todo o processo até fechar. Você só acompanha seus pontos subindo no ranking.</p>
+      <a href="https://wa.me/5500000000000" class="btn btn-primary">Indicar agora pelo WhatsApp</a>
+    </div>
+  </div>
+</section>
+
+<section class="secao" id="ranking">
+  <div class="secao-titulo">
+    <span class="tag">Ao vivo</span>
+    <h2>Ranking de indicações</h2>
+    <p>Atualizado em tempo real.</p>
+  </div>
+  <div id="podio"></div>
+  <div class="lista" id="lista"></div>
+</section>
+
+<section class="contato" id="contato">
+  <div class="contato-inner">
+    <div class="contato-info">
+      <span class="tag">Fale conosco</span>
+      <h2>Quer participar do Clube iCasas?</h2>
+      <p>Deixa seu contato que a gente te explica tudo e já cadastra sua primeira indicação.</p>
+      <div class="contato-linha">📞 (17) 99999-9999</div>
+      <div class="contato-linha">✉️ contato@icasas.com.br</div>
+    </div>
+    <div class="contato-form">
+      <div class="campo"><label>Nome</label><input type="text" placeholder="Seu nome"></div>
+      <div class="campo"><label>Telefone</label><input type="text" placeholder="(17) 90000-0000"></div>
+      <div class="campo"><label>Quem você quer indicar?</label><textarea placeholder="Nome e telefone da pessoa"></textarea></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;">Enviar indicação</button>
+    </div>
+  </div>
+</section>
+
+<div class="rodape">
+  <div class="rodape-inner">
+    <div class="rodape-col">
+      <div class="rodape-marca">CLUBE ICASAS</div>
+      <p>iCasas Construtora<br>Programa de indicação</p>
+    </div>
+    <div class="rodape-col">
+      <p>(17) 99999-9999<br>contato@icasas.com.br</p>
+    </div>
+  </div>
+  <div class="rodape-baixo">© 2026 iCasas Construtora · Todos os direitos reservados</div>
+</div>
+
+<script>
+// ===== SLIDER =====
+let slideAtual = 0;
+const totalSlides = document.querySelectorAll('.slide').length;
+function montarDots(){
+  const wrap = document.getElementById('sliderDots');
+  wrap.innerHTML = '';
+  for(let i=0;i<totalSlides;i++){
+    const d = document.createElement('div');
+    d.className = 'slider-dot' + (i===0?' ativo':'');
+    d.onclick = function(){ irParaSlide(i); };
+    wrap.appendChild(d);
+  }
+}
+function atualizarSlider(){
+  document.getElementById('sliderTrack').style.transform = 'translateX(-' + (slideAtual*100) + '%)';
+  document.querySelectorAll('.slider-dot').forEach(function(d,i){ d.classList.toggle('ativo', i===slideAtual); });
+}
+function moverSlide(dir){
+  slideAtual = (slideAtual + dir + totalSlides) % totalSlides;
+  atualizarSlider();
+}
+function irParaSlide(i){ slideAtual = i; atualizarSlider(); }
+montarDots();
+setInterval(function(){ moverSlide(1); }, 6000);
+
+// ===== RANKING =====
+const SUPA_URL = 'https://mqdhavyaeujufhlqdlfg.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xZGhhdnlhZXVqdWZobHFkbGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NDg0OTUsImV4cCI6MjA5NTUyNDQ5NX0.bmlsVIXzQ1H-R4CEVZJzg_8TXygBsSQ57GOteBKqLHE';
+const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+function $(id){ return document.getElementById(id); }
+function iniciais(nome){
+  const p = nome.trim().split(' ');
+  return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase();
+}
+function esc(s){ return String(s||'').replace(/[<>&]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]; }); }
+
+async function carregar(){
+  const { data, error } = await db.from('ranking_publico').select('*').order('pontos_totais', { ascending:false });
+  if(error){ $('lista').innerHTML = '<div class="vazio">Não foi possível carregar o ranking agora.</div>'; return; }
+  renderizar(data || []);
+}
+
+function renderizar(dados){
+  if(!dados.length){
+    $('podio').innerHTML = '';
+    $('lista').innerHTML = '<div class="vazio">Ainda não há indicações registradas.<br>Seja o primeiro do ranking! 🏆</div>';
+    return;
+  }
+  const top3 = dados.slice(0, 3);
+  const resto = dados.slice(3);
+  const ordemVisual = [top3[1], top3[0], top3[2]].filter(Boolean);
+
+  $('podio').innerHTML = '<div class="podio">' + ordemVisual.map(function(p){
+    const posReal = top3.indexOf(p) + 1;
+    return '<div class="podio-item podio-'+posReal+'">'+
+      '<div class="podio-avatar">'+iniciais(p.nome)+'</div>'+
+      '<div class="podio-nome">'+esc(p.nome)+'</div>'+
+      '<div class="podio-pontos">'+p.pontos_totais+' pts</div>'+
+      '<div class="podio-base">'+posReal+'º</div>'+
+    '</div>';
+  }).join('') + '</div>';
+
+  $('lista').innerHTML = resto.map(function(p, idx){
+    const pct = Math.round((p.pontos_no_ciclo / 10) * 100);
+    return '<div class="linha">'+
+      '<div class="pos">'+(idx+4)+'</div>'+
+      '<div class="info">'+
+        '<div class="nome">'+esc(p.nome)+'</div>'+
+        '<div class="barra-wrap"><div class="barra" style="width:'+pct+'%"></div></div>'+
+      '</div>'+
+      '<div class="lado">'+
+        '<div class="pontos-num">'+p.pontos_totais+'</div>'+
+        '<div class="pontos-label">pontos</div>'+
+        (p.premios_ganhos>0 ? '<div class="premio-badge">'+p.premios_ganhos+' prêmio(s)</div>' : '') +
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+carregar();
+db.channel('ranking-publico')
+  .on('postgres_changes', { event:'*', schema:'public', table:'indicacoes_pontos' }, carregar)
+  .on('postgres_changes', { event:'*', schema:'public', table:'indicadores' }, carregar)
+  .subscribe();
+</script>
+</body>
+</html>

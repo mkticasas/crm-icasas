@@ -1103,7 +1103,12 @@
             <input type="checkbox" id="l-is-referral" onchange="toggleReferral()" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">
             É uma indicação
           </label>
-          <input type="text" id="l-referral-name" placeholder="Quem indicou?" style="display:none;">
+          <div id="l-referral-wrap" style="display:none;">
+            <select id="l-indicado-por" onchange="document.getElementById('l-referral-name').style.display=this.value?'none':'block';" style="margin-bottom:6px;">
+              <option value="">— selecionar cliente indicador —</option>
+            </select>
+            <input type="text" id="l-referral-name" placeholder="Ou digite o nome se não estiver na lista">
+          </div>
         </div>
       </div>
       <div class="form-row">
@@ -2226,10 +2231,16 @@ function openLeadModal(lead=null){
   }
   // Origem
   document.getElementById('l-origin').value=lead?(lead.origin||''):'';
-  const isRef=lead?!!(lead.referral_name)&&lead.origin==='Indicação':false;
+  const isRef=lead?(!!(lead.referral_name)||!!(lead.indicado_por_id))&&lead.origin==='Indicação':false;
   document.getElementById('l-is-referral').checked=isRef;
   document.getElementById('l-referral-name').value=lead?(lead.referral_name||''):'';
-  document.getElementById('l-referral-name').style.display=isRef?'block':'none';
+  document.getElementById('l-referral-wrap').style.display=isRef?'block':'none';
+  document.getElementById('l-indicado-por').dataset.carregado='';
+  if(isRef){
+    carregarIndicadores().then(function(){
+      document.getElementById('l-indicado-por').value = lead&&lead.indicado_por_id ? lead.indicado_por_id : '';
+    });
+  }
   // Tags
   const currentTags=lead&&lead.tags?lead.tags:[];
   document.getElementById('l-tags').value=currentTags.join(',');
@@ -2253,13 +2264,29 @@ function openLeadModal(lead=null){
 
 function toggleReferral(){
   const cb=document.getElementById('l-is-referral');
-  const field=document.getElementById('l-referral-name');
+  const wrap=document.getElementById('l-referral-wrap');
   const originSelect=document.getElementById('l-origin');
-  field.style.display=cb.checked?'block':'none';
+  wrap.style.display=cb.checked?'block':'none';
   if(cb.checked){
     originSelect.value='Indicação';
-    field.focus();
+    carregarIndicadores();
   }
+}
+
+function escHtml(s){ return String(s||'').replace(/[<>&]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]; }); }
+
+// busca quem já é indicador (todo cliente que já fechou contrato vira um sozinho)
+// pra vincular a indicação de forma estruturada, não só um nome solto em texto
+async function carregarIndicadores(){
+  const sel=document.getElementById('l-indicado-por');
+  if(!sel || sel.dataset.carregado) return;
+  const {data,error}=await db.from('indicadores').select('id,nome,telefone').eq('ativo',true).order('nome');
+  if(error) return;
+  sel.innerHTML='<option value="">— selecionar cliente indicador —</option>' +
+    (data||[]).map(function(i){
+      return '<option value="'+i.id+'">'+escHtml(i.nome)+(i.telefone?' · '+escHtml(i.telefone):'')+'</option>';
+    }).join('');
+  sel.dataset.carregado='1';
 }
 
 function toggleTag(el){
@@ -2278,8 +2305,10 @@ async function saveLead(){
   const tags=tagsRaw?tagsRaw.split(',').filter(Boolean):[];
   const isRef=document.getElementById('l-is-referral').checked;
   const origin=document.getElementById('l-origin').value;
-  const referral_name=isRef?document.getElementById('l-referral-name').value.trim():'';
-  const data={name:document.getElementById('l-name').value.trim(),phone:document.getElementById('l-phone').value.trim(),address:document.getElementById('l-address').value.trim(),seller_id,stage:document.getElementById('l-stage').value,value:parseFloat(document.getElementById('l-value').value)||null,temperature:document.getElementById('l-temp').value,notes:document.getElementById('l-notes').value.trim(),tags,origin:origin||null,referral_name:referral_name||null};
+  const indicadoPorId=isRef?(document.getElementById('l-indicado-por').value||null):null;
+  // texto livre só é salvo quando NÃO tem indicador vinculado — evita duplicar a mesma informação em dois formatos
+  const referral_name=(isRef&&!indicadoPorId)?document.getElementById('l-referral-name').value.trim():'';
+  const data={name:document.getElementById('l-name').value.trim(),phone:document.getElementById('l-phone').value.trim(),address:document.getElementById('l-address').value.trim(),seller_id,stage:document.getElementById('l-stage').value,value:parseFloat(document.getElementById('l-value').value)||null,temperature:document.getElementById('l-temp').value,notes:document.getElementById('l-notes').value.trim(),tags,origin:origin||null,referral_name:referral_name||null,indicado_por_id:indicadoPorId};
   // ===== empresa do lead (novo) =====
   if(!id){
     const empSel=document.getElementById('l-empresa');
