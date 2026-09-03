@@ -1198,6 +1198,27 @@
 </div>
 
 <!-- MODAL SELLER -->
+<div class="modal-overlay" id="cropModal" style="z-index:300;">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header"><div class="modal-title">Ajustar foto</div><button class="modal-close" onclick="cancelarCrop()">×</button></div>
+    <div class="modal-body" style="text-align:center;">
+      <div id="cropArea" style="position:relative;width:280px;height:280px;margin:0 auto;border-radius:50%;overflow:hidden;background:#000;cursor:grab;touch-action:none;">
+        <canvas id="cropCanvas" width="280" height="280" style="position:absolute;top:0;left:0;"></canvas>
+      </div>
+      <div style="margin-top:20px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:16px;color:var(--text3);">−</span>
+        <input type="range" id="cropZoom" min="100" max="300" value="100" style="flex:1;" oninput="atualizarCrop()">
+        <span style="font-size:16px;color:var(--text3);">+</span>
+      </div>
+      <p style="font-size:11.5px;color:var(--text3);margin-top:10px;">Arraste a foto pra posicionar. Use o controle pra dar zoom.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cancelarCrop()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarCrop()">Usar esta foto</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="indicadorModal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title" id="indicadorModalTitle">Novo Indicador</div><button class="modal-close" onclick="closeModal('indicadorModal')">×</button></div>
@@ -1864,6 +1885,17 @@ function precisaDb(){
 window.addEventListener('DOMContentLoaded',()=>{
   iniciarDb();
   document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+  // arrastar a foto dentro do editor de recorte (mouse e touch)
+  const cropArea = document.getElementById('cropArea');
+  if(cropArea){
+    cropArea.addEventListener('mousedown', e=>iniciarArrastoCrop(e.clientX, e.clientY));
+    window.addEventListener('mousemove', e=>moverArrastoCrop(e.clientX, e.clientY));
+    window.addEventListener('mouseup', pararArrastoCrop);
+    cropArea.addEventListener('touchstart', e=>{ const t=e.touches[0]; iniciarArrastoCrop(t.clientX, t.clientY); }, {passive:true});
+    cropArea.addEventListener('touchmove', e=>{ const t=e.touches[0]; moverArrastoCrop(t.clientX, t.clientY); e.preventDefault(); }, {passive:false});
+    cropArea.addEventListener('touchend', pararArrastoCrop);
+  }
 });
 
 async function loadAll(){
@@ -3511,13 +3543,109 @@ async function openIndicadorModal(id){
 }
 
 const INDICADOR_FOTO_BUCKET = 'indicadores-fotos';
-async function uploadFotoIndicador(file){
+// ===== EDITOR DE RECORTE — abre antes de enviar, pra ajustar zoom/posição =====
+let cropImg = null, cropPanX = 0, cropPanY = 0, cropFileNome = 'foto.jpg';
+let cropArrastando = false, cropStartX = 0, cropStartY = 0, cropStartPanX = 0, cropStartPanY = 0;
+const CROP_TAM_PREVIEW = 280;
+
+function uploadFotoIndicador(file){
   if(!file) return;
-  if(file.size > 5*1024*1024){ showToast('Imagem muito grande — máximo 5MB.','error'); return; }
+  if(file.size > 10*1024*1024){ showToast('Imagem muito grande — máximo 10MB.','error'); return; }
+  cropFileNome = file.name;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      cropImg = img;
+      cropPanX = 0; cropPanY = 0;
+      document.getElementById('cropZoom').value = 100;
+      document.getElementById('cropModal').classList.add('open');
+      desenharCrop();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  document.getElementById('ind-foto-input').value = ''; // permite escolher o mesmo arquivo de novo depois
+}
+
+function desenharCrop(){
+  if(!cropImg) return;
+  const canvas = document.getElementById('cropCanvas');
+  const ctx = canvas.getContext('2d');
+  const TAM = CROP_TAM_PREVIEW;
+  ctx.clearRect(0,0,TAM,TAM);
+
+  const zoom = parseInt(document.getElementById('cropZoom').value)/100; // 1.0 a 3.0
+  const scaleBase = Math.max(TAM/cropImg.width, TAM/cropImg.height); // cobre o quadrado (tipo object-fit:cover)
+  const scale = scaleBase * zoom;
+  const imgW = cropImg.width*scale, imgH = cropImg.height*scale;
+
+  // trava o arraste pra imagem nunca deixar "buraco" dentro do círculo
+  const maxPanX = Math.max(0, (imgW - TAM)/2);
+  const maxPanY = Math.max(0, (imgH - TAM)/2);
+  cropPanX = Math.max(-maxPanX, Math.min(maxPanX, cropPanX));
+  cropPanY = Math.max(-maxPanY, Math.min(maxPanY, cropPanY));
+
+  const x = (TAM - imgW)/2 + cropPanX;
+  const y = (TAM - imgH)/2 + cropPanY;
+  ctx.drawImage(cropImg, x, y, imgW, imgH);
+}
+function atualizarCrop(){ desenharCrop(); }
+
+function iniciarArrastoCrop(clientX, clientY){
+  if(!cropImg) return;
+  cropArrastando = true;
+  cropStartX = clientX; cropStartY = clientY;
+  cropStartPanX = cropPanX; cropStartPanY = cropPanY;
+  const area = document.getElementById('cropArea'); if(area) area.style.cursor = 'grabbing';
+}
+function moverArrastoCrop(clientX, clientY){
+  if(!cropArrastando) return;
+  cropPanX = cropStartPanX + (clientX - cropStartX);
+  cropPanY = cropStartPanY + (clientY - cropStartY);
+  desenharCrop();
+}
+function pararArrastoCrop(){
+  cropArrastando = false;
+  const area = document.getElementById('cropArea'); if(area) area.style.cursor = 'grab';
+}
+
+function cancelarCrop(){
+  document.getElementById('cropModal').classList.remove('open');
+  cropImg = null;
+}
+
+// gera a imagem final em resolução maior (400x400) que o preview (280x280),
+// mantendo exatamente a mesma área/posição que o usuário escolheu, e comprime em JPEG
+function confirmarCrop(){
+  if(!cropImg) return;
+  const TAM_FINAL = 400;
+  const fator = TAM_FINAL / CROP_TAM_PREVIEW;
+  const canvasFinal = document.createElement('canvas');
+  canvasFinal.width = TAM_FINAL; canvasFinal.height = TAM_FINAL;
+  const ctx = canvasFinal.getContext('2d');
+
+  const zoom = parseInt(document.getElementById('cropZoom').value)/100;
+  const scaleBase = Math.max(CROP_TAM_PREVIEW/cropImg.width, CROP_TAM_PREVIEW/cropImg.height);
+  const scale = scaleBase * zoom * fator;
+  const imgW = cropImg.width*scale, imgH = cropImg.height*scale;
+  const x = (TAM_FINAL - imgW)/2 + cropPanX*fator;
+  const y = (TAM_FINAL - imgH)/2 + cropPanY*fator;
+  ctx.drawImage(cropImg, x, y, imgW, imgH);
+
+  canvasFinal.toBlob(async function(blob){
+    document.getElementById('cropModal').classList.remove('open');
+    cropImg = null;
+    await enviarFotoIndicador(blob);
+  }, 'image/jpeg', 0.85);
+}
+
+async function enviarFotoIndicador(blob){
   const preview = document.getElementById('ind-foto-preview');
   preview.innerHTML = '<span style="font-size:11px;">Enviando...</span>';
-  const path = Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-  const {error} = await db.storage.from(INDICADOR_FOTO_BUCKET).upload(path, file);
+  const nomeBase = cropFileNome.replace(/[^a-zA-Z0-9._-]/g,'_').replace(/\.[^.]+$/,'');
+  const path = Date.now()+'_'+nomeBase+'.jpg';
+  const {error} = await db.storage.from(INDICADOR_FOTO_BUCKET).upload(path, blob, {contentType:'image/jpeg'});
   if(error){ showToast('Erro ao enviar foto: '+error.message,'error'); preview.innerHTML='👤'; return; }
   const {data:urlData} = db.storage.from(INDICADOR_FOTO_BUCKET).getPublicUrl(path);
   document.getElementById('ind-foto-url').value = urlData.publicUrl;
