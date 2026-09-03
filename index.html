@@ -453,6 +453,9 @@
     <div class="drawer-item" id="ditem-reports" onclick="navTo('reports')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Relatórios
     </div>
+    <div class="drawer-item" id="ditem-indicacoes" onclick="navTo('indicacoes')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10l-1 8a4 4 0 0 1-8 0L7 4z"/><path d="M5 4H3v2a4 4 0 0 0 4 4M19 4h2v2a4 4 0 0 1-4 4"/></svg>Clube iCasas
+    </div>
     <div class="drawer-label" id="dlabel-admin">Configurações</div>
     <div class="drawer-item" id="ditem-sellers" onclick="navTo('sellers')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Vendedores
@@ -683,6 +686,44 @@
   </div>
 
   <!-- REPORTS -->
+  <div class="page" id="page-indicacoes">
+    <div class="metrics-grid" style="margin-bottom:20px;">
+      <div class="metric-card blue"><div class="metric-label">Indicadores</div><div class="metric-value" id="ind-total">—</div><div class="metric-sub">clientes cadastrados</div></div>
+      <div class="metric-card green"><div class="metric-label">Pontos distribuídos</div><div class="metric-value" id="ind-pontos">—</div><div class="metric-sub" id="ind-valor">R$ 0</div></div>
+      <div class="metric-card amber"><div class="metric-label">Indicações fechadas</div><div class="metric-value" id="ind-fechadas">—</div><div class="metric-sub">total geral</div></div>
+      <div class="metric-card purple"><div class="metric-label">Prêmios entregues</div><div class="metric-value" id="ind-premios">—</div><div class="metric-sub">10 pontos cada</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div class="card-title" style="margin:0;">Indicadores do Clube iCasas</div>
+        <button class="btn btn-primary btn-sm" onclick="openIndicadorModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo Indicador
+        </button>
+      </div>
+      <p style="font-size:12.5px;color:var(--text3);margin:8px 0 0;">
+        Todo cliente que fecha contrato na Construtora já entra aqui sozinho. Use "Novo Indicador" só para cadastrar clientes antigos que compraram antes do Clube existir.
+      </p>
+      <div class="table-wrap" style="margin-top:16px;">
+        <table>
+          <thead><tr><th>Nome</th><th>Telefone</th><th>Pontos</th><th>Progresso</th><th>Prêmios</th><th>Status</th><th></th></tr></thead>
+          <tbody id="indicadoresTable"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3);">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Indicações fechadas recentemente</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Indicador</th><th>Lead indicado</th><th>Data do fechamento</th></tr></thead>
+          <tbody id="indicacoesTable"><tr><td colspan="3" style="text-align:center;padding:32px;color:var(--text3);">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div class="page" id="page-reports">
     <div class="card" style="margin-bottom:20px;">
       <div class="card-title">Filtros do Relatório</div>
@@ -1151,6 +1192,24 @@
 </div>
 
 <!-- MODAL SELLER -->
+<div class="modal-overlay" id="indicadorModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="indicadorModalTitle">Novo Indicador</div><button class="modal-close" onclick="closeModal('indicadorModal')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="editIndicadorId">
+      <div class="form-row">
+        <div class="form-group"><label>Nome completo *</label><input type="text" id="ind-nome" placeholder="Ex: João da Silva"></div>
+        <div class="form-group"><label>Telefone</label><input type="tel" id="ind-telefone" placeholder="(17) 99999-9999"></div>
+      </div>
+      <p style="font-size:12px;color:var(--text3);">Cadastre aqui clientes que já compraram casa antes do Clube iCasas existir, pra eles poderem participar do programa de indicação normalmente.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('indicadorModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveIndicador()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="sellerModal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title" id="sellerModalTitle">Novo Vendedor</div><button class="modal-close" onclick="closeModal('sellerModal')">×</button></div>
@@ -3301,10 +3360,11 @@ function showPage(page){
   const clk=document.getElementById('brClock');
   if(clk)clk.style.display=page==='pipeline'?'inline-block':'none';
   const di=document.getElementById('ditem-'+page);if(di)di.classList.add('active');
-  const titles={dashboard:'Dashboard',leads:'Leads',pipeline:'Pipeline',sellers:'Vendedores',reports:'Relatórios',integrations:'Integrações',tags:'Etiquetas'};
+  const titles={dashboard:'Dashboard',leads:'Leads',pipeline:'Pipeline',sellers:'Vendedores',reports:'Relatórios',integrations:'Integrações',tags:'Etiquetas',indicacoes:'Clube iCasas'};
   document.getElementById('pageTitle').textContent=titles[page]||page;
   if(page==='dashboard')renderDashboard();
   if(page==='pipeline')renderPipeline();
+  if(page==='indicacoes')renderIndicacoes();
   if(page==='reports'){
     populateSellerDropdowns();
     const wrapEmp=document.getElementById('r-empresa-wrap');
@@ -3325,6 +3385,97 @@ function showPage(page){
   if(page==='integrations')loadWebhooks();
   if(page==='tags')renderTagsPage();
 }
+// ===== CLUBE ICASAS — indicadores e pontuação =====
+async function renderIndicacoes(){
+  const {data: indicadores} = await db.from('indicadores').select('*').eq('empresa','construtora').order('nome');
+  const {data: pontosRaw} = await db.from('indicacoes_pontos').select('indicador_id');
+
+  const contagem = {};
+  (pontosRaw||[]).forEach(function(p){ contagem[p.indicador_id] = (contagem[p.indicador_id]||0)+1; });
+
+  const lista = (indicadores||[]).map(function(i){
+    const pontos = contagem[i.id]||0;
+    return Object.assign({}, i, { pontos:pontos, pontosCiclo: pontos%10, premios: Math.floor(pontos/10) });
+  }).sort(function(a,b){ return b.pontos-a.pontos; });
+
+  const totalPontos = lista.reduce(function(a,i){return a+i.pontos;},0);
+  const totalPremios = lista.reduce(function(a,i){return a+i.premios;},0);
+
+  document.getElementById('ind-total').textContent = lista.length;
+  document.getElementById('ind-pontos').textContent = totalPontos;
+  document.getElementById('ind-valor').textContent = 'R$ '+(totalPontos*1000).toLocaleString('pt-BR');
+  document.getElementById('ind-fechadas').textContent = (pontosRaw||[]).length;
+  document.getElementById('ind-premios').textContent = totalPremios;
+
+  const tbody = document.getElementById('indicadoresTable');
+  if(!lista.length){
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3);">Nenhum indicador cadastrado ainda. Clique em "Novo Indicador" para começar.</td></tr>';
+  } else {
+    tbody.innerHTML = lista.map(function(i){
+      const pct = Math.round((i.pontosCiclo/10)*100);
+      return '<tr>'+
+        '<td style="color:var(--text);font-weight:500;">'+escHtml(i.nome)+'</td>'+
+        '<td>'+escHtml(i.telefone||'—')+'</td>'+
+        '<td style="font-weight:600;color:var(--text);">'+i.pontos+'</td>'+
+        '<td><div style="display:flex;align-items:center;gap:8px;">'+
+          '<div style="width:80px;height:6px;background:var(--bg3);border-radius:4px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:var(--accent);"></div></div>'+
+          '<span style="font-size:11px;color:var(--text3);">'+i.pontosCiclo+'/10</span>'+
+        '</div></td>'+
+        '<td>'+(i.premios>0?'🏆 '+i.premios:'—')+'</td>'+
+        '<td><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:'+(i.ativo?'rgba(34,197,94,.15);color:var(--green)':'rgba(255,255,255,.08);color:var(--text3)')+';">'+(i.ativo?'Ativo':'Inativo')+'</span></td>'+
+        '<td><button class="btn btn-ghost btn-sm" onclick="openIndicadorModal(\''+i.id+'\')">Editar</button></td>'+
+      '</tr>';
+    }).join('');
+  }
+
+  const {data: recentes} = await db.from('indicacoes_pontos')
+    .select('criado_em, indicadores(nome), leads(name)')
+    .order('criado_em', {ascending:false})
+    .limit(20);
+  const tbody2 = document.getElementById('indicacoesTable');
+  if(!recentes || !recentes.length){
+    tbody2.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:32px;color:var(--text3);">Nenhuma indicação fechada ainda.</td></tr>';
+  } else {
+    tbody2.innerHTML = recentes.map(function(r){
+      return '<tr>'+
+        '<td style="color:var(--text);font-weight:500;">'+escHtml(r.indicadores?r.indicadores.nome:'—')+'</td>'+
+        '<td>'+escHtml(r.leads?r.leads.name:'—')+'</td>'+
+        '<td>'+new Date(r.criado_em).toLocaleDateString('pt-BR')+'</td>'+
+      '</tr>';
+    }).join('');
+  }
+}
+
+async function openIndicadorModal(id){
+  document.getElementById('editIndicadorId').value = id||'';
+  document.getElementById('indicadorModalTitle').textContent = id?'Editar Indicador':'Novo Indicador';
+  document.getElementById('ind-nome').value='';
+  document.getElementById('ind-telefone').value='';
+  if(id){
+    const {data} = await db.from('indicadores').select('*').eq('id',id).single();
+    if(data){
+      document.getElementById('ind-nome').value = data.nome||'';
+      document.getElementById('ind-telefone').value = data.telefone||'';
+    }
+  }
+  document.getElementById('indicadorModal').classList.add('open');
+}
+
+async function saveIndicador(){
+  const id = document.getElementById('editIndicadorId').value;
+  const nome = document.getElementById('ind-nome').value.trim();
+  if(!nome){ showToast('Nome é obrigatório.','error'); return; }
+  const data = { nome:nome, telefone: document.getElementById('ind-telefone').value.trim()||null, empresa:'construtora', ativo:true };
+  const {error, data:saved} = id
+    ? await db.from('indicadores').update(data).eq('id',id).select()
+    : await db.from('indicadores').insert([data]).select();
+  if(error){ showToast('Erro: '+error.message,'error'); return; }
+  if(!saved||saved.length===0){ showToast('Não foi possível salvar — verifique suas permissões.','error'); return; }
+  showToast(id?'Indicador atualizado!':'Indicador cadastrado!','success');
+  closeModal('indicadorModal');
+  renderIndicacoes();
+}
+
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function initials(name){return(name||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
 function selectColor(el){document.querySelectorAll('.color-opt').forEach(e=>e.style.border='2px solid transparent');el.style.border=`2px solid ${el.dataset.color}`;document.getElementById('s-color').value=el.dataset.color;}
