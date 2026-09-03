@@ -498,7 +498,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
         Documentação
       </a>
-      <a href="clube.html" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+      <a href="https://mkticasas.github.io/crm-icasas/clubicasas.html" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 21h8M12 17v4M7 4h10l-1 8a4 4 0 01-8 0L7 4z"/><path d="M5 4H3v2a4 4 0 004 4M19 4h2v2a4 4 0 01-4 4"/></svg>
         Clube iCasas
       </a>
@@ -2347,6 +2347,13 @@ async function saveLead(){
   if(!id&&pendingAttachments.length)data.attachments=pendingAttachments;
   const{error,data:saved}=id?await db.from('leads').update(data).eq('id',id).select():await db.from('leads').insert([data]).select();
   if(error){showToast('Erro: '+error.message,'error');return;}
+  // Supabase não retorna erro quando a política de segurança bloqueia o update —
+  // ele só devolve sucesso com 0 linhas alteradas. Sem essa checagem o toast diz
+  // "salvo" mesmo quando nada foi gravado de verdade.
+  if(!saved||saved.length===0){
+    showToast('Não foi possível salvar — você não tem permissão para alterar este lead.','error');
+    return;
+  }
   showToast(id?'Lead atualizado!':'Lead cadastrado!','success');
   pendingAttachments=[];
   closeModal('leadModal');await loadLeads();renderDashboard();renderPipeline();
