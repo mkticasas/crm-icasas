@@ -2280,7 +2280,8 @@ function escHtml(s){ return String(s||'').replace(/[<>&]/g, function(c){ return 
 async function carregarIndicadores(){
   const sel=document.getElementById('l-indicado-por');
   if(!sel || sel.dataset.carregado) return;
-  const {data,error}=await db.from('indicadores').select('id,nome,telefone').eq('ativo',true).order('nome');
+  // Clube iCasas é só da Construtora — não faz sentido escolher indicador em lead da Automação
+  const {data,error}=await db.from('indicadores').select('id,nome,telefone').eq('ativo',true).eq('empresa','construtora').order('nome');
   if(error) return;
   sel.innerHTML='<option value="">— selecionar cliente indicador —</option>' +
     (data||[]).map(function(i){
