@@ -427,7 +427,7 @@ function renderizar(dados){
 
   // a página principal mostra só o pódio (top 3) — o resto fica só dentro do modal,
   // pra não deixar o site infinito conforme o número de participantes cresce
-  $('btnVerTodos').style.display = dados.length > 0 ? 'block' : 'none';
+  $('btnVerTodos').style.display = dados.length > 0 ? 'inline-block' : 'none';
 }
 
 function abrirModalRanking(){
