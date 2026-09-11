@@ -115,7 +115,11 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
 .tv-rodape{display:flex;justify-content:space-between;font-size:13px;color:var(--text3);}
 .tv-badge-atraso{background:rgba(239,68,68,.18);color:#ff6b6b;padding:3px 12px;border-radius:20px;font-weight:700;font-size:12.5px;}
 /* ===== KANBAN DE ETAPAS (cada processo é uma coluna, obras atravessam) ===== */
-.kanban-doc{display:flex;gap:10px;overflow-x:auto;padding-bottom:20px;align-items:flex-start;}
+.kanban-doc{display:flex;gap:10px;overflow-x:auto;padding-bottom:20px;align-items:flex-start;scrollbar-color:var(--border2) transparent;scrollbar-width:auto;}
+.kanban-doc::-webkit-scrollbar{height:14px;}
+.kanban-doc::-webkit-scrollbar-thumb{background:var(--border2);border-radius:7px;border:3px solid var(--bg);}
+.kanban-doc::-webkit-scrollbar-thumb:hover{background:var(--text3);}
+.kanban-doc::-webkit-scrollbar-track{background:transparent;}
 .kb-col{width:168px;flex-shrink:0;background:var(--bg2);border-radius:10px;padding:8px;height:calc(100vh - 210px);min-height:340px;max-height:720px;overflow-y:auto;overscroll-behavior:contain;border-top:4px solid var(--cor-bloco,var(--border2));}
 .contador-obras{display:flex;align-items:center;gap:9px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:7px 15px;}
 .contador-num{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;line-height:1;color:var(--accent);}
