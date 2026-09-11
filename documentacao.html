@@ -117,6 +117,9 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
 /* ===== KANBAN DE ETAPAS (cada processo é uma coluna, obras atravessam) ===== */
 .kanban-doc{display:flex;gap:10px;overflow-x:auto;padding-bottom:20px;align-items:flex-start;}
 .kb-col{width:168px;flex-shrink:0;background:var(--bg2);border-radius:10px;padding:8px;height:calc(100vh - 210px);min-height:340px;max-height:720px;overflow-y:auto;overscroll-behavior:contain;border-top:4px solid var(--cor-bloco,var(--border2));}
+.contador-obras{display:flex;align-items:center;gap:9px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:7px 15px;}
+.contador-num{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;line-height:1;color:var(--accent);}
+.contador-lbl{font-size:10.5px;line-height:1.2;color:var(--text3);white-space:nowrap;}
 .kb-col::-webkit-scrollbar{width:6px;}
 .kb-col::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 .kb-col::-webkit-scrollbar-track{background:transparent;}
@@ -212,6 +215,7 @@ button,input,select,textarea{font-family:inherit;font-size:14px;}
   <div class="pag">
     <div class="cab">
       <div class="titulo">Obras em documentação</div>
+      <div class="contador-obras" title="Obras ativas — as concluídas não entram na conta"><span class="contador-num" id="contadorNum">–</span><span class="contador-lbl">em<br>andamento</span></div>
       <input type="text" class="busca" id="busca" placeholder="Buscar por nome ou endereço" oninput="desenhar()">
       <button class="btn btn-p" style="margin-left:auto;white-space:nowrap;" onclick="abrirNovaObra()">+ Nova obra</button>
     </div>
@@ -538,6 +542,10 @@ function desenhar(){
   const q=($('busca').value||'').toLowerCase();
   const el=$('gridObras');
   const lista=obras.filter(function(o){ return !q || (o.nome+o.endereco).toLowerCase().indexOf(q)>=0; });
+
+  // contador de obras ativas — mesmo criterio da coluna "Concluidas": etapa atual null = concluida
+  const elCont=$('contadorNum');
+  if(elCont){ elCont.textContent = obras.filter(function(o){ return etapaAtualNumero(o.id)!==null; }).length; }
 
   const ordenadas = etapas.slice().sort(function(a,b){return a.numero-b.numero;});
 
