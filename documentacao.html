@@ -504,7 +504,18 @@ async function carregarTudo(){
   etapas=et||[];
   const {data:ob}=await db.from('doc_obras').select('*').eq('arquivada',false).order('criado',{ascending:false});
   obras=ob||[];
-  const {data:pg}=await db.from('doc_progresso').select('*');
+  // o Supabase devolve no maximo 1000 linhas por requisicao. Sem paginar, as obras
+  // que caiam depois desse limite ficavam sem nenhuma linha de progresso no navegador —
+  // e o checklist delas parava de responder ao clique, sem erro nenhum.
+  let pg=[]; let deslocamento=0; const passo=1000;
+  while(true){
+    const {data:parte, error:erroPg} = await db.from('doc_progresso').select('*')
+      .order('obra_id').order('etapa_numero').range(deslocamento, deslocamento+passo-1);
+    if(erroPg){ avisoDoc('Erro ao carregar o progresso: '+erroPg.message, true); break; }
+    pg = pg.concat(parte||[]);
+    if(!parte || parte.length < passo) break;
+    deslocamento += passo;
+  }
   progresso={};
   (pg||[]).forEach(function(p){
     progresso[p.obra_id]=progresso[p.obra_id]||{};
