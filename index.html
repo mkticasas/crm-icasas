@@ -77,6 +77,10 @@
   .btn-green:hover{background:rgba(34,197,94,.25);}
   .btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.2);}
   .btn-danger:hover{background:rgba(239,68,68,.25);}
+  .btn-amber{background:rgba(245,158,11,.15);color:var(--amber);border:1px solid rgba(245,158,11,.2);}
+  .btn-amber:hover{background:rgba(245,158,11,.25);}
+  .seller-card.inativo{opacity:.55;}
+  .seller-card.inativo:hover{opacity:.85;}
   .btn-sm{padding:5px 12px;font-size:12px;}
   .btn-full{width:100%;justify-content:center;padding:11px 16px;font-size:14px;}
 
@@ -2154,7 +2158,8 @@ function montarCardVendedor(s){
   const won=leads.filter(l=>l.stage==='won').length;
   const rev=leads.filter(l=>l.stage==='won').reduce((a,l)=>a+(parseFloat(l.value)||0),0);
   const goal=parseFloat(s.goal)||0,prog=goal>0?Math.min(Math.round((rev/goal)*100),100):0;
-  return `<div class="seller-card">
+  const ativo=s.status==='active';
+  return `<div class="seller-card${ativo?'':' inativo'}">
     <div class="seller-header">
       <div class="avatar-lg" style="background:${s.color||'#3d7eff'}">${initials(s.nickname||s.name)}</div>
       <div style="flex:1"><div class="seller-name">${s.name}</div>
@@ -2163,6 +2168,7 @@ function montarCardVendedor(s){
       ${s.can_see_all_leads?`<div style="font-size:10px;color:var(--accent);margin-top:3px;">👁 Vê todos os leads</div>`:''}
       ${s.can_see_all_companies?`<div style="font-size:10px;color:#ed8036;margin-top:3px;">🏢 Todas as empresas</div>`:(s.empresa?`<div style="font-size:10px;color:${empresaInfo(s.empresa).cor};margin-top:3px;">${empresaInfo(s.empresa).nome}</div>`:'')}
       ${s.oculto_filtro_vendedor?`<div style="font-size:10px;color:var(--text3);margin-top:3px;">🚫 Fora do rodízio de leads</div>`:''}
+      ${!ativo?`<div style="font-size:10px;color:var(--amber);margin-top:3px;">⏸ Inativo — não recebe leads</div>`:''}
       </div>
     </div>
     <div class="seller-stats">
@@ -2173,6 +2179,7 @@ function montarCardVendedor(s){
     ${goal>0?`<div style="margin-top:10px;"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px;"><span>Meta</span><span>${prog}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${prog}%;background:${s.color||'#3d7eff'}"></div></div></div>`:''}
     <div style="display:flex;gap:8px;margin-top:14px;">
       <button class="btn btn-ghost btn-sm" style="flex:1" onclick="editSeller('${s.id}')">Editar</button>
+      <button class="btn ${ativo?'btn-amber':'btn-green'} btn-sm" onclick="toggleSellerStatus('${s.id}')" title="${ativo?'Tira do rodízio de leads (ex.: férias)':'Volta a receber leads no rodízio'}">${ativo?'Desativar':'Ativar'}</button>
       <button class="btn btn-danger btn-sm" onclick="deleteSeller('${s.id}')">Excluir</button>
     </div>
   </div>`;
@@ -2549,6 +2556,19 @@ async function saveSeller(){
 }
 function editLead(id){const l=allLeads.find(l=>l.id==id);if(l)openLeadModal(l);}
 function editSeller(id){const s=allSellers.find(s=>s.id==id);if(s)openSellerModal(s);}
+// ativa/desativa direto pelo card — inativo sai do rodízio do webhook (que só pega status 'active')
+async function toggleSellerStatus(id){
+  const s=allSellers.find(x=>x.id==id);if(!s)return;
+  const ativar=s.status!=='active';
+  const nome=s.nickname||s.name;
+  if(!ativar&&!confirm(`Desativar ${nome}? Ele(a) para de receber leads novos no rodízio até ser ativado de novo. Os leads atuais continuam com ele(a).`))return;
+  const{error}=await db.from('sellers').update({status:ativar?'active':'inactive'}).eq('id',id);
+  if(error){showToast('Erro: '+error.message,'error');return;}
+  showToast(ativar?`${nome} ativado(a) — volta a receber leads.`:`${nome} desativado(a) — fora do rodízio.`,'success');
+  await loadSellers();
+  renderSellers();
+  renderDashboard();
+}
 async function deleteSeller(id){
   if(!confirm('Excluir este vendedor? Os leads vinculados ficarão sem responsável.'))return;
   // Primeiro remove a referência nos leads para não quebrar FK
