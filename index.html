@@ -1594,7 +1594,8 @@ async function doLogin(){
 // busca o vendedor ligado ao usuário autenticado
 async function carregarUsuarioLogado(authUser){
   const {data}=await db.from('sellers').select('*').eq('auth_user_id',authUser.id).maybeSingle();
-  if(!data||data.status!=='active')return false;
+  // inativo (ex.: férias) continua podendo entrar — status só controla o rodízio de leads
+  if(!data)return false;
   currentUser={...data, role: (data.role==='admin'?'admin':'seller'), auth_email: authUser.email};
   return true;
 }
@@ -1945,7 +1946,8 @@ async function loadLeads(){
 function vendedoresReais(filtrarPorEmpresa){
   return allSellers.filter(function(s){
     // fora sempre: quem é Engenharia/Financeiro (não vende) e quem foi marcado como oculto (Dev, Admin)
-    if(s.status!=='active' || s.role==='Engenharia' || s.role==='Financeiro' || s.oculto_filtro_vendedor===true) return false;
+    // inativo continua aparecendo — status só tira do rodízio de leads
+    if(s.role==='Engenharia' || s.role==='Financeiro' || s.oculto_filtro_vendedor===true) return false;
     // opcionalmente, só quem é da empresa em visualização agora — '__todas' mostra todo mundo
     if(filtrarPorEmpresa && empresaAtiva!=='__todas' && s.empresa!==empresaAtiva) return false;
     return true;
@@ -1974,7 +1976,7 @@ function atualizarVendedoresDoFormulario(){
   const prev=sel.value;
   while(sel.options.length>1) sel.remove(1);
   allSellers.filter(function(s){
-    if(s.status!=='active' || s.role==='Engenharia' || s.role==='Financeiro' || s.oculto_filtro_vendedor===true) return false;
+    if(s.role==='Engenharia' || s.role==='Financeiro' || s.oculto_filtro_vendedor===true) return false;
     return s.empresa===empresaEscolhida;
   }).forEach(function(s){ sel.add(new Option(s.nickname||s.name, s.id)); });
   // mantém quem já estava selecionado, se ainda estiver na lista nova; senão limpa
@@ -2168,7 +2170,7 @@ function montarCardVendedor(s){
       ${s.can_see_all_leads?`<div style="font-size:10px;color:var(--accent);margin-top:3px;">👁 Vê todos os leads</div>`:''}
       ${s.can_see_all_companies?`<div style="font-size:10px;color:#ed8036;margin-top:3px;">🏢 Todas as empresas</div>`:(s.empresa?`<div style="font-size:10px;color:${empresaInfo(s.empresa).cor};margin-top:3px;">${empresaInfo(s.empresa).nome}</div>`:'')}
       ${s.oculto_filtro_vendedor?`<div style="font-size:10px;color:var(--text3);margin-top:3px;">🚫 Fora do rodízio de leads</div>`:''}
-      ${!ativo?`<div style="font-size:10px;color:var(--amber);margin-top:3px;">⏸ Inativo — não recebe leads</div>`:''}
+      ${!ativo?`<div style="font-size:10px;color:var(--amber);margin-top:3px;">⏸ Inativo — fora do rodízio de leads</div>`:''}
       </div>
     </div>
     <div class="seller-stats">
@@ -2561,7 +2563,7 @@ async function toggleSellerStatus(id){
   const s=allSellers.find(x=>x.id==id);if(!s)return;
   const ativar=s.status!=='active';
   const nome=s.nickname||s.name;
-  if(!ativar&&!confirm(`Desativar ${nome}? Ele(a) para de receber leads novos no rodízio até ser ativado de novo. Os leads atuais continuam com ele(a).`))return;
+  if(!ativar&&!confirm(`Desativar ${nome}? Ele(a) sai do rodízio e para de receber leads automáticos até ser ativado de novo. Continua entrando no CRM e com os leads atuais.`))return;
   const{error}=await db.from('sellers').update({status:ativar?'active':'inactive'}).eq('id',id);
   if(error){showToast('Erro: '+error.message,'error');return;}
   showToast(ativar?`${nome} ativado(a) — volta a receber leads.`:`${nome} desativado(a) — fora do rodízio.`,'success');
