@@ -470,6 +470,9 @@
     <div class="drawer-item" id="ditem-indicacoes" onclick="navTo('indicacoes')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10l-1 8a4 4 0 0 1-8 0L7 4z"/><path d="M5 4H3v2a4 4 0 0 0 4 4M19 4h2v2a4 4 0 0 1-4 4"/></svg>Clube iCasas
     </div>
+    <a href="orcamentos.html" class="drawer-item" id="ditem-orcamentos" style="text-decoration:none;display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h3M8 17h3M15 13h1M15 17h1"/></svg>Orçamentos Automação
+    </a>
     <div class="drawer-item" id="ditem-push" onclick="ativarNotificacoes()" style="display:none"><!-- liberar quando o backend de push estiver ativo -->
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notificações
       <span id="pushStatus" style="margin-left:auto;font-size:11px;color:var(--text3);">—</span>
@@ -1371,6 +1374,7 @@
       <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;" onclick="editCurrentLead()">Editar</button>
       <button class="btn btn-danger btn-sm" style="flex:1;justify-content:center;" onclick="deleteCurrentLead()">Excluir</button>
     </div>
+    <a id="dp-orcamento" class="btn btn-ghost btn-sm" style="justify-content:center;text-decoration:none;display:none;" href="#">Fazer orçamento de automação</a>
   </div>
   <div class="detail-body">
     <div class="detail-section">
@@ -1429,6 +1433,10 @@ function podeVerTodasEmpresas(){
   if(!currentUser)return false;
   if(currentUser.role==='admin')return true;
   return !!currentUser.can_see_all_companies;
+}
+function podeFazerOrcamentoAutomacao(){
+  if(!currentUser)return false;
+  return currentUser.role==='admin' || !!currentUser.can_see_all_companies || (currentUser.empresa||EMPRESA_PADRAO)==='automacao';
 }
 function minhaEmpresa(){
   if(!currentUser)return EMPRESA_PADRAO;
@@ -1657,6 +1665,9 @@ function onLoginSuccess(){
   }
   // ===== seletor de empresa (novo) =====
   montarSeletorEmpresa();
+  // ===== orçamentos de automação: só pra equipe de automação, admin e quem vê as duas empresas =====
+  const dOrc=document.getElementById('ditem-orcamentos');
+  if(dOrc) dOrc.style.display = podeFazerOrcamentoAutomacao() ? '' : 'none';
 
   // Show FAB
   const fab=document.getElementById('fabNewLead');if(fab)fab.style.display='block';
@@ -2753,6 +2764,12 @@ function openDetail(id){
   const s=allSellers.find(s=>s.id==l.seller_id),stage=STAGE_INFO[l.stage]||STAGE_INFO.new;
   document.getElementById('dp-name').textContent=l.name||'—';
   document.getElementById('dp-stage-label').textContent=stage.label;
+  const dpOrc=document.getElementById('dp-orcamento');
+  if(dpOrc){
+    const mostra=(l.empresa||EMPRESA_PADRAO)==='automacao' && podeFazerOrcamentoAutomacao();
+    dpOrc.style.display=mostra?'flex':'none';
+    dpOrc.href='orcamentos.html?lead='+encodeURIComponent(l.id);
+  }
   document.getElementById('dp-phone').textContent=l.phone||'—';
   document.getElementById('dp-email').textContent=l.email||'—';
   document.getElementById('dp-address').textContent=l.address||'—';
