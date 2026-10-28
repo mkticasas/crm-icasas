@@ -271,6 +271,7 @@
     .topbar-logo{font-size:14px;}
     .topbar-sep,.topbar-title{display:none;}
     .btn-primary.btn-sm svg{display:none;}
+    .btn-orc-label{display:none;}
 
     /* PAGES */
     .page{padding:12px 14px;}
@@ -525,6 +526,10 @@
       <a href="https://mkticasas.github.io/crm-icasas/clubicasas.html" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 21h8M12 17v4M7 4h10l-1 8a4 4 0 01-8 0L7 4z"/><path d="M5 4H3v2a4 4 0 004 4M19 4h2v2a4 4 0 01-4 4"/></svg>
         Clube iCasas
+      </a>
+      <a href="orcamentos.html" id="btnOrcamentos" class="btn btn-ghost btn-sm" title="Orçamentos de Automação" style="text-decoration:none;display:none;align-items:center;gap:6px;border-color:rgba(76,168,216,.45);color:#7cc3e8;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h3M8 17h3M15 13h1M15 17h1"/></svg>
+        <span class="btn-orc-label">Orçamentos</span>
       </a>
       <button class="btn btn-primary btn-sm" onclick="openLeadModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1668,6 +1673,8 @@ function onLoginSuccess(){
   // ===== orçamentos de automação: só pra equipe de automação, admin e quem vê as duas empresas =====
   const dOrc=document.getElementById('ditem-orcamentos');
   if(dOrc) dOrc.style.display = podeFazerOrcamentoAutomacao() ? '' : 'none';
+  const bOrc=document.getElementById('btnOrcamentos');
+  if(bOrc) bOrc.style.display = podeFazerOrcamentoAutomacao() ? 'inline-flex' : 'none';
 
   // Show FAB
   const fab=document.getElementById('fabNewLead');if(fab)fab.style.display='block';
