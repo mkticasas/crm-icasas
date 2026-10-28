@@ -64,3 +64,7 @@ create policy automacao_fotos_update on storage.objects
 drop policy if exists automacao_fotos_delete on storage.objects;
 create policy automacao_fotos_delete on storage.objects
   for delete to authenticated using (bucket_id = 'automacao-produtos');
+
+-- v2: e-mail e CPF do cliente no orçamento (sincronizam com o card)
+alter table public.automacao_orcamentos add column if not exists cliente_email text;
+alter table public.automacao_orcamentos add column if not exists cliente_cpf text;

@@ -86,6 +86,8 @@
   .item input{padding:7px 9px;font-size:13px;}
   .item .nm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .item .ds{font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .item input.anot{margin-top:6px;padding:5px 8px;font-size:12px;background:transparent;border-style:dashed;}
+  .item input.anot:focus{background:var(--bg3);border-style:solid;}
   .icon-btn{width:32px;height:32px;border-radius:8px;border:none;background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;}
   .icon-btn:hover{background:rgba(239,68,68,.12);color:var(--red);}
   .totais{display:flex;flex-direction:column;gap:8px;max-width:340px;margin-left:auto;}
@@ -108,6 +110,13 @@
   .pick .info b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .pick .info span{font-size:12px;color:var(--text3);}
 
+  .vinculo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:10px;margin-bottom:14px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);}
+  .vinculo.ok{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.06);}
+  .vinculo a{color:#7aa5ff;text-decoration:none;font-weight:600;}
+  .vinculo .dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+  .vinculo button{background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;text-decoration:underline;}
+  .vinculo label{margin:0;display:flex;align-items:center;gap:6px;color:var(--text);font-size:13px;cursor:pointer;}
+  .vinculo label input{width:auto;}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg4);border:1px solid var(--border2);padding:11px 18px;border-radius:10px;font-size:14px;opacity:0;transition:all .2s;z-index:500;pointer-events:none;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .toast.error{border-color:rgba(239,68,68,.5);}
@@ -165,6 +174,7 @@
   #print .ph img{width:100%;height:100%;object-fit:cover;display:block;}
   #print .pn{font-weight:600;}
   #print .pd{font-size:10.5px;color:#6b707a;margin-top:1px;}
+  #print .pd.po{color:#1b1d22;font-style:italic;}
   #print .tot{display:flex;justify-content:flex-end;gap:24px;padding:8px 10px;font-size:12px;}
   #print .tot span:first-child{color:#6b707a;}
   #print .tot span:last-child{width:110px;text-align:right;}
@@ -251,15 +261,21 @@
 
     <div class="card section">
       <h3>Cliente</h3>
-      <div style="margin-bottom:14px;">
-        <label for="edLeadBusca">Puxar de um lead do CRM (opcional)</label>
-        <input id="edLeadBusca" list="leadsList" placeholder="Digite o nome do lead" onchange="escolherLead(this.value)">
+      <div id="edVinculo" class="vinculo"></div>
+      <div id="edBuscaWrap" style="margin-bottom:14px;">
+        <label for="edLeadBusca">Vincular a um card do CRM</label>
+        <input id="edLeadBusca" list="leadsList" placeholder="Digite o nome do cliente no CRM" onchange="escolherLead(this.value)">
         <datalist id="leadsList"></datalist>
       </div>
       <div class="grid3">
         <div><label for="edNome">Nome</label><input id="edNome"></div>
         <div><label for="edTel">Telefone</label><input id="edTel"></div>
         <div><label for="edValidade">Validade da proposta</label><input id="edValidade" type="date"></div>
+      </div>
+      <div class="grid3" style="margin-top:14px;">
+        <div><label for="edEmail">E-mail</label><input id="edEmail" type="email"></div>
+        <div><label for="edCpf">CPF / CNPJ</label><input id="edCpf"></div>
+        <div></div>
       </div>
       <div style="margin-top:14px;"><label for="edEnd">Endereço da obra</label><input id="edEnd"></div>
     </div>
@@ -432,7 +448,7 @@ async function iniciar(){
   const [p,o,l]=await Promise.all([
     db.from('automacao_produtos').select('*').order('nome'),
     db.from('automacao_orcamentos').select('*').order('numero',{ascending:false}),
-    db.from('leads').select('id,name,phone,address,empresa').eq('empresa','automacao').order('created_at',{ascending:false}).limit(2000)
+    db.from('leads').select('id,name,phone,email,cpf,address,empresa,stage,value,seller_id').eq('empresa','automacao').order('created_at',{ascending:false}).limit(3000)
   ]);
   if(p.error||o.error){
     document.getElementById('listaBody').innerHTML='<tr><td colspan="5" class="muted">As tabelas de orçamento ainda não foram criadas no Supabase. Rode o arquivo sql/01_orcamentos_automacao.sql.</td></tr>';
@@ -441,8 +457,15 @@ async function iniciar(){
   produtos=p.data||[];orcamentos=o.data||[];leads=l.data||[];
   document.getElementById('leadsList').innerHTML=leads.map(x=>`<option value="${esc(x.name)}${x.phone?' — '+esc(x.phone):''}"></option>`).join('');
   renderLista();
-  const leadId=new URLSearchParams(location.search).get('lead');
-  if(leadId){novoOrcamento();const ld=leads.find(x=>String(x.id)===leadId);if(ld)aplicarLead(ld);}
+  const qs=new URLSearchParams(location.search);
+  const leadId=qs.get('lead'),orcId=qs.get('orc');
+  if(orcId&&orcamentos.find(x=>x.id===orcId))abrirOrcamento(orcId);
+  else if(leadId){
+    novoOrcamento();
+    let ld=leads.find(x=>String(x.id)===leadId);
+    if(!ld){const r=await db.from('leads').select('id,name,phone,email,cpf,address,empresa,stage,value,seller_id').eq('id',leadId).maybeSingle();if(r.data){ld=r.data;leads.push(ld);}}
+    if(ld)aplicarLead(ld);
+  }
 }
 
 function ir(view){
@@ -645,8 +668,8 @@ async function importarCsv(input){
 
 // ---------- editor ----------
 function novoOrcamento(){
-  atual={id:null,numero:null,lead_id:null,cliente_nome:'',cliente_telefone:'',cliente_endereco:'',validade:hojeISO(15),
-         itens:[],desconto:0,condicoes:'',status:'rascunho',_ambientes:['Sala de estar']};
+  atual={id:null,numero:null,lead_id:null,cliente_nome:'',cliente_telefone:'',cliente_email:'',cliente_cpf:'',cliente_endereco:'',validade:hojeISO(15),
+         itens:[],desconto:0,condicoes:'',status:'rascunho',_ambientes:['Sala de estar'],_criarCard:true};
   preencherEditor();ir('editor');
 }
 function abrirOrcamento(id){
@@ -661,6 +684,8 @@ function preencherEditor(){
   document.getElementById('edTitulo').textContent=o.numero?`Orçamento ${o.numero}`:'Novo orçamento';
   document.getElementById('edNome').value=o.cliente_nome||'';
   document.getElementById('edTel').value=o.cliente_telefone||'';
+  document.getElementById('edEmail').value=o.cliente_email||'';
+  document.getElementById('edCpf').value=o.cliente_cpf||'';
   document.getElementById('edEnd').value=o.cliente_endereco||'';
   document.getElementById('edValidade').value=o.validade||'';
   document.getElementById('edCond').value=o.condicoes||'';
@@ -669,22 +694,40 @@ function preencherEditor(){
   document.getElementById('edLeadBusca').value='';
   document.getElementById('btnExcluir').classList.toggle('hidden',!o.id);
   document.getElementById('btnDuplicar').classList.toggle('hidden',!o.id);
+  renderVinculo();
   renderAmbientes();
 }
+const ETAPAS={new:'Novo Lead',contact:'Contato Realizado',proposal:'Proposta Enviada',negotiation:'Em Negociação',won:'Fechado - Ganho',lost:'Lead Perdido',standby:'Standby',not_going:'Não vai fazer'};
+function renderVinculo(){
+  const box=document.getElementById('edVinculo'),busca=document.getElementById('edBuscaWrap');
+  const ld=atual.lead_id?leads.find(x=>x.id===atual.lead_id):null;
+  if(atual.lead_id){
+    box.className='vinculo ok';busca.classList.add('hidden');
+    box.innerHTML=`<span class="dot"></span><span>Vinculado ao card <a href="index.html?lead=${encodeURIComponent(atual.lead_id)}">${esc(ld?ld.name:'#'+atual.lead_id)}</a>${ld&&ld.stage?` · ${esc(ETAPAS[ld.stage]||ld.stage)}`:''}</span>
+      <span style="flex:1"></span><button type="button" onclick="desvincular()">Trocar card</button>`;
+  }else{
+    box.className='vinculo';busca.classList.remove('hidden');
+    box.innerHTML=`<label><input type="checkbox" id="edCriarCard" ${atual._criarCard!==false?'checked':''} onchange="atual._criarCard=this.checked"> Criar um card no CRM para este cliente ao salvar</label>`;
+  }
+}
+function desvincular(){atual.lead_id=null;atual._criarCard=false;renderVinculo();document.getElementById('edLeadBusca').focus();}
 function escolherLead(v){
   const ld=leads.find(x=>(x.name+(x.phone?' — '+x.phone:''))===v)||leads.find(x=>x.name===v);
   if(ld)aplicarLead(ld);
 }
+// card → orçamento: puxa os dados do cliente que estão no card
 function aplicarLead(ld){
   atual.lead_id=ld.id;
-  document.getElementById('edNome').value=ld.name||'';
-  document.getElementById('edTel').value=ld.phone||'';
-  document.getElementById('edEnd').value=ld.address||'';
-  toast('Dados do lead carregados');
+  const set=(id,v)=>{const el=document.getElementById(id);if(v)el.value=v;};
+  set('edNome',ld.name);set('edTel',ld.phone);set('edEmail',ld.email);set('edCpf',ld.cpf);set('edEnd',ld.address);
+  document.getElementById('edLeadBusca').value='';
+  renderVinculo();toast('Dados do card carregados');
 }
 function lerCabecalho(){
   atual.cliente_nome=document.getElementById('edNome').value.trim();
   atual.cliente_telefone=document.getElementById('edTel').value.trim();
+  atual.cliente_email=document.getElementById('edEmail').value.trim();
+  atual.cliente_cpf=document.getElementById('edCpf').value.trim();
   atual.cliente_endereco=document.getElementById('edEnd').value.trim();
   atual.validade=document.getElementById('edValidade').value||null;
   atual.condicoes=document.getElementById('edCond').value.trim();
@@ -719,7 +762,8 @@ function renderAmbientes(){
       ${itens.length?itens.map(({it,ii})=>`
         <div class="item">
           <div class="mini">${it.foto_url?`<img src="${esc(it.foto_url)}" alt="">`:''}</div>
-          <div style="min-width:0;"><div class="nm">${esc(it.nome)}</div><div class="ds">${esc(it.descricao||it.codigo||'')}</div></div>
+          <div style="min-width:0;"><div class="nm">${esc(it.nome)}</div><div class="ds">${esc(it.descricao||it.codigo||'')}</div>
+            <input class="anot" value="${esc(it.obs||'')}" placeholder="Anotação deste item (aparece no PDF)" aria-label="Anotação do item" oninput="atual.itens[${ii}].obs=this.value"></div>
           <div class="q"><input type="number" min="1" step="1" value="${it.qtd}" aria-label="Quantidade" oninput="mudarItem(${ii},'qtd',this.value)"></div>
           <div class="pu"><input type="number" min="0" step="0.01" value="${it.preco}" aria-label="Valor unitário" oninput="mudarItem(${ii},'preco',this.value)"></div>
           <div class="st num" id="st-${ii}">${brl(it.qtd*it.preco)}</div>
@@ -772,7 +816,16 @@ async function salvar(){
   // mantém a ordem dos ambientes na ordem em que aparecem na tela
   const ordem=atual._ambientes;
   atual.itens.sort((a,b)=>ordem.indexOf(a.ambiente||'Geral')-ordem.indexOf(b.ambiente||'Geral'));
-  const reg={lead_id:atual.lead_id,cliente_nome:atual.cliente_nome,cliente_telefone:atual.cliente_telefone||null,cliente_endereco:atual.cliente_endereco||null,
+  // sem card vinculado: cria o card no CRM antes, pra o orçamento já nascer vinculado
+  if(!atual.lead_id&&atual._criarCard!==false){
+    const novo={name:atual.cliente_nome,phone:atual.cliente_telefone||null,email:atual.cliente_email||null,cpf:atual.cliente_cpf||null,
+      address:atual.cliente_endereco||null,empresa:'automacao',seller_id:eu.id,stage:atual.status==='rascunho'?'new':'proposal',origin:'Orçamento'};
+    const r=await db.from('leads').insert(novo).select('id,name,phone,email,cpf,address,empresa,stage,value,seller_id').single();
+    if(r.error){toast('Não criou o card: '+r.error.message,'error');return false;}
+    leads.unshift(r.data);atual.lead_id=r.data.id;toast('Card criado no CRM');
+  }
+  const reg={lead_id:atual.lead_id,cliente_nome:atual.cliente_nome,cliente_telefone:atual.cliente_telefone||null,
+    cliente_email:atual.cliente_email||null,cliente_cpf:atual.cliente_cpf||null,cliente_endereco:atual.cliente_endereco||null,
     validade:atual.validade,itens:atual.itens,desconto:atual.desconto,condicoes:atual.condicoes||null,status:atual.status,updated_at:new Date().toISOString()};
   let res;
   if(atual.id)res=await db.from('automacao_orcamentos').update(reg).eq('id',atual.id).select().single();
@@ -781,8 +834,38 @@ async function salvar(){
   const salvo=res.data;const amb=atual._ambientes;
   atual={...salvo,_ambientes:amb};
   const i=orcamentos.findIndex(x=>x.id===salvo.id);if(i>=0)orcamentos[i]=salvo;else orcamentos.unshift(salvo);
+  await sincronizarCard(salvo);
   preencherEditor();toast('Orçamento '+salvo.numero+' salvo');
   return true;
+}
+
+// orçamento → card: completa os dados do cliente, atualiza o valor e anda a etapa
+async function sincronizarCard(o){
+  if(!o.lead_id)return;
+  let ld=leads.find(x=>x.id===o.lead_id);
+  if(!ld){const r=await db.from('leads').select('id,name,phone,email,cpf,address,empresa,stage,value,seller_id').eq('id',o.lead_id).maybeSingle();if(!r.data)return;ld=r.data;leads.push(ld);}
+  const upd={},trocas=[];
+  [['phone','cliente_telefone','Telefone'],['email','cliente_email','E-mail'],['cpf','cliente_cpf','CPF'],['address','cliente_endereco','Endereço']].forEach(([c,k,rot])=>{
+    const novo=(o[k]||'').trim(),velho=(ld[c]||'').trim();
+    if(!novo||novo===velho)return;
+    if(!velho)upd[c]=novo;                         // card vazio: completa sem perguntar
+    else trocas.push({c,novo,velho,rot});           // card diferente: pergunta
+  });
+  if(trocas.length&&confirm('Os dados do cliente estão diferentes do card no CRM:\n\n'+
+      trocas.map(t=>`${t.rot}: "${t.velho}" → "${t.novo}"`).join('\n')+'\n\nAtualizar o card também?'))
+    trocas.forEach(t=>upd[t.c]=t.novo);
+  // valor do card = valor líquido do orçamento mais recente deste cliente
+  const doCard=orcamentos.filter(x=>x.lead_id===o.lead_id&&x.status!=='perdido')
+    .sort((a,b)=>String(b.updated_at||b.created_at).localeCompare(String(a.updated_at||a.created_at)));
+  if(doCard.length){const v=totalDe(doCard[0]).liq;if(Number(ld.value||0)!==v)upd.value=v;}
+  // etapa: orçamento enviado leva o card pra "Proposta Enviada"; aprovado oferece "Fechado - Ganho"
+  const antes=['new','contact','standby'];
+  if(o.status==='enviado'&&antes.includes(ld.stage))upd.stage='proposal';
+  if(o.status==='aprovado'&&ld.stage!=='won'&&confirm('Orçamento aprovado. Mover o card para "Fechado - Ganho"?'))upd.stage='won';
+  if(!Object.keys(upd).length)return;
+  const {error}=await db.from('leads').update(upd).eq('id',ld.id);
+  if(error){toast('Orçamento salvo, mas o card não atualizou: '+error.message,'error');return;}
+  Object.assign(ld,upd);
 }
 async function excluirOrcamento(){
   if(!atual.id||!confirm(`Excluir o orçamento ${atual.numero}?`))return;
@@ -808,10 +891,10 @@ async function gerarPdf(){
     return cab+`<tr>
       <td class="c">${it.qtd}</td>
       <td style="width:46px;"><div class="ph">${it.foto_url?`<img src="${esc(it.foto_url)}" alt="">`:''}</div></td>
-      <td><div class="pn">${esc(it.nome)}</div>${it.descricao?`<div class="pd">${esc(it.descricao)}</div>`:''}</td>
+      <td><div class="pn">${esc(it.nome)}</div>${it.descricao?`<div class="pd">${esc(it.descricao)}</div>`:''}${it.obs&&it.obs.trim()?`<div class="pd po">${esc(it.obs.trim())}</div>`:''}</td>
       <td class="r">${num(it.preco)}</td><td class="r">${num(it.qtd*it.preco)}</td></tr>`;
   }).join('');
-  const contato=[o.cliente_telefone,o.cliente_endereco].filter(Boolean).map(esc).join(' · ');
+  const contato=[o.cliente_telefone,o.cliente_email,o.cliente_cpf?('CPF/CNPJ '+o.cliente_cpf):'',o.cliente_endereco].filter(Boolean).map(esc).join(' · ');
   document.getElementById('print').innerHTML=`
     <div class="p-top"><span class="d">${dataBR(hojeISO())}</span><span class="n">Orçamento <b>${o.numero}</b></span></div>
     <div class="p-emp">${logo('#1b1d22')}
