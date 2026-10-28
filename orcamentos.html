@@ -226,6 +226,7 @@
       </select>
       <span class="muted" id="contaProd"></span>
       <span style="flex:1"></span>
+      <button class="btn btn-primary btn-sm adminOnly" onclick="abrirProduto(null)">+ Novo produto</button>
       <label class="btn btn-ghost btn-sm adminOnly" style="margin:0;color:var(--text);font-size:13px;">
         Importar CSV do Conta Azul
         <input type="file" accept=".csv,text/csv" class="hidden" onchange="importarCsv(this)">
@@ -291,6 +292,36 @@
       <button class="btn btn-ghost" onclick="duplicarOrcamento()" id="btnDuplicar">Duplicar</button>
       <button class="btn btn-ghost" onclick="salvar()">Salvar</button>
       <button class="btn btn-primary" onclick="gerarPdf()">Salvar e gerar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- cadastro / edição de produto -->
+<div class="modal-bg" id="prodModal" onclick="if(event.target===this)fecharProduto()">
+  <div class="modal" role="dialog" aria-label="Produto">
+    <div class="modal-head" style="justify-content:space-between;">
+      <h3 id="pmTitulo" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;">Novo produto</h3>
+      <button class="btn btn-ghost btn-sm" onclick="fecharProduto()">Fechar</button>
+    </div>
+    <div class="modal-body" style="padding:16px;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;gap:14px;align-items:flex-start;">
+        <div class="thumb vazio" id="pmFoto" style="width:96px;height:96px;flex-shrink:0;" onclick="document.getElementById('pmFotoInput').click()" title="Enviar foto">Sem foto</div>
+        <input type="file" id="pmFotoInput" accept="image/*" class="hidden" onchange="escolherFotoModal(this)">
+        <div class="grid2" style="flex:1;">
+          <div><label for="pmCodigo">Código *</label><input id="pmCodigo" placeholder="Ex.: RELEI1"></div>
+          <div><label for="pmPreco">Preço de venda (R$) *</label><input id="pmPreco" type="number" min="0" step="0.01"></div>
+        </div>
+      </div>
+      <div><label for="pmNome">Nome técnico / do Conta Azul *</label><input id="pmNome" placeholder="Ex.: Relé Zigbee - 03 Seções de Iluminação"></div>
+      <div><label for="pmNC">Nome comercial (aparece pro cliente)</label><input id="pmNC" placeholder="Ex.: Interruptor inteligente 3 teclas"></div>
+      <div><label for="pmDesc">O que ele faz, em uma frase</label><input id="pmDesc" placeholder="Ex.: Controle das luzes pelo painel, app ou voz"></div>
+      <div><label for="pmObs">Observação interna</label><input id="pmObs"></div>
+      <label class="switch" style="justify-content:flex-start;margin:0;"><input type="checkbox" id="pmAtivo" checked> Ativo (aparece na busca do orçamento)</label>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-danger" id="pmExcluir" onclick="excluirProduto()">Excluir</button>
+        <span style="flex:1"></span>
+        <button class="btn btn-primary" id="pmSalvar" onclick="salvarProduto()">Salvar produto</button>
+      </div>
     </div>
   </div>
 </div>
@@ -457,7 +488,10 @@ function renderCatalogo(){
         <input value="${esc(p.descricao||'')}" placeholder="O que ele faz, em uma frase" aria-label="Descrição" onchange="salvarCampo('${p.id}','descricao',this.value)">
       </div>
       <div class="preco num">${gest?`<input type="number" step="0.01" min="0" value="${p.preco}" aria-label="Preço" style="text-align:right;padding:7px 9px;font-size:13px;" onchange="salvarCampo('${p.id}','preco',this.value)">`:brl(p.preco)}</div>
-      <label class="switch"><input type="checkbox" ${p.ativo?'checked':''} onchange="salvarCampo('${p.id}','ativo',this.checked)"> Ativo</label>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;" class="switch">
+        <label class="switch" style="margin:0;"><input type="checkbox" ${p.ativo?'checked':''} onchange="salvarCampo('${p.id}','ativo',this.checked)"> Ativo</label>
+        ${gest?`<button class="btn btn-ghost btn-sm" onclick="abrirProduto('${p.id}')">Editar</button>`:''}
+      </div>
     </div>`).join('')+(rows.length>300?`<div class="muted" style="padding:14px;">Mostrando 300 de ${rows.length}. Use a busca para achar os outros.</div>`:'')
     :'<div class="muted" style="padding:18px;">Nenhum produto encontrado.</div>';
 }
@@ -498,6 +532,78 @@ async function enviarFoto(input){
   }catch(e){toast('Não foi possível enviar: '+e.message,'error');}
 }
 
+// cadastro e edição completa de produto (gestão)
+let prodEditando=null,fotoPendente=null;
+function abrirProduto(id){
+  if(!ehGestao())return;
+  prodEditando=id?produtos.find(x=>x.id===id):null;fotoPendente=null;
+  const p=prodEditando||{codigo:'',nome:'',nome_comercial:'',descricao:'',observacao:'',preco:'',ativo:true};
+  document.getElementById('pmTitulo').textContent=prodEditando?'Editar produto':'Novo produto';
+  document.getElementById('pmCodigo').value=p.codigo||'';
+  document.getElementById('pmPreco').value=p.preco;
+  document.getElementById('pmNome').value=p.nome||'';
+  document.getElementById('pmNC').value=p.nome_comercial||'';
+  document.getElementById('pmDesc').value=p.descricao||'';
+  document.getElementById('pmObs').value=p.observacao||'';
+  document.getElementById('pmAtivo').checked=p.ativo!==false;
+  document.getElementById('pmExcluir').classList.toggle('hidden',!prodEditando);
+  mostrarFotoModal(p.foto_url);
+  document.getElementById('prodModal').classList.add('open');
+  setTimeout(()=>document.getElementById(prodEditando?'pmNC':'pmCodigo').focus(),50);
+}
+function fecharProduto(){document.getElementById('prodModal').classList.remove('open');}
+function mostrarFotoModal(url){
+  const el=document.getElementById('pmFoto');
+  el.classList.toggle('vazio',!url);
+  el.innerHTML=url?`<img src="${esc(url)}" alt="">`:'Sem foto';
+}
+function escolherFotoModal(input){
+  const f=input.files&&input.files[0];input.value='';if(!f)return;
+  fotoPendente=f;mostrarFotoModal(URL.createObjectURL(f));
+}
+async function salvarProduto(){
+  const v=id=>document.getElementById(id).value.trim();
+  const reg={codigo:v('pmCodigo'),nome:v('pmNome'),preco:Number(document.getElementById('pmPreco').value),
+    nome_comercial:v('pmNC')||null,descricao:v('pmDesc')||null,observacao:v('pmObs')||null,
+    ativo:document.getElementById('pmAtivo').checked,updated_at:new Date().toISOString()};
+  if(!reg.codigo||!reg.nome){toast('Preencha código e nome','error');return;}
+  if(!(reg.preco>=0)||document.getElementById('pmPreco').value===''){toast('Preencha o preço','error');return;}
+  const dup=produtos.find(x=>x.codigo.toLowerCase()===reg.codigo.toLowerCase()&&(!prodEditando||x.id!==prodEditando.id));
+  if(dup){toast('Já existe um produto com o código '+dup.codigo,'error');return;}
+  const btn=document.getElementById('pmSalvar');btn.disabled=true;
+  try{
+    let res=prodEditando
+      ?await db.from('automacao_produtos').update(reg).eq('id',prodEditando.id).select().single()
+      :await db.from('automacao_produtos').insert(reg).select().single();
+    if(res.error)throw res.error;
+    let salvo=res.data;
+    if(fotoPendente){
+      const blob=await reduzirImagem(fotoPendente);
+      const path=`${salvo.codigo.replace(/[^\w-]/g,'_')}-${Date.now()}.jpg`;
+      const up=await db.storage.from(FOTO_BUCKET).upload(path,blob,{contentType:'image/jpeg'});
+      if(up.error)throw up.error;
+      const url=db.storage.from(FOTO_BUCKET).getPublicUrl(path).data.publicUrl;
+      const r2=await db.from('automacao_produtos').update({foto_url:url,foto_path:path}).eq('id',salvo.id).select().single();
+      if(r2.error)throw r2.error;
+      if(salvo.foto_path)db.storage.from(FOTO_BUCKET).remove([salvo.foto_path]);
+      salvo=r2.data;
+    }
+    const i=produtos.findIndex(x=>x.id===salvo.id);
+    if(i>=0)produtos[i]=salvo;else produtos.push(salvo);
+    produtos.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    fecharProduto();renderCatalogo();toast(prodEditando?'Produto atualizado':'Produto cadastrado');
+  }catch(e){toast('Não salvou: '+e.message,'error');}
+  finally{btn.disabled=false;}
+}
+async function excluirProduto(){
+  const p=prodEditando;if(!p)return;
+  if(!confirm(`Excluir "${nomeProd(p)}"? Orçamentos já feitos com ele não mudam. Se for só tirar da busca, prefira desmarcar "Ativo".`))return;
+  const {error}=await db.from('automacao_produtos').delete().eq('id',p.id);
+  if(error){toast('Não excluiu: '+error.message,'error');return;}
+  if(p.foto_path)db.storage.from(FOTO_BUCKET).remove([p.foto_path]);
+  produtos=produtos.filter(x=>x.id!==p.id);fecharProduto();renderCatalogo();toast('Produto excluído');
+}
+
 // importa o CSV exportado do Conta Azul (separado por ; e em Windows-1252)
 async function importarCsv(input){
   const file=input.files&&input.files[0];input.value='';if(!file)return;
@@ -508,15 +614,19 @@ async function importarCsv(input){
   const cab=linhas.shift().split(';').map(norm);
   const iCod=cab.findIndex(c=>c.startsWith('codigo')),iNome=cab.findIndex(c=>c.includes('nome')),iVal=cab.findIndex(c=>c.includes('valor')),iObs=cab.findIndex(c=>c.startsWith('observ'));
   if(iCod<0||iNome<0||iVal<0){toast('CSV fora do formato do Conta Azul (Código; Nome do Produto; Valor de Venda)','error');return;}
-  const n=cab.length;
   const regs=[];
   for(const l of linhas){
-    let p=l.split(';');
-    const extra=p.length-n; // nome com ';' dentro
-    if(extra>0)p=[...p.slice(0,iNome),p.slice(iNome,iNome+extra+1).join(';'),...p.slice(iNome+extra+1)];
+    const p=l.split(';');
     const codigo=(p[iCod]||'').trim();if(!codigo)continue;
-    const preco=Number(String(p[iVal]||'').replace(/[R$\s.]/g,'').replace(',','.'))||0;
-    regs.push({codigo,nome:(p[iNome]||'').trim(),preco,observacao:(iObs>=0?(p[iObs]||'').trim():'')||null});
+    // o nome pode ter ';' dentro: o preço é o primeiro campo depois do nome que começa com "R$",
+    // e tudo entre o nome e ele faz parte do nome; as colunas seguintes andam junto
+    let ip=p.findIndex((c,i)=>i>iNome&&/^\s*R\$/.test(c));
+    if(ip<0)ip=iVal;
+    const desloc=ip-iVal;
+    const nome=p.slice(iNome,iNome+1+desloc).join(';').trim();
+    const preco=Number(String(p[ip]||'').replace(/[R$\s.]/g,'').replace(',','.'))||0;
+    const obs=iObs>=0?(p[iObs+desloc]||'').trim():'';
+    regs.push({codigo,nome,preco,observacao:obs||null});
   }
   if(!confirm(`Importar ${regs.length} produtos? Preço e nome do Conta Azul serão atualizados. Nome comercial, descrição e fotos ficam como estão.`))return;
   const existentes=new Set(produtos.map(p=>p.codigo));
@@ -730,7 +840,7 @@ async function gerarPdf(){
   setTimeout(()=>document.title=tituloOriginal,1000);
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharPicker();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){fecharPicker();fecharProduto();}});
 iniciar();
 </script>
 </body>
