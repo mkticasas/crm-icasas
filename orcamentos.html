@@ -208,6 +208,7 @@
 
   <!-- LISTA -->
   <div class="page" id="view-lista">
+    <div id="bannerRascunho" class="vinculo hidden" style="border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.08);"></div>
     <div class="toolbar">
       <input type="search" id="buscaOrc" placeholder="Buscar por cliente ou número" oninput="renderLista()">
       <select id="filtroStatus" onchange="renderLista()">
@@ -457,6 +458,7 @@ async function iniciar(){
   produtos=p.data||[];orcamentos=o.data||[];leads=l.data||[];
   document.getElementById('leadsList').innerHTML=leads.map(x=>`<option value="${esc(x.name)}${x.phone?' — '+esc(x.phone):''}"></option>`).join('');
   renderLista();
+  mostrarBannerRascunho();
   const qs=new URLSearchParams(location.search);
   const leadId=qs.get('lead'),orcId=qs.get('orc');
   if(orcId&&orcamentos.find(x=>x.id===orcId))abrirOrcamento(orcId);
@@ -469,9 +471,10 @@ async function iniciar(){
 }
 
 function ir(view){
+  if(view!=='editor'&&typeof guardarRascunho==='function')guardarRascunho(); // saindo do editor: guarda o que não foi salvo
   ['lista','catalogo','editor'].forEach(v=>document.getElementById('view-'+v).classList.toggle('hidden',v!==view));
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===view));
-  if(view==='lista')renderLista();
+  if(view==='lista'){renderLista();mostrarBannerRascunho();}
   if(view==='catalogo')renderCatalogo();
   window.scrollTo(0,0);
 }
@@ -696,6 +699,7 @@ function preencherEditor(){
   document.getElementById('btnDuplicar').classList.toggle('hidden',!o.id);
   renderVinculo();
   renderAmbientes();
+  baseRascunho=fotoEstado();
 }
 const ETAPAS={new:'Novo Lead',contact:'Contato Realizado',proposal:'Proposta Enviada',negotiation:'Em Negociação',won:'Fechado - Ganho',lost:'Lead Perdido',standby:'Standby',not_going:'Não vai fazer'};
 function renderVinculo(){
@@ -835,6 +839,7 @@ async function salvar(){
   atual={...salvo,_ambientes:amb};
   const i=orcamentos.findIndex(x=>x.id===salvo.id);if(i>=0)orcamentos[i]=salvo;else orcamentos.unshift(salvo);
   await sincronizarCard(salvo);
+  apagarRascunho();
   preencherEditor();toast('Orçamento '+salvo.numero+' salvo');
   return true;
 }
@@ -871,6 +876,7 @@ async function excluirOrcamento(){
   if(!atual.id||!confirm(`Excluir o orçamento ${atual.numero}?`))return;
   const {error}=await db.from('automacao_orcamentos').delete().eq('id',atual.id);
   if(error){toast('Não excluiu: '+error.message,'error');return;}
+  apagarRascunho();
   orcamentos=orcamentos.filter(x=>x.id!==atual.id);toast('Excluído');ir('lista');
 }
 function duplicarOrcamento(){
@@ -924,6 +930,52 @@ async function gerarPdf(){
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){fecharPicker();fecharProduto();}});
+// ---------- rascunho automático (fica salvo neste aparelho) ----------
+let baseRascunho=null,timerRascunho=null;
+const chaveRascunho=()=>'orc_rascunho_'+(eu?eu.id:'x');
+function editorAberto(){const ed=document.getElementById('view-editor');return !!ed&&!ed.classList.contains('hidden');}
+function fotoEstado(){
+  if(!atual)return null;
+  lerCabecalho();
+  const {_criarCard,...resto}=atual;return JSON.stringify(resto);
+}
+function temAlteracao(){if(!editorAberto())return false;const f=fotoEstado();return f!==null&&f!==baseRascunho;}
+function guardarRascunho(){
+  clearTimeout(timerRascunho);
+  if(!temAlteracao())return;
+  try{localStorage.setItem(chaveRascunho(),JSON.stringify({em:Date.now(),atual}));}catch(e){}
+}
+function agendarRascunho(){clearTimeout(timerRascunho);timerRascunho=setTimeout(guardarRascunho,700);}
+function lerRascunho(){try{return JSON.parse(localStorage.getItem(chaveRascunho())||'null');}catch(e){return null;}}
+function apagarRascunho(){try{localStorage.removeItem(chaveRascunho());}catch(e){}mostrarBannerRascunho();}
+function mostrarBannerRascunho(){
+  const b=document.getElementById('bannerRascunho');if(!b)return;
+  const r=lerRascunho();
+  if(!r||!r.atual){b.classList.add('hidden');return;}
+  const o=r.atual,n=(o.itens||[]).length;
+  const quando=new Date(r.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  b.classList.remove('hidden');
+  b.innerHTML=`<span>Você tem um orçamento que não foi salvo: <b>${esc(o.cliente_nome||'sem nome')}</b>${o.numero?' (Nº '+o.numero+')':''} · ${n} item(ns) · ${quando}</span>
+    <span style="flex:1"></span>
+    <button class="btn btn-primary btn-sm" style="text-decoration:none;color:#fff;" onclick="continuarRascunho()">Continuar</button>
+    <button type="button" onclick="if(confirm('Descartar as alterações não salvas?'))apagarRascunho()">Descartar</button>`;
+}
+function continuarRascunho(){
+  const r=lerRascunho();if(!r)return;
+  atual=r.atual;
+  atual._ambientes=atual._ambientes&&atual._ambientes.length?atual._ambientes:[...new Set((atual.itens||[]).map(i=>i.ambiente||'Geral'))];
+  if(!atual._ambientes.length)atual._ambientes=['Sala de estar'];
+  ir('editor');preencherEditor();
+  baseRascunho=null; // continua marcado como não salvo até clicar em Salvar
+  toast('Rascunho recuperado. Lembre de salvar.');
+}
+// qualquer digitação ou clique no editor agenda o rascunho
+['input','change','click'].forEach(ev=>document.getElementById('view-editor').addEventListener(ev,agendarRascunho,true));
+document.getElementById('picker').addEventListener('click',agendarRascunho,true);
+// fechou a aba / trocou de app: grava na hora e avisa no computador
+window.addEventListener('beforeunload',e=>{if(temAlteracao()){guardarRascunho();e.preventDefault();e.returnValue='';}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')guardarRascunho();});
+
 iniciar();
 </script>
 </body>
