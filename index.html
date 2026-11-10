@@ -710,15 +710,6 @@
             <option value="name">Nome A-Z</option>
           </select>
         </div>
-        <!-- Temperatura -->
-        <div style="display:flex;align-items:center;gap:6px;">
-          <select id="pf-temp" onchange="renderPipeline()" style="width:auto;padding-right:28px;">
-            <option value="">Todos os leads</option>
-            <option value="hot">🔥 Quentes</option>
-            <option value="warm">🌡️ Mornos</option>
-            <option value="cold">❄️ Frios</option>
-          </select>
-        </div>
         <!-- Standby button -->
         <button class="btn btn-ghost btn-sm" onclick="toggleStandbyPanel()" id="btnStandby" style="margin-left:auto;gap:6px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.364 5.636a9 9 0 1 1-12.728 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
@@ -1276,7 +1267,7 @@
       </div>
       <div class="form-row">
         <div class="form-group"><label>Valor estimado (R$)</label><input type="number" id="l-value" placeholder="0"></div>
-        <div class="form-group"><label>Temperatura</label>
+        <div class="form-group" style="display:none;"><!-- temperatura desativada (nov/2026): fica salva, não aparece --><label>Temperatura</label>
           <select id="l-temp"><option value="hot">🔥 Quente</option><option value="warm">🌡️ Morno</option><option value="cold">❄️ Frio</option></select>
         </div>
       </div>
@@ -1479,7 +1470,7 @@
       <div class="detail-row"><label>Origem</label><span id="dp-origin">—</span></div>
       <div class="detail-row" id="dp-referral-row" style="display:none;"><label>Indicado por</label><span id="dp-referral">—</span></div>
       <div class="detail-row"><label>Endereço</label><span id="dp-address">—</span></div>
-      <div class="detail-row"><label>Temperatura</label><span id="dp-temp">—</span></div>
+      <div class="detail-row" style="display:none;"><label>Temperatura</label><span id="dp-temp">—</span></div>
       <div class="detail-row"><label>Vendedor</label><span id="dp-seller">—</span></div>
       <div class="detail-row"><label>Valor</label><span id="dp-value">—</span></div>
       <div class="detail-row"><label>Criado em</label><span id="dp-created">—</span></div>
@@ -2437,7 +2428,6 @@ function renderPipeline(){
 
 function pipelineCard(l){
   const s = allSellers.find(s=>s.id==l.seller_id);
-  const temp = l.temperature==='hot'?'🔥':l.temperature==='warm'?'🌡️':'❄️';
   const waNum = l.phone ? l.phone.replace(/\D/g,'') : '';
   const date = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '';
   return `<div class="lead-card" draggable="true" data-id="${l.id}"
@@ -2453,7 +2443,7 @@ function pipelineCard(l){
       <span style="width:6px;height:6px;border-radius:50%;background:${empresaInfo(l.empresa).cor};flex-shrink:0;"></span>
       <span style="font-size:9.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:${empresaInfo(l.empresa).cor};">${l.empresa==='construtora'?'Construtora':'Automação'}</span>
     </div>`:''}
-    <div class="lead-name">${temp} ${l.name||'—'}</div>
+    <div class="lead-name">${l.name||'—'}</div>
     <div class="lead-meta">
       ${l.phone?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>${l.phone}</div>`:''}
       ${l.origin?`<div class="lead-meta-row" style="margin:2px 0;">${origemBadge(l.origin)}</div>`:''}
@@ -3052,7 +3042,7 @@ function renderStandbyList(){
     const reminderStr = l.reminder_date ? new Date(l.reminder_date).toLocaleDateString('pt-BR') : null;
     return `<div class="lead-card" style="cursor:default;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
-        <div class="lead-name">${l.temperature==='hot'?'🔥':l.temperature==='warm'?'🌡️':'❄️'} ${l.name}</div>
+        <div class="lead-name">${l.name}</div>
         ${s?`<div class="avatar-tag" style="background:${s.color||'#3d7eff'};flex-shrink:0;">${initials(s.nickname||s.name)}</div>`:''}
       </div>
       ${l.phone?`<div style="font-size:11px;color:var(--text3);margin-bottom:3px;">📞 ${l.phone}</div>`:''}

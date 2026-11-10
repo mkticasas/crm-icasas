@@ -183,8 +183,7 @@ function renderPipeline(){
     return`<div class="pipeline-col">
       <div class="pipeline-col-hd" style="color:${color};">${label}<span class="col-count" style="background:${hexToRgba(color,.15)};">${allLeads.filter(l=>l.stage===key).length}</span></div>
       <div class="pipeline-col-body">${leads.length?leads.map(l=>{
-        const temp=l.temperature==='hot'?'🔥':l.temperature==='warm'?'🌡️':'❄️';
-        return`<div class="mini-card"><div class="mini-card-name">${temp} ${l.name||'—'}</div>${l.phone?`<div class="mini-card-info">${l.phone}</div>`:''}</div>`;
+        return`<div class="mini-card"><div class="mini-card-name">${l.name||'—'}</div>${l.phone?`<div class="mini-card-info">${l.phone}</div>`:''}</div>`;
       }).join(''):'<div class="mini-card-info" style="padding:6px;text-align:center;font-size:10px;">Vazio</div>'}</div>
     </div>`;
   }).join('');
