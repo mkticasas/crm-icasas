@@ -335,8 +335,9 @@
   @media(max-width:640px){
 
     /* PREVENT HORIZONTAL OVERFLOW — exceto pipeline que tem scroll próprio */
-    body{overflow:hidden;}
-    .main{overflow:hidden;width:100vw;max-width:100vw;}
+    /* só trava o lado; a rolagem para baixo continua livre (iOS 16+ respeita overflow:hidden no body e travava a página) */
+    html,body{overflow-x:hidden;overflow-x:clip;overflow-y:auto;}
+    .main{overflow-x:hidden;overflow-x:clip;overflow-y:visible;width:100vw;max-width:100vw;}
     .page:not(#page-pipeline){overflow-x:hidden;}
 
     /* TOPBAR */
