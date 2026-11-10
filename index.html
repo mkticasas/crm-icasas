@@ -1773,7 +1773,7 @@ async function logout(){
 }
 
 // ===== NOTIFICAÇÕES PUSH (iPhone: só funciona com o CRM na Tela de Início) =====
-const VAPID_PUBLIC='BHSPxmT7ow3IiHDjy6BHFGAs3wTU5Fb3bElWGnuyOUtFZsd2C1Xqq4zbvtF1piXGcY5HE3WCAgKgQkgBHhN6FFM';
+const VAPID_PUBLIC='BGhI_Xm1YaHmgKk9VriEsYq_ezt6fYHD4y-yPvwzYYNp3plzicR1gmJB2Dq-I5j5l3q2ZU3CyalPFfu3Fsgqotk';
 const pushSuportado=()=>'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const ehIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const ehAppInstalado=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -1877,6 +1877,15 @@ async function ativarNotificacoes(){
     }
     const reg=swReg||await navigator.serviceWorker.ready;
     let sub=await reg.pushManager.getSubscription();
+    // assinatura antiga feita com outra chave → refaz com a chave atual
+    if(sub){
+      try{
+        const k=sub.options&&sub.options.applicationServerKey;
+        const atual=b64ToUint8(VAPID_PUBLIC);
+        const igual=k&&new Uint8Array(k).length===atual.length&&new Uint8Array(k).every((v,i)=>v===atual[i]);
+        if(!igual){await sub.unsubscribe();sub=null;}
+      }catch(e){}
+    }
     if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToUint8(VAPID_PUBLIC)});
     const j=sub.toJSON();
     const {error}=await db.from('push_subscriptions').upsert({
