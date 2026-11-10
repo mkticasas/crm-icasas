@@ -18,6 +18,7 @@ const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SE
 });
 
 const BASE_URL = "https://mkticasas.github.io/crm-icasas/";
+const EMPRESAS: Record<string, string> = { construtora: "Construtora", automacao: "Automação" };
 
 async function enviar(sellerIds: string[], payload: Record<string, unknown>) {
   if (!sellerIds.length) return { enviados: 0, falhas: 0 };
@@ -76,7 +77,8 @@ Deno.serve(async (req) => {
         r2 = await enviar(ids, {
           ...base,
           title: "📥 Novo lead no CRM",
-          body: `${lead.name || "Sem nome"} → ${dono ? (dono.nickname || dono.name) : "sem corretor"}${detalhe ? " · " + detalhe : ""}`,
+          // admins: nome do lead · empresa → quem recebeu
+          body: `${lead.name || "Sem nome"} · ${EMPRESAS[lead.empresa] || lead.empresa || "sem empresa"} → ${dono ? (dono.nickname || dono.name) : "sem corretor"}`,
         });
       }
       return json({ corretor: r1, admins: r2 });
