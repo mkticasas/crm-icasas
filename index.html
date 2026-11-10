@@ -1790,6 +1790,7 @@ function montarSeletorEmpresa(){
     empresaAtiva=minhaEmpresa();
     sel.style.display='none';
   }
+  renderFaixaBlack();
 }
 async function trocarEmpresa(){
   const sel=document.getElementById('empresaSelect');
@@ -1803,6 +1804,7 @@ async function trocarEmpresa(){
   redesenharPaginaAtual();    // e só então redesenha a tela em que o usuário está
   if(board)board.style.opacity='1';
   sel.disabled=false;
+  renderFaixaBlack();
   showToast(empresaAtiva==='__todas'?'Mostrando as duas empresas':'Mostrando '+empresaInfo(empresaAtiva).nome,'success');
 }
 // redesenha só a página ativa, sem precisar de F5
@@ -1826,7 +1828,7 @@ async function logout(){
     history.replaceState(null,'',location.pathname);
   }
   jaTratouLinkRecovery = false;
-  currentUser=null;clearSession();
+  currentUser=null;clearSession();renderFaixaBlack();
   document.getElementById('loginUser').value='';document.getElementById('loginPass').value='';
   document.getElementById('loginScreen').classList.add('show');mostrarTela('entrar');closeDrawer();
 }
@@ -2240,6 +2242,7 @@ async function loadLeads(){
   // ===== filtro por empresa (novo) =====
   if(podeVerTodasEmpresas()){
     if(!escolheuEmpresa) empresaAtiva='__todas';   // padrão: as duas empresas
+    if(typeof renderFaixaBlack==='function')renderFaixaBlack();
     const _sel=document.getElementById('empresaSelect');
     if(_sel && _sel.value!==empresaAtiva) _sel.value=empresaAtiva;
     if(empresaAtiva && empresaAtiva!=='__todas') query=query.eq('empresa',empresaAtiva);
@@ -3249,7 +3252,14 @@ function fecharAvisoCampanha(){
 // ===== FAIXA FIXA BLACK iCASAS (sem fechar; some sozinha em 01/12/2026) =====
 const BLACK_ATE='2026-12-01T00:00:00-03:00';
 function renderFaixaBlack(){
-  const ativo=new Date()<new Date(BLACK_ATE);
+  // só para a Construtora: visão "Construtora", ou "Todas as empresas" para quem é da Construtora
+  let daConstrutora=false;
+  try{
+    if(typeof currentUser!=='undefined'&&currentUser){
+      daConstrutora = empresaAtiva==='construtora' || (empresaAtiva==='__todas' && minhaEmpresa()==='construtora');
+    }
+  }catch(e){}
+  const ativo=daConstrutora && new Date()<new Date(BLACK_ATE);
   const html=ativo?`<div class="black-banner"><div class="black-banner-in">
     <div class="bb-marca"><small>🖤 Black</small><b>iCasas</b></div>
     <div class="bb-sep"></div>
