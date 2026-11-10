@@ -477,20 +477,29 @@
     <div class="drawer-item" id="ditem-indicacoes" onclick="navTo('indicacoes')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10l-1 8a4 4 0 0 1-8 0L7 4z"/><path d="M5 4H3v2a4 4 0 0 0 4 4M19 4h2v2a4 4 0 0 1-4 4"/></svg>Clube iCasas
     </div>
+    <div class="drawer-item" id="ditem-push" onclick="ativarNotificacoes()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notificações
+      <span id="pushStatus" style="margin-left:auto;font-size:11px;color:var(--text3);">—</span>
+    </div>
+    <div class="drawer-label">Sistemas e links</div>
     <a href="documentacao.html" class="drawer-item" style="text-decoration:none;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Documentação
+    </a>
+    <a href="orcamentos.html" class="drawer-item" id="ditem-orcamentos" style="text-decoration:none;display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h3M8 17h3M15 13h1M15 17h1"/></svg>Orçamentos Automação
+    </a>
+    <a href="https://mkticasas.github.io/obras-automacao/" target="_blank" class="drawer-item" style="text-decoration:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Acompanhamento de Obras
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;opacity:.4;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
     </a>
     <a href="clubicasas.html" target="_blank" class="drawer-item" style="text-decoration:none;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Site do Clube iCasas
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;opacity:.4;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
     </a>
-    <a href="orcamentos.html" class="drawer-item" id="ditem-orcamentos" style="text-decoration:none;display:none;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h3M8 17h3M15 13h1M15 17h1"/></svg>Orçamentos Automação
+    <a href="tv.html" target="_blank" class="drawer-item" style="text-decoration:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>Modo TV
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;opacity:.4;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
     </a>
-    <div class="drawer-item" id="ditem-push" onclick="ativarNotificacoes()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notificações
-      <span id="pushStatus" style="margin-left:auto;font-size:11px;color:var(--text3);">—</span>
-    </div>
     <div class="drawer-label" id="dlabel-admin">Configurações</div>
     <div class="drawer-item" id="ditem-sellers" onclick="navTo('sellers')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Vendedores
@@ -501,14 +510,6 @@
     <div class="drawer-item" id="ditem-integrations" onclick="navTo('integrations')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>Integrações
     </div>
-    <a href="https://mkticasas.github.io/obras-automacao/" target="_blank" class="drawer-item" style="text-decoration:none;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Acompanhamento de Obras
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;opacity:.4;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-    </a>
-    <a href="tv.html" target="_blank" class="drawer-item" style="text-decoration:none;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>Modo TV
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;opacity:.4;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-    </a>
   </div>
   <div class="drawer-bottom">
     <div class="drawer-logout" onclick="logout()">
@@ -1823,14 +1824,31 @@ function usuarioOcupado(){
   if(document.querySelector('.detail-panel.open'))return true;
   return false;
 }
-function aplicarAtualizacao(){
-  // trava contra loop: no máximo 3 recargas automáticas a cada 10 min
-  let hist=[];try{hist=JSON.parse(sessionStorage.getItem('crm_reloads')||'[]');}catch(e){}
-  hist=hist.filter(t=>Date.now()-t<10*60*1000);
-  if(hist.length>=3)return;
-  hist.push(Date.now());try{sessionStorage.setItem('crm_reloads',JSON.stringify(hist));}catch(e){}
+// manual=true: o usuário tocou no aviso → recarrega sempre.
+// automático: recarrega uma vez por versão nova; se mesmo assim continuar na versão velha
+// (cache teimoso), não fica em loop — mostra o aviso para tocar.
+function aplicarAtualizacao(manual,alvo){
+  if(!manual&&alvo){
+    let tentado=null;try{tentado=sessionStorage.getItem('crm_reload_alvo');}catch(e){}
+    if(tentado===alvo){mostrarAvisoAtualizacao();return;}
+    try{sessionStorage.setItem('crm_reload_alvo',alvo);}catch(e){}
+  }
+  const t=document.getElementById('toast');
+  if(t){t.innerHTML='🔄 Atualizando...';t.className='toast success show';t.onclick=null;}
   const u=new URL(location.href);u.searchParams.set('_v',Date.now());
-  location.replace(u.toString());
+  const ir=()=>location.replace(u.toString());
+  // no clique, garante que o service worker não sirva nada antigo
+  if(manual&&'serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}).finally(ir);
+    setTimeout(ir,1500);
+  } else ir();
+}
+let versaoAlvo=null;
+function mostrarAvisoAtualizacao(){
+  const t=document.getElementById('toast');if(!t)return;
+  t.innerHTML='🔄 <strong>Nova versão do CRM</strong> — toque para atualizar';
+  t.className='toast success show';t.style.cursor='pointer';
+  t.onclick=()=>aplicarAtualizacao(true);
 }
 async function checarAtualizacao(){
   try{
@@ -1839,12 +1857,9 @@ async function checarAtualizacao(){
     if(!versaoRodando)versaoRodando=await digitalDe(document);
     const h=await versaoServidor();
     if(!h||h===versaoRodando)return;
-    atualizacaoPendente=true;
-    if(!usuarioOcupado())return aplicarAtualizacao();
-    const t=document.getElementById('toast');
-    t.innerHTML='🔄 <strong>Nova versão do CRM</strong> — toque para atualizar';
-    t.className='toast success show';t.style.cursor='pointer';
-    t.onclick=aplicarAtualizacao;
+    atualizacaoPendente=true;versaoAlvo=h;
+    if(!usuarioOcupado())return aplicarAtualizacao(false,h);
+    mostrarAvisoAtualizacao();
   }catch(e){}
 }
 // limpa o parâmetro de cache da barra de endereço depois de recarregar
@@ -1854,7 +1869,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 setInterval(()=>{if(document.visibilityState==='visible')checarAtualizacao();},2*60*1000);
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='visible')return;
-  if(atualizacaoPendente&&!usuarioOcupado())return aplicarAtualizacao();
+  if(atualizacaoPendente&&!usuarioOcupado())return aplicarAtualizacao(false,versaoAlvo);
   checarAtualizacao();
 });
 window.addEventListener('pageshow',e=>{if(e.persisted)checarAtualizacao();});
@@ -2289,7 +2304,7 @@ function leadRow(l,cols){
   return `<tr onclick="openDetail('${l.id}')">
     <td>${l.name||'—'}</td><td>${l.phone||'—'}</td>
     ${cols>=9?`<td>${waBtn}</td>`:''}
-    <td>${l.origin||'—'}</td>
+    <td>${origemBadge(l.origin)}</td>
     <td>${s?`<span style="display:flex;align-items:center;gap:6px;"><div class="avatar-sm" style="width:20px;height:20px;font-size:9px;background:${s.color||'#3d7eff'}">${initials(s.nickname||s.name)}</div>${s.nickname||s.name}</span>`:'—'}</td>
     <td><span class="badge ${stage.badge}">${stage.label}</span></td>
     <td>${value}</td><td>${date}</td>
@@ -2364,7 +2379,7 @@ function pipelineCard(l){
     <div class="lead-name">${temp} ${l.name||'—'}</div>
     <div class="lead-meta">
       ${l.phone?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>${l.phone}</div>`:''}
-      ${l.origin?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>${l.origin}</div>`:''}
+      ${l.origin?`<div class="lead-meta-row" style="margin:2px 0;">${origemBadge(l.origin)}</div>`:''}
       ${l.address?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${l.address}</div>`:''}
       ${date?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${date}</div>`:''}
       ${l.attachments&&l.attachments.length?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${l.attachments.length} arquivo${l.attachments.length!==1?'s':''}</div>`:''}
@@ -2541,7 +2556,7 @@ function previewReport(){
       <td style="color:var(--text);font-weight:500;">${l.name||'—'}</td>
       <td>${l.phone||'—'}</td>
       <td><span style="color:${emp.cor};font-size:12px;">${emp.nome}</span></td>
-      <td>${l.origin||'—'}</td>
+      <td>${origemBadge(l.origin)}</td>
       <td>${s?s.nickname||s.name:'—'}</td>
       <td><span class="badge ${stage.badge}">${stage.label}</span></td>
       <td>${l.value?'R$ '+parseFloat(l.value).toLocaleString('pt-BR'):'—'}</td>
@@ -2558,7 +2573,7 @@ function exportCSVReport(){
     const s=allSellers.find(s=>s.id==l.seller_id);
     const emp=empresaInfo(l.empresa||'automacao');
     linhas.push([
-      l.name||'', l.phone||'', l.email||'', emp.nome, l.origin||'',
+      l.name||'', l.phone||'', l.email||'', emp.nome, origemLabel(l.origin),
       s?(s.nickname||s.name):'', STAGE_INFO[l.stage]?.label||'',
       l.value?parseFloat(l.value).toFixed(2).replace('.',','):'',
       l.created_at?new Date(l.created_at).toLocaleDateString('pt-BR'):''
@@ -2593,7 +2608,7 @@ function exportPDF(){
     body:data.map(l=>{
       const s=allSellers.find(s=>s.id==l.seller_id);
       const emp=empresaInfo(l.empresa||'automacao');
-      return[l.name||'—',l.phone||'—',emp.nome,l.origin||'—',s?s.nickname||s.name:'—',STAGE_INFO[l.stage]?.label||'—',l.value?'R$ '+parseFloat(l.value).toLocaleString('pt-BR'):'—',l.created_at?new Date(l.created_at).toLocaleDateString('pt-BR'):'—'];
+      return[l.name||'—',l.phone||'—',emp.nome,origemLabel(l.origin)||'—',s?s.nickname||s.name:'—',STAGE_INFO[l.stage]?.label||'—',l.value?'R$ '+parseFloat(l.value).toLocaleString('pt-BR'):'—',l.created_at?new Date(l.created_at).toLocaleDateString('pt-BR'):'—'];
     }),
     styles:{fontSize:9,cellPadding:4},
     headStyles:{fillColor:[61,126,255],textColor:255,fontStyle:'bold'},
@@ -2852,7 +2867,7 @@ function openDetail(id){
   document.getElementById('dp-email').textContent=l.email||'—';
   document.getElementById('dp-address').textContent=l.address||'—';
   document.getElementById('dp-temp').textContent=l.temperature==='hot'?'🔥 Quente':l.temperature==='warm'?'🌡️ Morno':'❄️ Frio';
-  document.getElementById('dp-origin').textContent=l.origin||'—';
+  document.getElementById('dp-origin').innerHTML=origemBadge(l.origin);
   const refRow=document.getElementById('dp-referral-row');
   if(l.referral_name){
     refRow.style.display='flex';
@@ -3150,6 +3165,36 @@ function renderWebhooks() {
   }).join('');
 }
 
+// ===== CORES DAS ORIGENS =====
+// Facebook e Instagram com a cor do app; as demais com cores próprias e fundo suave
+const ORIGENS={
+  facebook:{label:'Facebook',cor:'#1877F2',solido:true,icone:'<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.07C24 5.41 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.04V9.41c0-3.02 1.8-4.7 4.54-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.5c-1.5 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.5h-2.8V24C19.62 23.1 24 18.1 24 12.07"/></svg>'},
+  instagram:{label:'Instagram',cor:'#E1306C',fundo:'linear-gradient(45deg,#FEDA75 0%,#FA7E1E 25%,#D62976 50%,#962FBF 75%,#4F5BD5 100%)',solido:true,icone:'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.6" cy="6.4" r="1" fill="currentColor" stroke="none"/></svg>'},
+  whatsapp:{label:'WhatsApp',cor:'#25D366'},
+  google:{label:'Google',cor:'#EA4335'},
+  site:{label:'Site',cor:'#22D3EE'},
+  feirao:{label:'Feirão',cor:'#F59E0B'},
+  empreendimentos:{label:'Empreendimentos',cor:'#A855F7'},
+  imovelweb:{label:'ImovelWeb',cor:'#FF7A00'},
+  indicacao:{label:'Indicação',cor:'#14B8A6'},
+  manual:{label:'Manual',cor:'#94A3B8'},
+  outros:{label:'Outros',cor:'#64748B'},
+};
+function origemInfo(o){
+  const k=origemNorm(o);if(!k)return null;
+  if(ORIGENS[k])return ORIGENS[k];
+  let h=0;for(const c of k)h=(h*31+c.charCodeAt(0))%360;   // origem nova ganha uma cor fixa só dela
+  return {label:String(o).charAt(0).toUpperCase()+String(o).slice(1),cor:`hsl(${h},70%,62%)`};
+}
+function origemLabel(o){const i=origemInfo(o);return i?i.label:'';}
+function origemBadge(o){
+  const i=origemInfo(o);if(!i)return '<span style="color:var(--text3)">—</span>';
+  const base='display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;line-height:1.5;white-space:nowrap;';
+  const estilo=i.solido
+    ?`background:${i.fundo||i.cor};color:#fff;border:1px solid transparent;`
+    :`background:color-mix(in srgb,${i.cor} 16%,transparent);color:${i.cor};border:1px solid color-mix(in srgb,${i.cor} 35%,transparent);`;
+  return `<span class="origem-badge" style="${base}${estilo}">${i.icone||''}${i.label}</span>`;
+}
 // Compara origem sem ligar para maiúscula/acento ("facebook" = "Facebook", "outro" = "Outros")
 function origemNorm(o){let t=String(o||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();if(t==='outro')t='outros';return t;}
 // Normaliza telefone para o WhatsApp: só dígitos, com 55 uma única vez
@@ -4014,7 +4059,7 @@ async function deleteIndicador(){
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function initials(name){return(name||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
 function selectColor(el){document.querySelectorAll('.color-opt').forEach(e=>e.style.border='2px solid transparent');el.style.border=`2px solid ${el.dataset.color}`;document.getElementById('s-color').value=el.dataset.color;}
-function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),3000);}
+function showToast(msg,type='success'){const t=document.getElementById('toast');t.onclick=null;t.style.cursor='';t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),3000);}
 
 function mobileNavTo(page){
   showPage(page);
