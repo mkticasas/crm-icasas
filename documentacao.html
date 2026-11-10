@@ -497,6 +497,7 @@ async function sair(){
 }
 
 function souAdmin(){ return eu && ['admin','Gerente de Vendas','Diretor Comercial'].includes(eu.role); }
+function souDocAdmin(){ return souAdmin() || (eu && eu.doc_admin===true); }
 
 let todosSellers=[];
 function nomeDoVendedor(id){
@@ -681,7 +682,7 @@ function ativarDragDrop(){
       // ADMIN: pode soltar em QUALQUER coluna — pra frente ou pra trás, inclusive
       // pulando etapas ou indo direto pra "Concluídas" — e o checklist é reajustado
       // de verdade nos dois sentidos, não é só uma mudança visual
-      if(souAdmin()){
+      if(souDocAdmin()){
         const destinoNumero = etapaDestino==='fim' ? null : Number(etapaDestino);
         moverObraParaEtapa(obraId, destinoNumero);
         return;
@@ -765,7 +766,7 @@ async function abrirObra(id){
   // ===== admin pode trocar o corretor responsável pela obra =====
   const wrapCorretor=$('trocarCorretorWrap');
   const btnExcluir=$('btnExcluirObra');
-  if(souAdmin()){
+  if(souDocAdmin()){
     const sel=$('selCorretorObra');
     const corretores = todosSellers.filter(function(s){return s.doc_responsavel==='Corretor';});
     sel.innerHTML = '<option value="">— nenhum —</option>' +
@@ -832,7 +833,7 @@ function fecharObra(){ $('mdObra').classList.remove('on'); obraAbertaId=null; }
 function souFinanceiro(){ return eu && eu.doc_responsavel==='Financeiro'; }
 
 function podeEditar(obra, etapa){
-  if(souAdmin()) return true;
+  if(souDocAdmin()) return true;
   if(etapaAtualNumero(obra.id) !== etapa.numero) return false;
   if(eu.doc_responsavel) return etapa.responsavel.indexOf(eu.doc_responsavel)>=0;
   const meuNome=(eu.nickname||eu.name||'').toLowerCase();
@@ -847,7 +848,7 @@ function nomesDaEtapa(etapa){
   return etapa.responsavel.split('/').map(function(s){return s.trim();});
 }
 function podeConfirmarParte(obra, etapa, numParte){
-  if(souAdmin()) return true;
+  if(souDocAdmin()) return true;
   if(etapaAtualNumero(obra.id) !== etapa.numero) return false;
   const nomes = nomesDaEtapa(etapa);
   const alvo = (nomes[numParte-1]||'').toLowerCase();
