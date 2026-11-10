@@ -240,29 +240,35 @@
   /* FAIXA BLACK iCASAS — fixa, não fecha, some sozinha depois de 30/11 */
   .black-slot:empty{display:none;}
   #page-pipeline .black-slot{padding:0 24px;flex-shrink:0;}
-  .black-banner{margin:14px 0 16px;background:#0a0a0a;border-top:1px solid #b08d4a;border-bottom:1px solid #b08d4a;}
   #page-pipeline .black-banner{margin:14px 0 2px;}
-  .black-banner-in{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0;}
-  .bb-marca{padding:14px 28px 14px 22px;border-right:1px solid #3a3122;font-family:'Syne',sans-serif;line-height:1;}
-  .bb-marca small{display:block;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;letter-spacing:4px;color:#8c7546;margin-bottom:5px;}
-  .bb-marca b{display:block;font-size:24px;font-weight:800;color:#c9a45a;letter-spacing:-.3px;}
-  .bb-sep{display:none;}
-  .bb-texto{padding:14px 28px;font-size:14px;line-height:1.5;color:#d9d4c7;}
-  .bb-texto strong{color:#fff;font-weight:600;}
-  .bb-premios{margin-top:2px;font-size:13px;color:#9c9585;}
-  .bb-premios span{color:#c9a45a;font-weight:600;}
-  .bb-alerta{padding:14px 22px 14px 24px;border-left:1px solid #3a3122;font-size:12px;line-height:1.45;color:#a39d8f;max-width:310px;}
-  .bb-alerta b{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#e06c5a;font-weight:700;margin-bottom:2px;}
+  .black-banner{position:relative;margin:14px 0 16px;border-radius:16px;padding:2px;overflow:hidden;
+    background:linear-gradient(110deg,#7a5c1e,#f5d27a 22%,#b8892f 40%,#fff1c1 52%,#b8892f 64%,#f5d27a 80%,#7a5c1e);background-size:250% 100%;animation:blackBorda 6s linear infinite;
+    box-shadow:0 10px 40px rgba(212,175,55,.18);}
+  .black-banner-in{position:relative;display:flex;align-items:center;gap:24px;border-radius:14px;padding:18px 26px;
+    background:radial-gradient(120% 160% at 0% 0%,#2a2210 0%,#0b0b0c 45%,#050505 100%);color:#f3e3b5;overflow:hidden;}
+  .black-banner-in::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,226,140,.10) 50%,transparent 65%);background-size:220% 100%;animation:blackBrilho 4.5s ease-in-out infinite;pointer-events:none;}
+  .bb-marca{flex-shrink:0;font-family:'Syne',sans-serif;font-weight:800;line-height:.95;text-transform:uppercase;}
+  .bb-marca small{display:block;font-size:11px;letter-spacing:5px;color:#c9a14a;font-weight:700;margin-bottom:4px;}
+  .bb-marca b{display:block;font-size:30px;letter-spacing:1px;background:linear-gradient(180deg,#fff3c4,#e8c35f 55%,#a87a22);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .bb-sep{width:1px;align-self:stretch;background:linear-gradient(180deg,transparent,#c9a14a,transparent);flex-shrink:0;}
+  .bb-texto{flex:1;font-size:15px;line-height:1.5;color:#efe4c6;}
+  .bb-texto strong{color:#f5d27a;font-weight:700;}
+  .bb-premios{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  .bb-premio{font-size:12px;font-weight:700;color:#0b0b0c;background:linear-gradient(180deg,#f8dd8f,#c9a14a);padding:4px 11px;border-radius:20px;}
+  .bb-alerta{flex-shrink:0;max-width:270px;font-size:12.5px;font-weight:700;line-height:1.4;color:#ffd7d7;background:rgba(220,38,38,.16);border:1px solid rgba(248,113,113,.45);border-radius:12px;padding:10px 13px;}
+  @keyframes blackBorda{to{background-position:-250% 0;}}
+  @keyframes blackBrilho{0%,100%{background-position:120% 0;}50%{background-position:-20% 0;}}
   @media(max-width:900px){
-    #page-pipeline .black-slot{padding:0 14px;}
     .black-banner{margin:10px 0 12px;}
-    .black-banner-in{grid-template-columns:auto 1fr;}
-    .bb-marca{padding:10px 14px 10px 12px;}
-    .bb-marca b{font-size:18px;}
-    .bb-texto{padding:10px 12px;font-size:12.5px;}
-    .bb-premios{font-size:12px;}
-    .bb-alerta{grid-column:1/-1;max-width:none;border-left:none;border-top:1px solid #3a3122;padding:8px 12px;font-size:11.5px;}
-    .bb-alerta b{display:inline;margin-right:6px;}
+    #page-pipeline .black-slot{padding:0 14px;}
+    #page-pipeline .black-banner-in{padding:10px 12px;gap:6px;}
+    #page-pipeline .bb-premios{margin-top:5px;}
+    #page-pipeline .bb-alerta br{display:none;}
+    .black-banner-in{flex-direction:column;align-items:stretch;gap:10px;padding:14px 16px;}
+    .bb-sep{display:none;}
+    .bb-marca b{font-size:24px;}
+    .bb-texto{font-size:13.5px;}
+    .bb-alerta{max-width:none;font-size:12px;}
   }
   /* AVISO DE CAMPANHA (Black iCasas) */
   .aviso-campanha{position:fixed;left:50%;top:0;transform:translate(-50%,-120%);z-index:10001;width:min(440px,calc(100vw - 24px));margin-top:max(env(safe-area-inset-top,0px),12px);
@@ -3255,10 +3261,11 @@ function renderFaixaBlack(){
   }catch(e){}
   const ativo=daConstrutora && new Date()<new Date(BLACK_ATE);
   const html=ativo?`<div class="black-banner"><div class="black-banner-in">
-    <div class="bb-marca"><small>BLACK</small><b>iCasas</b></div>
-    <div class="bb-texto">Contrato assinado até <strong>30/11</strong> concorre a <strong>dois sorteios</strong> no fim do mês.
-      <div class="bb-premios"><span>TV 65"</span> &nbsp;e&nbsp; <span>lava-louças</span></div></div>
-    <div class="bb-alerta"><b>Atenção</b>É sorteio, não brinde. Nunca diga "você ganha".</div>
+    <div class="bb-marca"><small>🖤 Black</small><b>iCasas</b></div>
+    <div class="bb-sep"></div>
+    <div class="bb-texto">Contrato assinado até <strong>30/11</strong> concorre a <strong>2 sorteios</strong> no fim do mês:
+      <div class="bb-premios"><span class="bb-premio">📺 TV 65"</span><span class="bb-premio">🍽️ Lava-louças</span></div></div>
+    <div class="bb-alerta">⚠️ É sorteio, não brinde.<br>Nunca diga "você ganha".</div>
   </div></div>`:'';
   document.querySelectorAll('.black-slot').forEach(el=>{el.innerHTML=html;});
 }
