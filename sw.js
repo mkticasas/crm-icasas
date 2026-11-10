@@ -1,6 +1,18 @@
 // Service worker do CRM iCasas — notificações + garante sempre a versão mais nova (não faz cache)
+// Mudar SW_VERSAO força todo celular com o app aberto a recarregar na versão nova
+const SW_VERSAO = '2026-11-10-1';
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener('activate', (e) => e.waitUntil((async () => {
+  await self.clients.claim();
+  const janelas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  for (const c of janelas) {
+    try {
+      const u = new URL(c.url);
+      u.searchParams.set('_v', Date.now());
+      await c.navigate(u.toString());
+    } catch (_) {}
+  }
+})()));
 
 // Ao abrir o app, busca a página direto do servidor (sem cache do iPhone)
 self.addEventListener('fetch', (event) => {
