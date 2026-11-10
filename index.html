@@ -1006,6 +1006,7 @@
           <label>Distribuição</label>
           <select id="wh-dist" onchange="toggleFixedSeller()">
             <option value="roundrobin">Round-robin (ordem automática)</option>
+            <option value="group">Rodízio entre vendedores escolhidos</option>
             <option value="fixed">Vendedor fixo</option>
           </select>
         </div>
@@ -1015,6 +1016,11 @@
       <div class="form-group" id="wh-seller-group" style="display:none;">
         <label>Vendedor fixo</label>
         <select id="wh-seller"><option value="">Selecionar...</option></select>
+      </div>
+      <div class="form-group" id="wh-group-wrap" style="display:none;">
+        <label>Vendedores do rodízio <span id="wh-group-count" style="color:var(--text3);font-weight:400;"></span></label>
+        <div id="wh-group-list" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px;">Os leads deste webhook vão em ordem só para quem estiver marcado (e ativo). Quem recebeu há mais tempo é o próximo.</div>
       </div>
       <div class="form-group">
         <label>Status</label>
@@ -3100,9 +3106,12 @@ function renderWebhooks() {
   el.innerHTML = allWebhooks.map(wh => {
     const webhookUrl = `${EDGE_BASE}/webhook-lead?token=${wh.token}`;
     const seller = allSellers.find(s => s.id === wh.fixed_seller_id);
-    const distLabel = (wh.distribution === 'roundrobin'
-      ? '🔄 Round-robin automático'
-      : `👤 Fixo: ${seller ? (seller.nickname || seller.name) : '—'}`)
+    const grupoNomes = (wh.group_seller_ids||[]).map(id => { const x = allSellers.find(s => s.id === id); return x ? (x.nickname || x.name) : null; }).filter(Boolean);
+    const distLabel = (wh.distribution === 'fixed'
+      ? `👤 Fixo: ${seller ? (seller.nickname || seller.name) : '—'}`
+      : wh.distribution === 'group'
+        ? `👥 Rodízio: ${grupoNomes.join(', ') || '—'}`
+        : '🔄 Round-robin automático')
       + ` · <span style="color:${empresaInfo(wh.empresa||'automacao').cor}">${empresaInfo(wh.empresa||'automacao').nome}</span>`;
     const leadsFromThis = allLeads.filter(l => l.webhook_token === wh.token).length;
     const map = wh.field_map || {};
@@ -3169,7 +3178,10 @@ function openWebhookModal(wh = null) {
   document.getElementById('editWebhookId').value = wh ? wh.id : '';
   document.getElementById('webhookModalTitle').textContent = wh ? 'Editar Webhook' : 'Novo Webhook';
   document.getElementById('wh-name').value = wh ? wh.name : '';
-  document.getElementById('wh-origin').value = wh ? wh.origin : 'Instagram';
+  { const sel=document.getElementById('wh-origin'),orig=wh?(wh.origin||''):'Instagram';
+    let op=[...sel.options].find(o=>origemNorm(o.value)===origemNorm(orig));
+    if(orig&&!op){op=new Option(orig,orig);sel.add(op);}
+    sel.value=op?op.value:''; }
   document.getElementById('wh-dist').value = wh ? wh.distribution : 'roundrobin';
   document.getElementById('wh-empresa').value = wh ? (wh.empresa||'automacao') : (typeof empresaAtiva!=='undefined'&&empresaAtiva!=='__todas'?empresaAtiva:'automacao');
   document.getElementById('wh-active').value = wh ? String(wh.active) : 'true';
@@ -3178,6 +3190,14 @@ function openWebhookModal(wh = null) {
   while (sel.options.length > 1) sel.remove(1);
   allSellers.filter(s => s.status === 'active').forEach(s => sel.add(new Option(s.nickname || s.name, s.id)));
   sel.value = wh ? (wh.fixed_seller_id || '') : '';
+  const grupo = new Set(wh && wh.group_seller_ids ? wh.group_seller_ids : []);
+  document.getElementById('wh-group-list').innerHTML = allSellers
+    .filter(s => s.status === 'active' || grupo.has(s.id))
+    .filter(s => !['Engenharia','Financeiro'].includes(s.role) && !s.oculto_filtro_vendedor)
+    .sort((a,b)=>(a.nickname||a.name).localeCompare(b.nickname||b.name))
+    .map(s => `<label class="tag-pill wh-gp ${grupo.has(s.id)?'active':''}" style="${grupo.has(s.id)?'border-color:var(--accent);color:var(--accent);':''}">
+      <input type="checkbox" value="${s.id}" ${grupo.has(s.id)?'checked':''} onchange="marcarGrupoWh(this)" style="display:none;">${s.nickname||s.name}${s.status!=='active'?' (inativo)':''}</label>`).join('');
+  atualizarContagemGrupoWh();
   toggleFixedSeller();
   document.getElementById('webhookModal').classList.add('open');
 }
@@ -3185,6 +3205,16 @@ function openWebhookModal(wh = null) {
 function toggleFixedSeller() {
   const dist = document.getElementById('wh-dist').value;
   document.getElementById('wh-seller-group').style.display = dist === 'fixed' ? 'block' : 'none';
+  document.getElementById('wh-group-wrap').style.display = dist === 'group' ? 'block' : 'none';
+}
+function marcarGrupoWh(cb){
+  const l=cb.closest('label');l.classList.toggle('active',cb.checked);
+  l.style.borderColor=cb.checked?'var(--accent)':'';l.style.color=cb.checked?'var(--accent)':'';
+  atualizarContagemGrupoWh();
+}
+function atualizarContagemGrupoWh(){
+  const n=document.querySelectorAll('#wh-group-list input:checked').length;
+  document.getElementById('wh-group-count').textContent=n?`(${n} selecionado${n>1?'s':''})`:'';
 }
 
 function editWebhook(id) {
@@ -3199,12 +3229,15 @@ async function saveWebhook() {
   const dist = document.getElementById('wh-dist').value;
   const fixedSeller = document.getElementById('wh-seller').value;
   if (dist === 'fixed' && !fixedSeller) { showToast('Selecione um vendedor fixo.', 'error'); return; }
+  const grupoIds = [...document.querySelectorAll('#wh-group-list input:checked')].map(c => c.value);
+  if (dist === 'group' && grupoIds.length < 2) { showToast('Marque pelo menos 2 vendedores para o rodízio.', 'error'); return; }
   const data = {
     name,
     origin: document.getElementById('wh-origin').value,
     distribution: dist,
     empresa: document.getElementById('wh-empresa').value,
     fixed_seller_id: dist === 'fixed' ? fixedSeller : null,
+    group_seller_ids: dist === 'group' ? grupoIds : [],
     active: document.getElementById('wh-active').value === 'true'
   };
   const { error } = id
