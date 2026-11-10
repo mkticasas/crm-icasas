@@ -354,7 +354,7 @@
 
     /* BOTTOM NAV */
     .mobile-nav{display:flex!important;}
-    .page{padding-bottom:76px;}
+    .page{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px));}
     footer{display:none!important;}
   }
 
@@ -378,14 +378,17 @@
   .mobile-nav{
     display:none;
     position:fixed;bottom:0;left:0;right:0;
-    background:var(--bg2);border-top:1px solid var(--border);
-    z-index:99;padding:8px 0 env(safe-area-inset-bottom,0);
+    background:rgba(19,22,29,.92);-webkit-backdrop-filter:saturate(160%) blur(16px);backdrop-filter:saturate(160%) blur(16px);
+    border-top:1px solid var(--border);
+    z-index:99;padding:6px 6px max(env(safe-area-inset-bottom,0px),8px);
   }
-  .mobile-nav-inner{display:flex;justify-content:space-around;align-items:center;}
-  .mobile-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 12px;cursor:pointer;color:var(--text3);transition:color .15s;min-width:56px;}
+  .mobile-nav-inner{display:flex;align-items:stretch;width:100%;max-width:520px;margin:0 auto;}
+  .mobile-nav-item{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 2px;cursor:pointer;color:var(--text3);transition:color .15s;-webkit-tap-highlight-color:transparent;border-radius:12px;position:relative;}
+  .mobile-nav-item svg{width:22px;height:22px;flex-shrink:0;transition:transform .15s;}
+  .mobile-nav-item span{font-size:10.5px;font-weight:500;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
   .mobile-nav-item.active{color:var(--accent);}
-  .mobile-nav-item svg{width:20px;height:20px;}
-  .mobile-nav-item span{font-size:10px;font-weight:500;}
+  .mobile-nav-item.active::before{content:'';position:absolute;top:2px;left:50%;transform:translateX(-50%);width:44px;height:30px;border-radius:15px;background:rgba(61,126,255,.14);z-index:-1;}
+  .mobile-nav-item:active svg{transform:scale(.9);}
   /* Trava de zoom no iPhone: iOS dá zoom em campos com fonte < 16px */
   html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;}
   @media (max-width:900px){input,select,textarea{font-size:16px !important;}}
