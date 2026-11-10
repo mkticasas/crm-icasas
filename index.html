@@ -250,6 +250,8 @@
       background-repeat:no-repeat!important;background-position:right 8px center!important;}
     .topbar-sep{display:none;}
   }
+  /* com o menu aberto, o + flutuante some para não cobrir os itens */
+  body.drawer-aberto #fabNewLead{opacity:0!important;pointer-events:none!important;}
   /* FAIXA BLACK iCASAS — fixa, não fecha, some sozinha depois de 30/11 */
   .black-slot:empty{display:none;}
   #page-pipeline .black-slot{padding:0 24px;flex-shrink:0;}
@@ -2030,8 +2032,8 @@ async function removerPushDesteAparelho(){
 }
 
 // DRAWER
-function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('drawerOverlay').classList.add('open');}
-function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawerOverlay').classList.remove('open');}
+function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('drawerOverlay').classList.add('open');document.body.classList.add('drawer-aberto');}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawerOverlay').classList.remove('open');document.body.classList.remove('drawer-aberto');}
 function navTo(page){showPage(page);closeDrawer();}
 
 // PROFILE MODAL
