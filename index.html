@@ -593,7 +593,7 @@
       <div class="filter-group"><label>Vendedor</label><select id="f-seller" onchange="filterLeads()"><option value="">Todos</option></select></div>
       <div class="filter-group"><label>Origem</label>
         <select id="f-origin" onchange="filterLeads()">
-          <option value="">Todas</option><option>Instagram</option><option>Facebook</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Feirão</option><option>Outros</option>
+          <option value="">Todas</option><option>Instagram</option><option>Facebook</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Feirão</option><option>Empreendimentos</option><option>ImovelWeb</option><option>Outros</option>
         </select>
       </div>
       <div class="filter-group"><label>De</label><input type="date" id="f-date-from" onchange="filterLeads()"></div>
@@ -770,7 +770,7 @@
         <div class="filter-group"><label>Estágio</label><select id="r-stage"><option value="">Todos</option></select></div>
         <div class="filter-group"><label>Vendedor</label><select id="r-seller"><option value="">Todos</option></select></div>
         <div class="filter-group"><label>Origem</label>
-          <select id="r-origin"><option value="">Todas</option><option>Instagram</option><option>Facebook</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Feirão</option><option>Outros</option></select>
+          <select id="r-origin"><option value="">Todas</option><option>Instagram</option><option>Facebook</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Feirão</option><option>Empreendimentos</option><option>ImovelWeb</option><option>Outros</option></select>
         </div>
         <div class="filter-group"><label>De</label><input type="date" id="r-date-from"></div>
         <div class="filter-group"><label>Até</label><input type="date" id="r-date-to"></div>
@@ -990,7 +990,7 @@
           <label>Origem dos leads</label>
           <select id="wh-origin">
             <option>Instagram</option><option>Facebook</option><option>WhatsApp</option>
-            <option>Site</option><option>Feirão</option><option>Indicação</option><option>Outros</option>
+            <option>Site</option><option>Feirão</option><option>Empreendimentos</option><option>ImovelWeb</option><option>Indicação</option><option>Outros</option>
           </select>
         </div>
         <div class="form-group">
@@ -1175,7 +1175,7 @@
             <option>Facebook</option>
             <option>WhatsApp</option>
             <option>Site</option>
-            <option>Feirão</option>
+            <option>Feirão</option><option>Empreendimentos</option><option>ImovelWeb</option>
             <option>Google</option>
             <option>Outros</option>
           </select>
@@ -2264,7 +2264,7 @@ function filterLeads(){
   const stage=document.getElementById('f-stage').value,seller=document.getElementById('f-seller').value,origin=document.getElementById('f-origin').value;
   const from=document.getElementById('f-date-from').value,to=document.getElementById('f-date-to').value,search=document.getElementById('f-search').value.toLowerCase();
   let f=allLeads.filter(l=>{
-    if(stage&&l.stage!==stage)return false;if(seller&&l.seller_id!=seller)return false;if(origin&&l.origin!==origin)return false;
+    if(stage&&l.stage!==stage)return false;if(seller&&l.seller_id!=seller)return false;if(origin&&origemNorm(l.origin)!==origemNorm(origin))return false;
     if(from&&new Date(l.created_at)<new Date(from))return false;if(to&&new Date(l.created_at)>new Date(to+'T23:59:59'))return false;
     if(search&&!l.name?.toLowerCase().includes(search)&&!l.phone?.includes(search))return false;return true;
   });
@@ -2485,7 +2485,7 @@ function getReportLeads(){
   const origin=document.getElementById('r-origin').value,from=document.getElementById('r-date-from').value,to=document.getElementById('r-date-to').value;
   return allLeads.filter(l=>{
     if(empresaFiltro!=='__todas'&&l.empresa!==empresaFiltro)return false;
-    if(stage&&l.stage!==stage)return false;if(seller&&l.seller_id!=seller)return false;if(origin&&l.origin!==origin)return false;
+    if(stage&&l.stage!==stage)return false;if(seller&&l.seller_id!=seller)return false;if(origin&&origemNorm(l.origin)!==origemNorm(origin))return false;
     if(from&&new Date(l.created_at)<new Date(from))return false;if(to&&new Date(l.created_at)>new Date(to+'T23:59:59'))return false;return true;
   });
 }
@@ -2618,7 +2618,13 @@ function openLeadModal(lead=null){
   // vendedor sempre filtrado pela empresa que ficou definida acima
   atualizarVendedoresDoFormulario();
   // Origem
-  document.getElementById('l-origin').value=lead?(lead.origin||''):'';
+  { // casa a origem salva com a opção da lista mesmo com maiúscula/acento diferente; se não existir, adiciona
+    const sel=document.getElementById('l-origin'),orig=lead?(lead.origin||''):'';
+    sel.querySelectorAll('option[data-extra]').forEach(o=>o.remove());
+    let op=[...sel.options].find(o=>o.value&&origemNorm(o.value)===origemNorm(orig));
+    if(orig&&!op){op=new Option(orig,orig);op.dataset.extra='1';sel.add(op);}
+    sel.value=op?op.value:'';
+  }
   // indicação não depende mais da origem — é sinalizada só pelo nome/indicador preenchido
   const isRef=lead?(!!(lead.referral_name)||!!(lead.indicado_por_id)):false;
   document.getElementById('l-is-referral').checked=isRef;
@@ -3135,6 +3141,8 @@ function renderWebhooks() {
   }).join('');
 }
 
+// Compara origem sem ligar para maiúscula/acento ("facebook" = "Facebook", "outro" = "Outros")
+function origemNorm(o){let t=String(o||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();if(t==='outro')t='outros';return t;}
 // Normaliza telefone para o WhatsApp: só dígitos, com 55 uma única vez
 function waFmt(num){let d=String(num||'').replace(/\D/g,'');if(!d)return '';if(!(d.startsWith('55')&&d.length>=12))d='55'+d;return d;}
 // Copia o número no formato do WhatsApp (+55DDDNÚMERO)
