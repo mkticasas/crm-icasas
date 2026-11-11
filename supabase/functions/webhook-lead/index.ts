@@ -58,9 +58,7 @@ Deno.serve(async (req) => {
   const mPipe = nameRaw.match(/^(.*?)\s*\|\s*([^|]*)$/)
   if (mPipe) { name = mPipe[1].trim() || nameRaw; formDoNome = mPipe[2].trim() }
   const formulario = String(body.formulario || body.form || body.form_name || '').trim() || formDoNome || wh.name || null
-  // Nome do lead no CRM: "Nome | FORMULÁRIO" (padrão usado pela equipe). Se já veio com a "|" do Zapier, mantém como veio.
-  if (mPipe) name = nameRaw
-  else if (formulario) name = `${name} | ${formulario}`
+  // Nome fica limpo (só o nome do lead); o formulário/webhook aparece no CRM como selo separado
 
   // Respostas do formulário: todo campo extra que o Zapier mandar vira pergunta → resposta (na ordem enviada)
   const usados = new Set(['name', 'full_name', 'phone', 'phone_number', 'email', 'notes', 'campaign',
