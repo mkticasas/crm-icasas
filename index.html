@@ -710,7 +710,7 @@
           <option value="">Todas</option><option>Instagram</option><option>Facebook</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Feirão</option><option>Empreendimentos</option><option>ImovelWeb</option><option>Outros</option>
         </select>
       </div>
-      <div class="filter-group"><label>Formulário</label><select id="f-form" onchange="filterLeads()"><option value="">Todos</option></select></div>
+      <div class="filter-group"><label>Campanha</label><select id="f-form" onchange="filterLeads()"><option value="">Todas</option></select></div>
       <div class="filter-group"><label>De</label><input type="date" id="f-date-from" onchange="filterLeads()"></div>
       <div class="filter-group"><label>Até</label><input type="date" id="f-date-to" onchange="filterLeads()"></div>
       <div class="filter-group"><label>Buscar</label><input type="text" id="f-search" placeholder="Nome ou telefone..." oninput="filterLeads()" style="width:180px;"></div>
@@ -764,7 +764,7 @@
           </select>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
-          <select id="pf-form" onchange="renderPipeline()" style="width:auto;max-width:200px;padding-right:28px;"><option value="">Todos os formulários</option></select>
+          <select id="pf-form" onchange="renderPipeline()" style="width:auto;max-width:200px;padding-right:28px;"><option value="">Todas as campanhas</option></select>
         </div>
         <!-- Standby button -->
         <button class="btn btn-ghost btn-sm" onclick="toggleStandbyPanel()" id="btnStandby" style="margin-left:auto;gap:6px;">
@@ -884,7 +884,7 @@
         <div class="filter-group"><label>Origem</label>
           <select id="r-origin"><option value="">Todas</option><option>Instagram</option><option>Facebook</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Feirão</option><option>Empreendimentos</option><option>ImovelWeb</option><option>Outros</option></select>
         </div>
-        <div class="filter-group"><label>Formulário</label><select id="r-form"><option value="">Todos</option></select></div>
+        <div class="filter-group"><label>Campanha</label><select id="r-form"><option value="">Todas</option></select></div>
         <div class="filter-group r-data"><label>De</label><input type="date" id="r-date-from"></div>
         <div class="filter-group r-data"><label>Até</label><input type="date" id="r-date-to"></div>
         <div class="r-acoes" style="display:flex;gap:8px;margin-top:16px;">
@@ -1333,7 +1333,7 @@
         <div id="l-tags-picker" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
         <input type="hidden" id="l-tags" value="">
       </div>
-      <div class="form-group"><label>Formulário</label><input type="text" id="l-form" list="dl-formularios" placeholder="Ex.: CASA E CONSTRUÇÃO"><datalist id="dl-formularios"></datalist></div>
+      <div class="form-group"><label>Campanha</label><input type="text" id="l-form" list="dl-formularios" placeholder="Ex.: CASA E CONSTRUÇÃO"><datalist id="dl-formularios"></datalist></div>
       <div class="form-group"><label>Observações</label><textarea id="l-notes" placeholder="Informações relevantes sobre o lead..."></textarea></div>
       <div class="form-group">
         <label>Anexos (PDF, imagens)</label>
@@ -1526,7 +1526,7 @@
       <div class="detail-row"><label>Telefone</label><span id="dp-phone">—</span></div>
       <div class="detail-row"><label>E-mail</label><span id="dp-email">—</span></div>
       <div class="detail-row"><label>Origem</label><span id="dp-origin">—</span></div>
-      <div class="detail-row"><label>Formulário</label><span id="dp-form">—</span></div>
+      <div class="detail-row"><label>Campanha</label><span id="dp-form">—</span></div>
       <div class="detail-row" id="dp-referral-row" style="display:none;"><label>Indicado por</label><span id="dp-referral">—</span></div>
       <div class="detail-row"><label>Endereço</label><span id="dp-address">—</span></div>
       <div class="detail-row" style="display:none;"><label>Temperatura</label><span id="dp-temp">—</span></div>
@@ -2711,7 +2711,7 @@ function previewReport(){
 function exportCSVReport(){
   const data=getReportLeads();
   if(!data.length){showToast('Nenhum dado para exportar.','error');return;}
-  const linhas=[['Nome','Telefone','Email','Empresa','Origem','Formulário','Vendedor','Estágio','Valor','Data']];
+  const linhas=[['Nome','Telefone','Email','Empresa','Origem','Campanha','Vendedor','Estágio','Valor','Data']];
   data.forEach(l=>{
     const s=allSellers.find(s=>s.id==l.seller_id);
     const emp=empresaInfo(l.empresa||'automacao');
@@ -3364,7 +3364,7 @@ setInterval(renderFaixaBlack,60*60*1000);
 function formBadge(f){
   if(!f)return '';
   const base='display:inline-flex;align-items:center;gap:3px;padding:0 6px;border-radius:10px;font-size:9px;font-weight:600;line-height:15px;height:15px;white-space:nowrap;letter-spacing:.2px;vertical-align:middle;max-width:100%;overflow:hidden;text-overflow:ellipsis;';
-  return `<span class="form-badge" title="Formulário" style="${base}background:rgba(255,255,255,.06);color:var(--text2);border:1px solid rgba(255,255,255,.14);"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>${String(f).replace(/</g,'&lt;')}</span>`;
+  return `<span class="form-badge" title="Campanha" style="${base}background:rgba(255,255,255,.06);color:var(--text2);border:1px solid rgba(255,255,255,.14);"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>${String(f).replace(/</g,'&lt;')}</span>`;
 }
 function badgesOrigemForm(l){return [l.origin?origemBadge(l.origin):'',formBadge(l.formulario)].filter(Boolean).join(' ');}
 function listaFormularios(){
@@ -3375,7 +3375,7 @@ function preencherFiltrosFormulario(){
   ['pf-form','f-form','r-form'].forEach(id=>{
     const sel=document.getElementById(id);if(!sel)return;
     const atual=sel.value;
-    sel.innerHTML='<option value="">'+(id==='pf-form'?'Todos os formulários':'Todos')+'</option>'+lista.map(f=>`<option value="${f.replace(/"/g,'&quot;')}">${f}</option>`).join('');
+    sel.innerHTML='<option value="">'+(id==='pf-form'?'Todas as campanhas':'Todas')+'</option>'+lista.map(f=>`<option value="${f.replace(/"/g,'&quot;')}">${f}</option>`).join('');
     if(atual&&lista.includes(atual))sel.value=atual;
   });
   const dl=document.getElementById('dl-formularios');
