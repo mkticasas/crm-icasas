@@ -278,6 +278,11 @@
     .popup-update .pu-bts{width:100%;}
     .popup-update .pu-bts .btn{flex:1;justify-content:center;height:40px;}
   }
+  /* RESPOSTAS DO FORMULÁRIO (detalhe do lead) */
+  .resp-item{padding:8px 0;border-bottom:1px solid var(--border);}
+  .resp-item:last-child{border-bottom:none;}
+  .resp-p{font-size:11px;color:var(--text3);margin-bottom:2px;}
+  .resp-r{font-size:13px;color:var(--text);line-height:1.45;white-space:pre-wrap;word-break:break-word;}
   /* FAIXA BLACK iCASAS — fixa, não fecha, some sozinha depois de 30/11 */
   .black-slot:empty{display:none;}
   #page-pipeline .black-slot{padding:0 24px;flex-shrink:0;}
@@ -689,6 +694,7 @@
           <option value="">Todas</option><option>Instagram</option><option>Facebook</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Feirão</option><option>Empreendimentos</option><option>ImovelWeb</option><option>Outros</option>
         </select>
       </div>
+      <div class="filter-group"><label>Formulário</label><select id="f-form" onchange="filterLeads()"><option value="">Todos</option></select></div>
       <div class="filter-group"><label>De</label><input type="date" id="f-date-from" onchange="filterLeads()"></div>
       <div class="filter-group"><label>Até</label><input type="date" id="f-date-to" onchange="filterLeads()"></div>
       <div class="filter-group"><label>Buscar</label><input type="text" id="f-search" placeholder="Nome ou telefone..." oninput="filterLeads()" style="width:180px;"></div>
@@ -740,6 +746,9 @@
             <option value="value_asc">Menor valor</option>
             <option value="name">Nome A-Z</option>
           </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <select id="pf-form" onchange="renderPipeline()" style="width:auto;max-width:200px;padding-right:28px;"><option value="">Todos os formulários</option></select>
         </div>
         <!-- Standby button -->
         <button class="btn btn-ghost btn-sm" onclick="toggleStandbyPanel()" id="btnStandby" style="margin-left:auto;gap:6px;">
@@ -859,6 +868,7 @@
         <div class="filter-group"><label>Origem</label>
           <select id="r-origin"><option value="">Todas</option><option>Instagram</option><option>Facebook</option><option>Indicação</option><option>Site</option><option>WhatsApp</option><option>Feirão</option><option>Empreendimentos</option><option>ImovelWeb</option><option>Outros</option></select>
         </div>
+        <div class="filter-group"><label>Formulário</label><select id="r-form"><option value="">Todos</option></select></div>
         <div class="filter-group r-data"><label>De</label><input type="date" id="r-date-from"></div>
         <div class="filter-group r-data"><label>Até</label><input type="date" id="r-date-to"></div>
         <div class="r-acoes" style="display:flex;gap:8px;margin-top:16px;">
@@ -1307,6 +1317,7 @@
         <div id="l-tags-picker" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
         <input type="hidden" id="l-tags" value="">
       </div>
+      <div class="form-group"><label>Formulário</label><input type="text" id="l-form" list="dl-formularios" placeholder="Ex.: CASA E CONSTRUÇÃO"><datalist id="dl-formularios"></datalist></div>
       <div class="form-group"><label>Observações</label><textarea id="l-notes" placeholder="Informações relevantes sobre o lead..."></textarea></div>
       <div class="form-group">
         <label>Anexos (PDF, imagens)</label>
@@ -1499,12 +1510,17 @@
       <div class="detail-row"><label>Telefone</label><span id="dp-phone">—</span></div>
       <div class="detail-row"><label>E-mail</label><span id="dp-email">—</span></div>
       <div class="detail-row"><label>Origem</label><span id="dp-origin">—</span></div>
+      <div class="detail-row"><label>Formulário</label><span id="dp-form">—</span></div>
       <div class="detail-row" id="dp-referral-row" style="display:none;"><label>Indicado por</label><span id="dp-referral">—</span></div>
       <div class="detail-row"><label>Endereço</label><span id="dp-address">—</span></div>
       <div class="detail-row" style="display:none;"><label>Temperatura</label><span id="dp-temp">—</span></div>
       <div class="detail-row"><label>Vendedor</label><span id="dp-seller">—</span></div>
       <div class="detail-row"><label>Valor</label><span id="dp-value">—</span></div>
       <div class="detail-row"><label>Criado em</label><span id="dp-created">—</span></div>
+    </div>
+    <div class="detail-section" id="dp-respostas-wrap" style="display:none;">
+      <div class="detail-section-title">Respostas do formulário</div>
+      <div id="dp-respostas"></div>
     </div>
     <div class="detail-section">
       <div class="detail-section-title">Observações</div>
@@ -2151,6 +2167,7 @@ function startRealtime(){
       // Lead novo chegou
       const lead = payload.new;
       allLeads.unshift(lead);
+      preencherFiltrosFormulario();
       filterLeads();
       renderDashboard();
       renderPipeline();
@@ -2304,6 +2321,7 @@ async function loadLeads(){
   const{data,error}=await query;
   if(error){showToast('Erro ao carregar leads.','error');return;}
   allLeads=data||[];
+  preencherFiltrosFormulario();
   filterLeads();
   const ativa=document.querySelector('.page.active');
   const pid=ativa?ativa.id.replace('page-',''):'';
@@ -2390,10 +2408,10 @@ function renderRecentLeads(){
 
 // LEADS TABLE
 function filterLeads(){
-  const stage=document.getElementById('f-stage').value,seller=document.getElementById('f-seller').value,origin=document.getElementById('f-origin').value;
+  const stage=document.getElementById('f-stage').value,seller=document.getElementById('f-seller').value,origin=document.getElementById('f-origin').value,formF=(document.getElementById('f-form')||{}).value||'';
   const from=document.getElementById('f-date-from').value,to=document.getElementById('f-date-to').value,search=document.getElementById('f-search').value.toLowerCase();
   let f=allLeads.filter(l=>{
-    if(stage&&l.stage!==stage)return false;if(seller&&l.seller_id!=seller)return false;if(origin&&origemNorm(l.origin)!==origemNorm(origin))return false;
+    if(stage&&l.stage!==stage)return false;if(seller&&l.seller_id!=seller)return false;if(origin&&origemNorm(l.origin)!==origemNorm(origin))return false;if(formF&&l.formulario!==formF)return false;
     if(from&&new Date(l.created_at)<new Date(from))return false;if(to&&new Date(l.created_at)>new Date(to+'T23:59:59'))return false;
     if(search&&!l.name?.toLowerCase().includes(search)&&!l.phone?.includes(search))return false;return true;
   });
@@ -2412,7 +2430,7 @@ function leadRow(l,cols){
   return `<tr onclick="openDetail('${l.id}')">
     <td>${l.name||'—'}</td><td>${l.phone||'—'}</td>
     ${cols>=9?`<td>${waBtn}</td>`:''}
-    <td>${origemBadge(l.origin)}</td>
+    <td>${badgesOrigemForm(l)||'<span style="color:var(--text3)">—</span>'}</td>
     <td>${s?`<span style="display:flex;align-items:center;gap:6px;"><div class="avatar-sm" style="width:20px;height:20px;font-size:9px;background:${s.color||'#3d7eff'}">${initials(s.nickname||s.name)}</div>${s.nickname||s.name}</span>`:'—'}</td>
     <td><span class="badge ${stage.badge}">${stage.label}</span></td>
     <td>${value}</td><td>${date}</td>
@@ -2425,12 +2443,12 @@ function clearFilters(){['f-stage','f-seller','f-origin'].forEach(id=>document.g
 function renderPipeline(){
   const sf     = document.getElementById('pf-seller')?.value || '';
   const sort   = document.getElementById('pf-sort')?.value   || 'newest';
-  const temp   = document.getElementById('pf-temp')?.value   || '';
+  const formF  = document.getElementById('pf-form')?.value   || '';
   const search = (document.getElementById('pf-search')?.value || '').toLowerCase();
 
   let filtered = allLeads.filter(l => {
     if (sf && l.seller_id != sf) return false;
-    if (temp && l.temperature !== temp) return false;
+    if (formF && l.formulario !== formF) return false;
     if (search && !l.name?.toLowerCase().includes(search) && !l.phone?.includes(search)) return false;
     return true;
   });
@@ -2486,7 +2504,7 @@ function pipelineCard(l){
     <div class="lead-name">${l.name||'—'}</div>
     <div class="lead-meta">
       ${l.phone?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>${l.phone}</div>`:''}
-      ${l.origin?`<div class="lead-meta-row" style="margin:2px 0;">${origemBadge(l.origin)}</div>`:''}
+      ${(l.origin||l.formulario)?`<div class="lead-meta-row" style="margin:2px 0;flex-wrap:wrap;gap:4px;">${badgesOrigemForm(l)}</div>`:''}
       ${l.address?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${l.address}</div>`:''}
       ${date?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${date}</div>`:''}
       ${l.attachments&&l.attachments.length?`<div class="lead-meta-row"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${l.attachments.length} arquivo${l.attachments.length!==1?'s':''}</div>`:''}
@@ -2611,7 +2629,9 @@ function getReportLeads(){
   const empresaFiltro=(document.getElementById('r-empresa')||{}).value || '__todas';
   const stage=document.getElementById('r-stage').value,seller=document.getElementById('r-seller').value;
   const origin=document.getElementById('r-origin').value,from=document.getElementById('r-date-from').value,to=document.getElementById('r-date-to').value;
+  const formF=(document.getElementById('r-form')||{}).value||'';
   return allLeads.filter(l=>{
+    if(formF&&l.formulario!==formF)return false;
     if(empresaFiltro!=='__todas'&&l.empresa!==empresaFiltro)return false;
     if(stage&&l.stage!==stage)return false;if(seller&&l.seller_id!=seller)return false;if(origin&&origemNorm(l.origin)!==origemNorm(origin))return false;
     if(from&&new Date(l.created_at)<new Date(from))return false;if(to&&new Date(l.created_at)>new Date(to+'T23:59:59'))return false;return true;
@@ -2663,7 +2683,7 @@ function previewReport(){
       <td style="color:var(--text);font-weight:500;">${l.name||'—'}</td>
       <td>${l.phone||'—'}</td>
       <td><span style="color:${emp.cor};font-size:12px;">${emp.nome}</span></td>
-      <td>${origemBadge(l.origin)}</td>
+      <td>${badgesOrigemForm(l)||'<span style="color:var(--text3)">—</span>'}</td>
       <td>${s?s.nickname||s.name:'—'}</td>
       <td><span class="badge ${stage.badge}">${stage.label}</span></td>
       <td>${l.value?'R$ '+parseFloat(l.value).toLocaleString('pt-BR'):'—'}</td>
@@ -2675,12 +2695,12 @@ function previewReport(){
 function exportCSVReport(){
   const data=getReportLeads();
   if(!data.length){showToast('Nenhum dado para exportar.','error');return;}
-  const linhas=[['Nome','Telefone','Email','Empresa','Origem','Vendedor','Estágio','Valor','Data']];
+  const linhas=[['Nome','Telefone','Email','Empresa','Origem','Formulário','Vendedor','Estágio','Valor','Data']];
   data.forEach(l=>{
     const s=allSellers.find(s=>s.id==l.seller_id);
     const emp=empresaInfo(l.empresa||'automacao');
     linhas.push([
-      l.name||'', l.phone||'', l.email||'', emp.nome, origemLabel(l.origin),
+      l.name||'', l.phone||'', l.email||'', emp.nome, origemLabel(l.origin), l.formulario||'',
       s?(s.nickname||s.name):'', STAGE_INFO[l.stage]?.label||'',
       l.value?parseFloat(l.value).toFixed(2).replace('.',','):'',
       l.created_at?new Date(l.created_at).toLocaleDateString('pt-BR'):''
@@ -2747,6 +2767,7 @@ function openLeadModal(lead=null){
   atualizarVendedoresDoFormulario();
   // Origem
   { // casa a origem salva com a opção da lista mesmo com maiúscula/acento diferente; se não existir, adiciona
+    document.getElementById('l-form').value=lead?(lead.formulario||''):'';
     const sel=document.getElementById('l-origin'),orig=lead?(lead.origin||''):'';
     sel.querySelectorAll('option[data-extra]').forEach(o=>o.remove());
     let op=[...sel.options].find(o=>o.value&&origemNorm(o.value)===origemNorm(orig));
@@ -2830,7 +2851,7 @@ async function saveLead(){
   const indicadoPorId=isRef?(document.getElementById('l-indicado-por').value||null):null;
   // texto livre só é salvo quando NÃO tem indicador vinculado — evita duplicar a mesma informação em dois formatos
   const referral_name=(isRef&&!indicadoPorId)?document.getElementById('l-referral-name').value.trim():'';
-  const data={name:document.getElementById('l-name').value.trim(),phone:document.getElementById('l-phone').value.trim(),address:document.getElementById('l-address').value.trim(),seller_id,stage:document.getElementById('l-stage').value,value:parseFloat(document.getElementById('l-value').value)||null,temperature:document.getElementById('l-temp').value,notes:document.getElementById('l-notes').value.trim(),tags,origin:origin||null,referral_name:referral_name||null,indicado_por_id:indicadoPorId};
+  const data={name:document.getElementById('l-name').value.trim(),phone:document.getElementById('l-phone').value.trim(),address:document.getElementById('l-address').value.trim(),seller_id,stage:document.getElementById('l-stage').value,value:parseFloat(document.getElementById('l-value').value)||null,temperature:document.getElementById('l-temp').value,notes:document.getElementById('l-notes').value.trim(),tags,origin:origin||null,formulario:(document.getElementById('l-form').value.trim()||null),referral_name:referral_name||null,indicado_por_id:indicadoPorId};
   // ===== empresa do lead (novo) =====
   if(!id){
     const empSel=document.getElementById('l-empresa');
@@ -2986,6 +3007,11 @@ function openDetail(id){
   document.getElementById('dp-value').textContent=l.value?'R$ '+parseFloat(l.value).toLocaleString('pt-BR'):'—';
   document.getElementById('dp-created').textContent=l.created_at?new Date(l.created_at).toLocaleDateString('pt-BR'):'—';
   document.getElementById('dp-notes').textContent=l.notes||'Sem observações.';
+  document.getElementById('dp-form').innerHTML=l.formulario?formBadge(l.formulario):'—';
+  { const rs=Array.isArray(l.respostas)?l.respostas:[];
+    const esc=t=>String(t??'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    document.getElementById('dp-respostas-wrap').style.display=rs.length?'':'none';
+    document.getElementById('dp-respostas').innerHTML=rs.map(x=>`<div class="resp-item"><div class="resp-p">${esc(x.p)}</div><div class="resp-r">${esc(x.r)}</div></div>`).join(''); }
   const waNum=l.phone?l.phone.replace(/\D/g,''):'';
   document.getElementById('dp-wa-wrap').innerHTML=waNum?`<a class="wa-btn" href="https://wa.me/${waFmt(waNum)}" target="_blank">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -3326,6 +3352,27 @@ setInterval(renderFaixaBlack,60*60*1000);
     if(el&&!isNaN(d))el.textContent='versão '+d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   }catch(e){}
 })();
+// ===== FORMULÁRIO (de qual formulário/campanha o lead veio) =====
+function formBadge(f){
+  if(!f)return '';
+  const base='display:inline-flex;align-items:center;gap:3px;padding:0 6px;border-radius:10px;font-size:9px;font-weight:600;line-height:15px;height:15px;white-space:nowrap;letter-spacing:.2px;vertical-align:middle;max-width:100%;overflow:hidden;text-overflow:ellipsis;';
+  return `<span class="form-badge" title="Formulário" style="${base}background:rgba(255,255,255,.06);color:var(--text2);border:1px solid rgba(255,255,255,.14);"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>${String(f).replace(/</g,'&lt;')}</span>`;
+}
+function badgesOrigemForm(l){return [l.origin?origemBadge(l.origin):'',formBadge(l.formulario)].filter(Boolean).join(' ');}
+function listaFormularios(){
+  return [...new Set(allLeads.map(l=>l.formulario).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+function preencherFiltrosFormulario(){
+  const lista=listaFormularios();
+  ['pf-form','f-form','r-form'].forEach(id=>{
+    const sel=document.getElementById(id);if(!sel)return;
+    const atual=sel.value;
+    sel.innerHTML='<option value="">'+(id==='pf-form'?'Todos os formulários':'Todos')+'</option>'+lista.map(f=>`<option value="${f.replace(/"/g,'&quot;')}">${f}</option>`).join('');
+    if(atual&&lista.includes(atual))sel.value=atual;
+  });
+  const dl=document.getElementById('dl-formularios');
+  if(dl)dl.innerHTML=lista.map(f=>`<option value="${f.replace(/"/g,'&quot;')}">`).join('');
+}
 // ===== CORES DAS ORIGENS =====
 // Facebook e Instagram com a cor do app; as demais com cores próprias e fundo suave
 const ORIGENS={

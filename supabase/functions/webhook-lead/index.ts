@@ -44,13 +44,27 @@ Deno.serve(async (req) => {
   if (whErr || !wh) return new Response(JSON.stringify({ error: 'Webhook não encontrado ou inativo' }), { status: 404, headers })
 
   const map = wh.field_map || {}
-  const name     = getNestedValue(body, map.name     || 'name')  || getNestedValue(body, 'full_name') || ''
+  const nameRaw  = String(getNestedValue(body, map.name || 'name') || getNestedValue(body, 'full_name') || '').trim()
   const phone    = getNestedValue(body, map.phone    || 'phone') || getNestedValue(body, 'phone_number') || ''
   const email    = getNestedValue(body, map.email    || 'email') || ''
   const notes    = map.notes    ? getNestedValue(body, map.notes)    : ''
   const campaign = map.campaign ? getNestedValue(body, map.campaign) : ''
 
-  if (!name) return new Response(JSON.stringify({ error: 'Nome não encontrado no payload. Verifique o mapeamento.' }), { status: 400, headers })
+  if (!nameRaw) return new Response(JSON.stringify({ error: 'Nome não encontrado no payload. Verifique o mapeamento.' }), { status: 400, headers })
+
+  // Formulário: campo "formulario"/"form" do Zapier > texto depois da "|" no nome (formato antigo) > nome do webhook
+  let name = nameRaw
+  let formDoNome = ''
+  const mPipe = nameRaw.match(/^(.*?)\s*\|\s*([^|]*)$/)
+  if (mPipe) { name = mPipe[1].trim() || nameRaw; formDoNome = mPipe[2].trim() }
+  const formulario = String(body.formulario || body.form || body.form_name || '').trim() || formDoNome || wh.name || null
+
+  // Respostas do formulário: todo campo extra que o Zapier mandar vira pergunta → resposta (na ordem enviada)
+  const usados = new Set(['name', 'full_name', 'phone', 'phone_number', 'email', 'notes', 'campaign',
+    'formulario', 'form', 'form_name', map.name, map.phone, map.email, map.notes, map.campaign].filter(Boolean))
+  const respostas = Object.entries(body)
+    .filter(([k, v]) => !usados.has(k) && v !== null && v !== undefined && String(v).trim() !== '' && typeof v !== 'object')
+    .map(([k, v]) => ({ p: k.replace(/_/g, ' ').trim(), r: String(v).trim() }))
 
   // empresa do lead = empresa do webhook que o recebeu
   // (webhook sem empresa cadastrada cai em 'automacao', pra não quebrar os antigos)
@@ -101,7 +115,9 @@ Deno.serve(async (req) => {
       stage: 'new',
       temperature: 'hot',
       webhook_token: token,
-      empresa: empresaLead
+      empresa: empresaLead,
+      formulario,
+      respostas
     }]).select().single()
 
   if (leadErr) return new Response(JSON.stringify({ error: leadErr.message }), { status: 500, headers })
@@ -109,5 +125,5 @@ Deno.serve(async (req) => {
   await supabase.from('webhooks').update({ leads_count: (wh.leads_count || 0) + 1 }).eq('id', wh.id)
   if (seller_id) await supabase.from('sellers').update({ last_lead_at: new Date().toISOString() }).eq('id', seller_id)
 
-  return new Response(JSON.stringify({ success: true, lead_id: lead.id, empresa: empresaLead, seller_id, distribuicao }), { status: 200, headers })
+  return new Response(JSON.stringify({ success: true, lead_id: lead.id, empresa: empresaLead, seller_id, distribuicao, formulario, respostas: respostas.length }), { status: 200, headers })
 })
