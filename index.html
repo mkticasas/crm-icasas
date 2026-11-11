@@ -283,6 +283,22 @@
   .resp-item:last-child{border-bottom:none;}
   .resp-p{font-size:11px;color:var(--text3);margin-bottom:2px;}
   .resp-r{font-size:13px;color:var(--text);line-height:1.45;white-space:pre-wrap;word-break:break-word;}
+  /* INTEGRAÇÕES — webhooks compactos */
+  .webhook-card.wh-compacto{display:flex;align-items:center;gap:12px;padding:10px 14px;margin-bottom:8px;border-radius:12px;}
+  .whc-info{flex:1;min-width:0;}
+  .whc-linha1{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .whc-nome{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;}
+  .whc-linha2{font-size:11.5px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .whc-linha2 b{color:var(--text2);}
+  .whc-acoes{display:flex;gap:5px;flex-shrink:0;}
+  .whc-acoes .btn{padding:4px 9px;font-size:11.5px;}
+  .whc-sep{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin:18px 2px 8px;}
+  @media(max-width:640px){
+    .webhook-card.wh-compacto{flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px;}
+    .whc-linha2{white-space:normal;}
+    .whc-acoes{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:5px;}
+    .whc-acoes .btn{justify-content:center;padding:6px 4px;font-size:11px;}
+  }
   /* FAIXA BLACK iCASAS — fixa, não fecha, some sozinha depois de 30/11 */
   .black-slot:empty{display:none;}
   #page-pipeline .black-slot{padding:0 24px;flex-shrink:0;}
@@ -435,9 +451,9 @@
 
     /* WEBHOOK CARDS */
     .webhook-card{padding:14px;}
-    .webhook-card>div:first-child{flex-direction:column;gap:10px;}
-    .webhook-card>div:first-child>div:last-child{display:flex;flex-wrap:wrap;gap:6px;width:100%;}
-    .webhook-card>div:first-child>div:last-child .btn{flex:1;justify-content:center;min-width:calc(50% - 3px);}
+    .webhook-card:not(.wh-compacto)>div:first-child{flex-direction:column;gap:10px;}
+    .webhook-card:not(.wh-compacto)>div:first-child>div:last-child{display:flex;flex-wrap:wrap;gap:6px;width:100%;}
+    .webhook-card:not(.wh-compacto)>div:first-child>div:last-child .btn{flex:1;justify-content:center;min-width:calc(50% - 3px);}
     .webhook-meta{gap:10px;}
 
     /* REPORTS */
@@ -3251,51 +3267,43 @@ function renderWebhooks() {
     el.innerHTML = `<div class="empty-state"><p>Nenhum webhook criado ainda.</p><button class="btn btn-primary" onclick="openWebhookModal()">Criar primeiro webhook</button></div>`;
     return;
   }
-  el.innerHTML = allWebhooks.map(wh => {
+  // ativos sempre no topo; dentro de cada grupo, os mais novos primeiro
+  const ordenados = [...allWebhooks].sort((a,b) => (b.active?1:0)-(a.active?1:0) || new Date(b.created_at)-new Date(a.created_at));
+  const ativos = ordenados.filter(w => w.active), inativos = ordenados.filter(w => !w.active);
+  const card = wh => {
     const webhookUrl = `${EDGE_BASE}/webhook-lead?token=${wh.token}`;
     const seller = allSellers.find(s => s.id === wh.fixed_seller_id);
     const grupoNomes = (wh.group_seller_ids||[]).map(id => { const x = allSellers.find(s => s.id === id); return x ? (x.nickname || x.name) : null; }).filter(Boolean);
-    const distLabel = (wh.distribution === 'fixed'
-      ? `👤 Fixo: ${seller ? (seller.nickname || seller.name) : '—'}`
-      : wh.distribution === 'group'
-        ? `👥 Rodízio: ${grupoNomes.join(', ') || '—'}`
-        : '🔄 Round-robin automático')
-      + ` · <span style="color:${empresaInfo(wh.empresa||'automacao').cor}">${empresaInfo(wh.empresa||'automacao').nome}</span>`;
+    const dist = wh.distribution === 'fixed'
+      ? `Fixo: ${seller ? (seller.nickname || seller.name) : '—'}`
+      : wh.distribution === 'group' ? `Rodízio: ${grupoNomes.join(', ') || '—'}` : 'Round-robin';
+    const emp = empresaInfo(wh.empresa||'automacao');
     const leadsFromThis = allLeads.filter(l => l.webhook_token === wh.token).length;
     const map = wh.field_map || {};
     const hasMap = map.name || map.phone;
-    return `<div class="webhook-card ${wh.active ? '' : 'inactive'}">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-        <div style="flex:1;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <span class="status-dot" style="background:${wh.active ? 'var(--green)' : 'var(--text3)'}"></span>
-            <span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:600;">${wh.name}</span>
-            <span class="badge badge-new" style="font-size:10px;">${wh.origin}</span>
-            ${hasMap ? '<span class="badge" style="font-size:10px;background:rgba(34,197,94,.15);color:#4ade80;">✓ Mapeado</span>' : '<span class="badge" style="font-size:10px;background:rgba(245,158,11,.15);color:#fbbf24;">⚠ Sem mapeamento</span>'}
-          </div>
-          <div style="font-size:12px;color:var(--text3);">${distLabel}</div>
+    return `<div class="webhook-card wh-compacto ${wh.active ? '' : 'inactive'}">
+      <div class="whc-info">
+        <div class="whc-linha1">
+          <span class="status-dot" style="background:${wh.active ? 'var(--green)' : 'var(--text3)'}"></span>
+          <span class="whc-nome">${wh.name}</span>
+          ${origemBadge(wh.origin)}
+          ${hasMap ? '' : '<span class="badge" style="font-size:9px;background:rgba(245,158,11,.15);color:#fbbf24;">Sem mapeamento</span>'}
         </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
-          <button class="btn btn-ghost btn-sm" onclick="openMappingModal('${wh.id}')">Mapeamento</button>
-          <button class="btn btn-ghost btn-sm" onclick="openTestModal('${wh.id}')">Testar</button>
-          <button class="btn btn-ghost btn-sm" onclick="editWebhook('${wh.id}')">Editar</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteWebhook('${wh.id}')">Excluir</button>
+        <div class="whc-linha2">
+          <span style="color:${emp.cor}">${emp.nome}</span> · ${dist} · <b>${wh.leads_count || leadsFromThis}</b> leads · desde ${new Date(wh.created_at).toLocaleDateString('pt-BR')}
         </div>
       </div>
-      <div class="webhook-url" onclick="copyUrl('${webhookUrl}', this)">
-        <span>${webhookUrl}</span>
-        <span class="copy-btn">📋 Copiar</span>
-      </div>
-      ${hasMap ? `<div style="margin-top:8px;padding:8px 12px;background:var(--bg3);border-radius:8px;font-size:11px;color:var(--text3);font-family:monospace;">
-        nome→<strong>${map.name||'—'}</strong> · tel→<strong>${map.phone||'—'}</strong> · email→<strong>${map.email||'—'}</strong>${map.notes?' · obs→<strong>'+map.notes+'</strong>':''}
-      </div>` : ''}
-      <div class="webhook-meta">
-        <div class="webhook-stat">Leads recebidos: <strong>${wh.leads_count || leadsFromThis}</strong></div>
-        <div class="webhook-stat">Criado em: <strong>${new Date(wh.created_at).toLocaleDateString('pt-BR')}</strong></div>
-        <div class="webhook-stat">Status: <strong style="color:${wh.active ? 'var(--green)' : 'var(--text3)'}">${wh.active ? 'Ativo' : 'Inativo'}</strong></div>
+      <div class="whc-acoes">
+        <button class="btn btn-ghost btn-sm" onclick="copyUrl('${webhookUrl}', this)" title="${webhookUrl}">Copiar URL</button>
+        <button class="btn btn-ghost btn-sm" onclick="openMappingModal('${wh.id}')">Mapear</button>
+        <button class="btn btn-ghost btn-sm" onclick="openTestModal('${wh.id}')">Testar</button>
+        <button class="btn btn-ghost btn-sm" onclick="editWebhook('${wh.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteWebhook('${wh.id}')" title="Excluir">✕</button>
       </div>
     </div>`;
-  }).join('');
+  };
+  el.innerHTML = ativos.map(card).join('')
+    + (inativos.length ? `<div class="whc-sep">Inativos (${inativos.length})</div>` + inativos.map(card).join('') : '');
 }
 
 
@@ -3419,12 +3427,13 @@ function copiarNumero(num,ev){
 }
 
 function copyUrl(url, el) {
-  navigator.clipboard.writeText(url).then(() => {
-    const btn = el.querySelector('.copy-btn');
-    btn.textContent = '✅ Copiado!';
-    setTimeout(() => btn.textContent = '📋 Copiar', 2000);
+  const feito = () => {
+    const alvo = (el && el.querySelector && el.querySelector('.copy-btn')) || el;
+    if (alvo) { const antes = alvo.textContent; alvo.textContent = 'Copiado!'; setTimeout(() => alvo.textContent = antes, 1800); }
     showToast('URL copiada!', 'success');
-  });
+  };
+  const reserva = () => { const ta=document.createElement('textarea');ta.value=url;ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');feito();}catch(e){showToast('Não deu para copiar.','error');}ta.remove(); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(feito, reserva); else reserva();
 }
 
 function openWebhookModal(wh = null) {
