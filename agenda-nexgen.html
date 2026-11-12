@@ -101,9 +101,7 @@ textarea{resize:vertical;min-height:70px;}
       <div class="step"><span>3</span>Seus dados e do cliente</div>
       <div class="grid2">
         <div><label for="cNome">Seu nome (corretor)</label><input id="cNome" autocomplete="name" placeholder="Ex.: João Silva"></div>
-        <div><label for="cTel">Seu WhatsApp</label><input id="cTel" inputmode="tel" placeholder="(17) 99999-9999"></div>
         <div><label for="clNome">Nome do cliente</label><input id="clNome" placeholder="Nome completo"></div>
-        <div><label for="clTel">WhatsApp do cliente</label><input id="clTel" inputmode="tel" placeholder="(17) 99999-9999"></div>
       </div>
       <label for="obs">Observação (opcional)</label>
       <textarea id="obs" placeholder="Terreno de interesse, faixa de valor, dúvidas do cliente..."></textarea>
@@ -117,7 +115,7 @@ textarea{resize:vertical;min-height:70px;}
   <div id="telaOk" class="card ok hidden">
     <div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
     <h2>Solicitação enviada</h2>
-    <p>O horário fica reservado para você enquanto o Vinicius, da iCasas, confirma. Você recebe a confirmação pelo WhatsApp.</p>
+    <p>O horário fica reservado para você enquanto o Vinicius, da iCasas, confirma o atendimento.</p>
     <div class="det" id="okDet"></div>
     <a class="btn ghost hidden" id="okCal" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:var(--text);">Adicionar ao meu Google Agenda</a>
     <button class="btn" onclick="novaReserva()">Solicitar para outro cliente</button>
@@ -208,7 +206,6 @@ function mascaraTel(e){
   if(d.length>7)f='('+d.slice(0,2)+') '+d.slice(2,d.length-4)+'-'+d.slice(-4);
   e.target.value=f;
 }
-['cTel','clTel'].forEach(id=>document.getElementById(id).addEventListener('input',mascaraTel));
 
 function erro(msg){const e=document.getElementById('erro');e.textContent=msg;e.style.display=msg?'block':'none';}
 
@@ -217,14 +214,12 @@ async function reservar(){
   const v=id=>document.getElementById(id).value.trim();
   if(!diaSel||horaSel==null)return erro('Escolha o dia e o horário.');
   if(!v('cNome'))return erro('Informe seu nome.');
-  if(v('cTel').replace(/\D/g,'').length<10)return erro('Informe seu WhatsApp com DDD — é por ele que você recebe a confirmação.');
   if(!v('clNome'))return erro('Informe o nome do cliente.');
-  if(v('clTel').replace(/\D/g,'').length<10)return erro('Informe o WhatsApp do cliente com DDD.');
   const b=document.getElementById('btnReservar');b.disabled=true;b.textContent='Enviando...';
   const {data,error}=await db.rpc('agenda_reservar',{
     p_data:diaSel,p_hora:horaSel,
-    p_corretor_nome:v('cNome'),p_corretor_telefone:v('cTel'),
-    p_cliente_nome:v('clNome'),p_cliente_telefone:v('clTel'),
+    p_corretor_nome:v('cNome'),p_corretor_telefone:null,
+    p_cliente_nome:v('clNome'),p_cliente_telefone:null,
     p_observacao:v('obs')||null
   });
   b.disabled=false;b.textContent='Solicitar agendamento';
@@ -233,7 +228,7 @@ async function reservar(){
     await carregarOcupados();renderMes();renderSlots();
     return;
   }
-  try{localStorage.setItem('nexgen_corretor',JSON.stringify({nome:v('cNome'),tel:v('cTel')}));}catch(e){}
+  try{localStorage.setItem('nexgen_corretor',JSON.stringify({nome:v('cNome')}));}catch(e){}
   mostrarOk(v('clNome'));
 }
 
@@ -253,7 +248,7 @@ function mostrarOk(cliente){
 function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
 async function novaReserva(){
-  ['clNome','clTel','obs'].forEach(id=>document.getElementById(id).value='');
+  ['clNome','obs'].forEach(id=>document.getElementById(id).value='');
   diaSel=null;horaSel=null;atualizaResumo();
   document.getElementById('telaOk').classList.add('hidden');
   document.getElementById('telaAgenda').classList.remove('hidden');
@@ -281,7 +276,7 @@ setInterval(()=>{if(!document.hidden&&!document.getElementById('telaAgenda').cla
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)atualizarAgora();});
 
 (async function(){
-  try{const c=JSON.parse(localStorage.getItem('nexgen_corretor')||'null');if(c){cNome.value=c.nome||'';cTel.value=c.tel||'';}}catch(e){}
+  try{const c=JSON.parse(localStorage.getItem('nexgen_corretor')||'null');if(c){cNome.value=c.nome||'';}}catch(e){}
   mesBase=new Date(HOJE.getFullYear(),HOJE.getMonth(),1);
   renderMes();
   await carregarOcupados();
