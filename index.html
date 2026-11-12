@@ -2328,7 +2328,7 @@ async function loadAll(){
 
 // Abre o lead vindo do link do e-mail (?lead=ID)
 function abrirLeadDaUrl(){
-  agAtualizarBadge();
+  agAtualizarBadge(); agLigarTempoReal();
   if(new URLSearchParams(location.search).has('agenda')){history.replaceState(null,'',location.pathname);showPage('agenda');return;}
   const id=new URLSearchParams(location.search).get('lead');
   if(!id)return;
@@ -4068,7 +4068,7 @@ function showPage(page){
   if(page==='tags')renderTagsPage();
 }
 // ===== AGENDA NEXGEN — reservas dos corretores parceiros =====
-const AG_HORAS=[8,10,12,14,16];
+const AG_HORAS=[8,10,12,14,16,18];
 let agSegunda=null, agReservas=[];
 function agIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function agSegundaDe(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());const dw=x.getDay()||7;x.setDate(x.getDate()-dw+1);return x;}
@@ -4157,6 +4157,18 @@ function agAvisarCorretor(id,tipo,rr){
     ? `Olá ${r.corretor_nome||''}! Confirmado o atendimento do cliente ${r.cliente_nome} em ${quando} com a iCasas. Até lá!`
     : `Olá ${r.corretor_nome||''}! Não vou conseguir atender o cliente ${r.cliente_nome} em ${quando}. Pode escolher outro horário por aqui: ${link}`;
   window.open('https://wa.me/'+waFmt(r.corretor_telefone)+'?text='+encodeURIComponent(msg),'_blank');
+}
+let agCanal=null, agTimer=null;
+function agLigarTempoReal(){
+  if(agCanal)return;
+  agCanal=db.channel('crm-agenda-reservas')
+    .on('postgres_changes',{event:'*',schema:'public',table:'agenda_reservas'},()=>{
+      clearTimeout(agTimer);
+      agTimer=setTimeout(()=>{
+        const pg=document.getElementById('page-agenda');
+        if(pg&&pg.classList.contains('active')) renderAgenda(); else agAtualizarBadge();
+      },300);
+    }).subscribe();
 }
 async function agAtualizarBadge(){
   try{

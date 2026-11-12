@@ -129,7 +129,7 @@ const SUPA_URL='https://mqdhavyaeujufhlqdlfg.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xZGhhdnlhZXVqdWZobHFkbGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NDg0OTUsImV4cCI6MjA5NTUyNDQ5NX0.bmlsVIXzQ1H-R4CEVZJzg_8TXygBsSQ57GOteBKqLHE';
 const db=supabase.createClient(SUPA_URL,SUPA_KEY);
 
-const HORAS=[8,10,12,14,16];
+const HORAS=[8,10,12,14,16,18];
 const DIAS_FRENTE=60;
 const DSEM=['Seg','Ter','Qua','Qui','Sex'];
 
@@ -257,6 +257,26 @@ async function novaReserva(){
   document.getElementById('telaAgenda').classList.remove('hidden');
   await carregarOcupados();renderMes();renderSlots();window.scrollTo(0,0);
 }
+
+// ===== tempo real: qualquer reserva/bloqueio/liberação atualiza a tela na hora =====
+let recarregando=null;
+async function atualizarAgora(){
+  if(recarregando)return recarregando;
+  recarregando=(async()=>{
+    await carregarOcupados();
+    if(diaSel&&horaSel!=null&&ocupados.has(diaSel+'|'+horaSel)){
+      horaSel=null;atualizaResumo();
+      erro('O horário que você tinha escolhido acabou de ficar indisponível. Escolha outro.');
+    }
+    if(mesBase)renderMes();
+    renderSlots();
+  })();
+  try{await recarregando;}finally{recarregando=null;}
+}
+db.channel('agenda-nexgen').on('broadcast',{event:'mudou'},()=>atualizarAgora()).subscribe();
+// garantia extra: confere a cada 20s e quando o corretor volta para a aba
+setInterval(()=>{if(!document.hidden&&!document.getElementById('telaAgenda').classList.contains('hidden'))atualizarAgora();},20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)atualizarAgora();});
 
 (async function(){
   try{const c=JSON.parse(localStorage.getItem('nexgen_corretor')||'null');if(c){cNome.value=c.nome||'';cTel.value=c.tel||'';}}catch(e){}
