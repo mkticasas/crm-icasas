@@ -243,6 +243,8 @@
     .topbar-logo img{height:26px!important;width:26px!important;}
     #btnOrcamentos{display:none!important;}
     #btnNovoLeadTopo,#brClock{display:none!important;}   /* no celular o + flutuante já cria lead */
+    #btnAgendaTopo .btn-ag-label{display:none;}
+    #btnAgendaTopo{padding:6px 9px;}
     #empresaSelect{background:transparent!important;border:1px solid var(--border)!important;color:var(--text3)!important;
       padding:3px 22px 3px 9px!important;height:30px;border-radius:15px!important;max-width:128px;
       -webkit-appearance:none;appearance:none;
@@ -652,6 +654,11 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h3M8 17h3M15 13h1M15 17h1"/></svg>
         <span class="btn-orc-label">Orçamentos</span>
       </a>
+      <button class="btn btn-primary btn-sm" id="btnAgendaTopo" onclick="showPage('agenda')" title="Agenda NexGen" style="display:none;align-items:center;gap:6px;position:relative;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span class="btn-ag-label">Agenda NexGen</span>
+        <span id="agBadgeTopo" style="display:none;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--amber);color:#111;font-size:10px;font-weight:800;align-items:center;justify-content:center;"></span>
+      </button>
       <button class="btn btn-primary btn-sm" id="btnNovoLeadTopo" onclick="openLeadModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Novo Lead
@@ -1856,6 +1863,11 @@ function onLoginSuccess(){
 
   // Show FAB
   const fab=document.getElementById('fabNewLead');if(fab)fab.style.display='block';
+  // responsável pela Agenda NexGen: no topo, "Agenda NexGen" no lugar de "Novo Lead"
+  const ehRespAgenda=currentUser&&currentUser.id===AG_RESPONSAVEL_ID;
+  const bAg=document.getElementById('btnAgendaTopo'), bNovo=document.getElementById('btnNovoLeadTopo');
+  if(bAg) bAg.style.display=ehRespAgenda?'inline-flex':'none';
+  if(bNovo) bNovo.style.display=ehRespAgenda?'none':'';
   // Start Brasilia clock
   startBrClock();
   atualizarStatusPush();
@@ -4068,6 +4080,7 @@ function showPage(page){
   if(page==='tags')renderTagsPage();
 }
 // ===== AGENDA NEXGEN — reservas dos corretores parceiros =====
+const AG_RESPONSAVEL_ID='a9604597-5d1a-4a26-a728-851944d1b8bd'; // Vinicius
 const AG_HORAS=[8,10,12,14,16,18];
 const AG_HORAS_SAB=[8,10,12];
 function agHorasDo(dataIso){const [y,m,d]=dataIso.split('-').map(Number);return new Date(y,m-1,d).getDay()===6?AG_HORAS_SAB:AG_HORAS;}
@@ -4177,8 +4190,8 @@ function agLigarTempoReal(){
 async function agAtualizarBadge(){
   try{
     const {count}=await db.from('agenda_reservas').select('id',{count:'exact',head:true}).eq('status','pendente');
-    const el=document.getElementById('agBadge'); if(!el)return;
-    el.textContent=count||''; el.style.display=count?'inline-flex':'none';
+    ['agBadge','agBadgeTopo'].forEach(id=>{const el=document.getElementById(id); if(!el)return;
+      el.textContent=count||''; el.style.display=count?'inline-flex':'none';});
   }catch(e){}
 }
 async function agStatus(id,status){
