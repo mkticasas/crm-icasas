@@ -31,7 +31,7 @@ h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,30px);line-he
 .mes{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:var(--text2);font-size:13px;font-weight:600;}
 .mes button{background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:16px;}
 .mes button:disabled{opacity:.3;cursor:default;}
-.dias{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.dias{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
 .dias .cab{font-size:11px;color:var(--text3);text-align:center;font-weight:600;text-transform:uppercase;}
 .dia{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 0;text-align:center;cursor:pointer;transition:.15s;font-weight:600;font-size:15px;}
 .dia small{display:block;font-size:10px;font-weight:500;color:var(--text3);margin-top:2px;}
@@ -80,7 +80,7 @@ textarea{resize:vertical;min-height:70px;}
 
   <div id="telaAgenda">
     <h1>Agende o atendimento do seu cliente</h1>
-    <p class="sub">Escolha um dia e um horário livre. Cada atendimento com a equipe iCasas dura 2 horas, de segunda a sexta, e é confirmado pelo Vinicius.</p>
+    <p class="sub">Escolha um dia e um horário livre. Cada atendimento com a equipe iCasas dura 2 horas (segunda a sexta das 8h às 20h, sábado das 8h às 14h) e é confirmado pelo Vinicius.</p>
 
     <div class="card">
       <div class="step"><span>1</span>Escolha o dia</div>
@@ -130,8 +130,10 @@ const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const db=supabase.createClient(SUPA_URL,SUPA_KEY);
 
 const HORAS=[8,10,12,14,16,18];
+const HORAS_SAB=[8,10,12];
+function horasDo(dataIso){return deIso(dataIso).getDay()===6?HORAS_SAB:HORAS;}
 const DIAS_FRENTE=60;
-const DSEM=['Seg','Ter','Qua','Qui','Sex'];
+const DSEM=['Seg','Ter','Qua','Qui','Sex','Sáb'];
 
 let ocupados=new Set();     // "YYYY-MM-DD|8"
 let diaSel=null, horaSel=null;
@@ -150,7 +152,7 @@ const HOJE=deIso(agoraBR().data);
 const LIMITE=new Date(HOJE);LIMITE.setDate(LIMITE.getDate()+DIAS_FRENTE);
 
 function slotPassou(dataIso,h){const a=agoraBR();return dataIso<a.data||(dataIso===a.data&&h<=a.hora);}
-function livresNoDia(dataIso){return HORAS.filter(h=>!ocupados.has(dataIso+'|'+h)&&!slotPassou(dataIso,h)).length;}
+function livresNoDia(dataIso){return horasDo(dataIso).filter(h=>!ocupados.has(dataIso+'|'+h)&&!slotPassou(dataIso,h)).length;}
 
 async function carregarOcupados(){
   const {data,error}=await db.rpc('agenda_ocupados',{p_inicio:iso(HOJE),p_fim:iso(LIMITE)});
@@ -168,7 +170,7 @@ function renderMes(){
   let primeiro=true;
   for(let d=1;d<=ult;d++){
     const dt=new Date(y,m,d),dw=dt.getDay();
-    if(dw===0||dw===6)continue;
+    if(dw===0)continue;
     if(primeiro){for(let i=1;i<dw;i++)h+='<div class="vazio"></div>';primeiro=false;}
     const s=iso(dt);
     const fora=dt<HOJE||dt>LIMITE;
@@ -185,7 +187,7 @@ function escolherDia(s){diaSel=s;horaSel=null;renderMes();renderSlots();atualiza
 function renderSlots(){
   const el=document.getElementById('slots');
   if(!diaSel){el.innerHTML='<div class="hint">Selecione um dia acima.</div>';return;}
-  el.innerHTML=HORAS.map(h=>{
+  el.innerHTML=horasDo(diaSel).map(h=>{
     const oc=ocupados.has(diaSel+'|'+h)||slotPassou(diaSel,h);
     const st=ocupados.has(diaSel+'|'+h)?'Ocupado':(oc?'Encerrado':'Livre');
     return `<div class="slot ${oc?'ocupado':''} ${h===horaSel?'sel':''}" onclick="escolherHora(${h})"><b>${h}h – ${h+2}h</b><small>${st}</small></div>`;

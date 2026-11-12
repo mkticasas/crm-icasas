@@ -4069,6 +4069,8 @@ function showPage(page){
 }
 // ===== AGENDA NEXGEN — reservas dos corretores parceiros =====
 const AG_HORAS=[8,10,12,14,16,18];
+const AG_HORAS_SAB=[8,10,12];
+function agHorasDo(dataIso){const [y,m,d]=dataIso.split('-').map(Number);return new Date(y,m-1,d).getDay()===6?AG_HORAS_SAB:AG_HORAS;}
 let agSegunda=null, agReservas=[];
 function agIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function agSegundaDe(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());const dw=x.getDay()||7;x.setDate(x.getDate()-dw+1);return x;}
@@ -4080,14 +4082,14 @@ function agMudarSemana(n){
 }
 async function renderAgenda(){
   if(!agSegunda) agSegunda=agSegundaDe(new Date());
-  const dias=[0,1,2,3,4].map(i=>{const d=new Date(agSegunda);d.setDate(d.getDate()+i);return d;});
-  const ini=agIso(dias[0]), fim=agIso(dias[4]);
-  document.getElementById('agSemanaNome').textContent=dias[0].toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})+' – '+dias[4].toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  const dias=[0,1,2,3,4,5].map(i=>{const d=new Date(agSegunda);d.setDate(d.getDate()+i);return d;});
+  const ini=agIso(dias[0]), fim=agIso(dias[5]);
+  document.getElementById('agSemanaNome').textContent=dias[0].toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})+' – '+dias[5].toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
   const {data,error}=await db.from('agenda_reservas').select('*').gte('data',ini).lte('data',fim).not('status','in','(cancelado,recusado)');
   if(error){document.getElementById('agGrade').innerHTML='<div class="loading">Erro ao carregar a agenda.</div>';console.error(error);return;}
   agReservas=data||[];
   const hojeIso=agIso(new Date());
-  let h='<table style="width:100%;border-collapse:collapse;min-width:720px;table-layout:fixed;"><tr><th style="width:84px;"></th>';
+  let h='<table style="width:100%;border-collapse:collapse;min-width:860px;table-layout:fixed;"><tr><th style="width:84px;"></th>';
   dias.forEach(d=>{const hj=agIso(d)===hojeIso;h+=`<th style="padding:12px 8px;font-size:12px;text-align:left;color:${hj?'var(--accent)':'var(--text2)'};border-bottom:1px solid var(--border);text-transform:capitalize;">${d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})}<br><a href="#" onclick="agTravarDia('${agIso(d)}');return false;" style="font-size:10.5px;font-weight:500;color:var(--text3);text-transform:none;">travar dia</a></th>`;});
   h+='</tr>';
   AG_HORAS.forEach(hr=>{
@@ -4095,7 +4097,9 @@ async function renderAgenda(){
     dias.forEach(d=>{
       const di=agIso(d), r=agReservas.find(x=>x.data===di&&x.hora===hr);
       h+='<td style="padding:6px;vertical-align:top;border-bottom:1px solid var(--border);border-left:1px solid var(--border);">';
-      if(!r){
+      if(!agHorasDo(di).includes(hr)){
+        h+='<div style="text-align:center;color:var(--text3);font-size:11px;padding-top:8px;">—</div>';
+      } else if(!r){
         h+=`<button class="btn btn-ghost btn-sm" style="width:100%;opacity:.55;font-size:11px;" onclick="agBloquear('${di}',${hr})">Livre · bloquear</button>`;
       } else if(r.status==='pendente'){
         h+=`<div style="background:color-mix(in srgb,var(--amber) 14%,transparent);border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);border-radius:8px;padding:8px;font-size:12px;line-height:1.45;">
@@ -4194,7 +4198,7 @@ async function agBloquear(data,hora){
   renderAgenda();
 }
 async function agTravarDia(data){
-  const livres=AG_HORAS.filter(h=>!agReservas.find(x=>x.data===data&&x.hora===h));
+  const livres=agHorasDo(data).filter(h=>!agReservas.find(x=>x.data===data&&x.hora===h));
   if(!livres.length){showToast('Esse dia não tem horário livre.','error');return;}
   if(!confirm('Travar todos os horários livres de '+data.split('-').reverse().join('/')+'? Os já reservados continuam.'))return;
   const {error}=await db.from('agenda_reservas').insert(livres.map(hora=>({data,hora,status:'bloqueado',observacao:'Bloqueado pelo CRM'})));
