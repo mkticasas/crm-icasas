@@ -583,6 +583,7 @@
     </div>
     <div class="drawer-item" id="ditem-agenda" onclick="navTo('agenda')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Agenda NexGen
+      <span id="agBadge" style="display:none;margin-left:auto;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--amber);color:#111;font-size:10.5px;font-weight:800;align-items:center;justify-content:center;"></span>
     </div>
     <div class="drawer-item" id="ditem-indicacoes" onclick="navTo('indicacoes')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10l-1 8a4 4 0 0 1-8 0L7 4z"/><path d="M5 4H3v2a4 4 0 0 0 4 4M19 4h2v2a4 4 0 0 1-4 4"/></svg>Clube iCasas
@@ -873,7 +874,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
       <div>
         <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;">Agenda NexGen</div>
-        <div style="font-size:13px;color:var(--text3);margin-top:4px;">Atendimentos que os corretores da NexGen reservam pelo link. Cada reserva já entra como lead.</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:4px;">Solicitações dos corretores da NexGen. Aprove para virar lead no CRM; recuse ou trave horários quando não puder atender.</div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="copiarLinkAgenda()">Copiar link dos corretores</button>
     </div>
@@ -1935,6 +1936,7 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').then(r=>{swReg=r;atualizarStatusPush();}).catch(e=>console.warn('SW',e));
   // clique na notificação com o CRM já aberto
   navigator.serviceWorker.addEventListener('message',async e=>{
+    if(e.data&&e.data.abrirAgenda&&currentUser){showPage('agenda');return;}
     const id=e.data&&e.data.abrirLead;
     if(!id||!currentUser)return;
     if(!allLeads.some(l=>l.id==id))await loadLeads();
@@ -2326,6 +2328,8 @@ async function loadAll(){
 
 // Abre o lead vindo do link do e-mail (?lead=ID)
 function abrirLeadDaUrl(){
+  agAtualizarBadge();
+  if(new URLSearchParams(location.search).has('agenda')){history.replaceState(null,'',location.pathname);showPage('agenda');return;}
   const id=new URLSearchParams(location.search).get('lead');
   if(!id)return;
   history.replaceState(null,'',location.pathname);
@@ -4079,7 +4083,7 @@ async function renderAgenda(){
   const dias=[0,1,2,3,4].map(i=>{const d=new Date(agSegunda);d.setDate(d.getDate()+i);return d;});
   const ini=agIso(dias[0]), fim=agIso(dias[4]);
   document.getElementById('agSemanaNome').textContent=dias[0].toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})+' – '+dias[4].toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
-  const {data,error}=await db.from('agenda_reservas').select('*').gte('data',ini).lte('data',fim).neq('status','cancelado');
+  const {data,error}=await db.from('agenda_reservas').select('*').gte('data',ini).lte('data',fim).not('status','in','(cancelado,recusado)');
   if(error){document.getElementById('agGrade').innerHTML='<div class="loading">Erro ao carregar a agenda.</div>';console.error(error);return;}
   agReservas=data||[];
   const hojeIso=agIso(new Date());
@@ -4093,6 +4097,17 @@ async function renderAgenda(){
       h+='<td style="padding:6px;vertical-align:top;border-bottom:1px solid var(--border);border-left:1px solid var(--border);">';
       if(!r){
         h+=`<button class="btn btn-ghost btn-sm" style="width:100%;opacity:.55;font-size:11px;" onclick="agBloquear('${di}',${hr})">Livre · bloquear</button>`;
+      } else if(r.status==='pendente'){
+        h+=`<div style="background:color-mix(in srgb,var(--amber) 14%,transparent);border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);border-radius:8px;padding:8px;font-size:12px;line-height:1.45;">
+          <div style="font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.3px;">AGUARDANDO APROVAÇÃO</div>
+          <div style="font-weight:700;">${agEsc(r.cliente_nome)}</div>
+          <div style="color:var(--text2);font-size:11px;">${agEsc(r.cliente_telefone||'')}</div>
+          <div style="color:var(--text3);font-size:11px;margin-top:3px;">Corretor: ${agEsc(r.corretor_nome||'—')}</div>
+          ${r.observacao?`<div style="color:var(--text3);font-size:11px;font-style:italic;">${agEsc(r.observacao)}</div>`:''}
+          <div style="display:flex;gap:6px;margin-top:7px;">
+            <button class="btn btn-primary btn-sm" style="flex:1;padding:5px 4px;font-size:11px;background:var(--green);border-color:var(--green);" onclick="agAprovar(${r.id})">Aprovar</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1;padding:5px 4px;font-size:11px;color:var(--red);" onclick="agRecusar(${r.id})">Recusar</button>
+          </div></div>`;
       } else if(r.status==='bloqueado'){
         h+=`<div style="background:var(--bg3);border-radius:8px;padding:8px;font-size:11.5px;color:var(--text3);">🔒 Bloqueado<br><a href="#" onclick="agStatus(${r.id},'cancelado');return false;" style="color:var(--accent);">liberar</a></div>`;
       } else {
@@ -4105,6 +4120,7 @@ async function renderAgenda(){
           <div style="display:flex;gap:8px;margin-top:6px;font-size:11px;">
             ${feito?'<span style="color:var(--green);">✓ realizado</span>':`<a href="#" onclick="agStatus(${r.id},'realizado');return false;" style="color:var(--green);">realizado</a>`}
             <a href="#" onclick="agCancelar(${r.id});return false;" style="color:var(--red);">cancelar</a>
+            ${r.corretor_telefone?`<a href="#" onclick="agAvisarCorretor(${r.id},'aprovado');return false;" style="color:var(--text2);">avisar corretor</a>`:''}
           </div></div>`;
       }
       h+='</td>';
@@ -4113,6 +4129,41 @@ async function renderAgenda(){
   });
   h+='</table>';
   document.getElementById('agGrade').innerHTML=h;
+  agAtualizarBadge();
+}
+async function agAprovar(id){
+  const r=agReservas.find(x=>x.id===id);
+  const {data,error}=await db.rpc('agenda_aprovar',{p_id:id});
+  if(error){showToast('Erro: '+error.message,'error');renderAgenda();return;}
+  showToast('Agendamento aprovado — lead criado no CRM.','success');
+  if(typeof loadLeads==='function') loadLeads();
+  await renderAgenda();
+  if(r&&r.corretor_telefone&&confirm('Avisar o corretor '+(r.corretor_nome||'')+' no WhatsApp que foi aprovado?')) agAvisarCorretor(id,'aprovado',r);
+}
+async function agRecusar(id){
+  const r=agReservas.find(x=>x.id===id);
+  if(!confirm('Recusar este agendamento? O horário volta a ficar livre.'))return;
+  const {error}=await db.from('agenda_reservas').update({status:'recusado',decidido_em:new Date().toISOString()}).eq('id',id);
+  if(error){showToast('Erro: '+error.message,'error');return;}
+  showToast('Agendamento recusado.','success');
+  await renderAgenda();
+  if(r&&r.corretor_telefone&&confirm('Avisar o corretor no WhatsApp para escolher outro horário?')) agAvisarCorretor(id,'recusado',r);
+}
+function agAvisarCorretor(id,tipo,rr){
+  const r=rr||agReservas.find(x=>x.id===id); if(!r)return;
+  const quando=r.data.split('-').reverse().slice(0,2).join('/')+' das '+r.hora+'h às '+(r.hora+2)+'h';
+  const link=location.href.replace(/[^/]*([?#].*)?$/,'')+'agenda-nexgen.html';
+  const msg=tipo==='aprovado'
+    ? `Olá ${r.corretor_nome||''}! Confirmado o atendimento do cliente ${r.cliente_nome} em ${quando} com a iCasas. Até lá!`
+    : `Olá ${r.corretor_nome||''}! Não vou conseguir atender o cliente ${r.cliente_nome} em ${quando}. Pode escolher outro horário por aqui: ${link}`;
+  window.open('https://wa.me/'+waFmt(r.corretor_telefone)+'?text='+encodeURIComponent(msg),'_blank');
+}
+async function agAtualizarBadge(){
+  try{
+    const {count}=await db.from('agenda_reservas').select('id',{count:'exact',head:true}).eq('status','pendente');
+    const el=document.getElementById('agBadge'); if(!el)return;
+    el.textContent=count||''; el.style.display=count?'inline-flex':'none';
+  }catch(e){}
 }
 async function agStatus(id,status){
   const {error}=await db.from('agenda_reservas').update({status}).eq('id',id);

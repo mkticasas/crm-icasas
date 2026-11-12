@@ -1,6 +1,6 @@
 // Service worker do CRM iCasas — notificações + garante sempre a versão mais nova (não faz cache)
 // Mudar SW_VERSAO força todo celular com o app aberto a recarregar na versão nova
-const SW_VERSAO = '2026-11-10-1';
+const SW_VERSAO = '2026-11-12-1';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => {
   await self.clients.claim();
@@ -29,19 +29,20 @@ self.addEventListener('push', (event) => {
     icon: 'icons/icon-192.png',
     badge: 'icons/icon-192.png',
     tag: d.tag,
-    data: { url: d.url || './', leadId: d.leadId || null },
+    data: { url: d.url || './', leadId: d.leadId || null, abrirAgenda: !!d.abrirAgenda },
   }));
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const { url, leadId } = event.notification.data || {};
+  const { url, leadId, abrirAgenda } = event.notification.data || {};
   event.waitUntil((async () => {
     const abertas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const crm = abertas.find((c) => c.url.includes('/crm-icasas/'));
     if (crm) {
       await crm.focus();
       if (leadId) crm.postMessage({ abrirLead: leadId });
+      if (abrirAgenda) crm.postMessage({ abrirAgenda: true });
       return;
     }
     await self.clients.openWindow(url || './');

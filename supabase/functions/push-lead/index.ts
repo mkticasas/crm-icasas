@@ -1,6 +1,7 @@
 // push-lead — envia notificação push do CRM iCasas
 // Chamadas aceitas:
 //  1) Trigger do banco (header x-push-token): { lead_id, novo } → avisa o corretor do lead (+ admins se lead novo)
+//     ou { agenda_id } → avisa o responsável que chegou solicitação de agendamento NexGen
 //  2) App logado (Authorization: Bearer <jwt do usuário>): { teste: true } → envia um teste para os aparelhos do próprio usuário
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -54,6 +55,22 @@ Deno.serve(async (req) => {
     // 1) Disparo pelo banco
     if (req.headers.get("x-push-token")) {
       if (req.headers.get("x-push-token") !== cfg.trigger_token) return json({ erro: "token inválido" }, 401);
+
+      // solicitação de agendamento NexGen → responsável aprova no CRM
+      if (body.agenda_id) {
+        const { data: r } = await db.from("agenda_reservas")
+          .select("id,data,hora,cliente_nome,corretor_nome,responsavel_id,status").eq("id", body.agenda_id).single();
+        if (!r || !r.responsavel_id) return json({ erro: "agendamento não encontrado" }, 404);
+        const [y, m, d] = String(r.data).split("-");
+        const res = await enviar([r.responsavel_id], {
+          title: "📅 Agendamento NexGen para aprovar",
+          body: `${r.cliente_nome || "Cliente"} · ${d}/${m} das ${r.hora}h às ${r.hora + 2}h · corretor ${r.corretor_nome || "—"}`,
+          url: `${BASE_URL}?agenda=1`,
+          abrirAgenda: true,
+          tag: `agenda-${r.id}`,
+        });
+        return json({ agenda: res });
+      }
       const { data: lead } = await db.from("leads").select("id,name,phone,origin,product,seller_id,empresa").eq("id", body.lead_id).single();
       if (!lead) return json({ erro: "lead não encontrado" }, 404);
       const detalhe = [lead.origin, lead.product].filter(Boolean).join(" · ");

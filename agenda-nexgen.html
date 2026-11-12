@@ -80,7 +80,7 @@ textarea{resize:vertical;min-height:70px;}
 
   <div id="telaAgenda">
     <h1>Agende o atendimento do seu cliente</h1>
-    <p class="sub">Escolha um dia e um horário livre. Cada atendimento com a equipe iCasas dura 2 horas, de segunda a sexta.</p>
+    <p class="sub">Escolha um dia e um horário livre. Cada atendimento com a equipe iCasas dura 2 horas, de segunda a sexta, e é confirmado pelo Vinicius.</p>
 
     <div class="card">
       <div class="step"><span>1</span>Escolha o dia</div>
@@ -109,18 +109,18 @@ textarea{resize:vertical;min-height:70px;}
       <textarea id="obs" placeholder="Terreno de interesse, faixa de valor, dúvidas do cliente..."></textarea>
       <div class="resumo hidden" id="resumo"></div>
       <div class="erro" id="erro"></div>
-      <button class="btn" id="btnReservar" onclick="reservar()">Confirmar agendamento</button>
+      <button class="btn" id="btnReservar" onclick="reservar()">Solicitar agendamento</button>
     </div>
     <div class="rod">iCasas Construtora · parceria NexGen</div>
   </div>
 
   <div id="telaOk" class="card ok hidden">
     <div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
-    <h2>Atendimento agendado</h2>
-    <p>A equipe iCasas já recebeu o contato do seu cliente.</p>
+    <h2>Solicitação enviada</h2>
+    <p>O horário fica reservado para você enquanto o Vinicius, da iCasas, confirma. Você recebe a confirmação pelo WhatsApp.</p>
     <div class="det" id="okDet"></div>
-    <a class="btn ghost" id="okCal" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:var(--text);">Adicionar ao meu Google Agenda</a>
-    <button class="btn" onclick="novaReserva()">Agendar outro cliente</button>
+    <a class="btn ghost hidden" id="okCal" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:var(--text);">Adicionar ao meu Google Agenda</a>
+    <button class="btn" onclick="novaReserva()">Solicitar para outro cliente</button>
   </div>
 </div>
 
@@ -215,16 +215,17 @@ async function reservar(){
   const v=id=>document.getElementById(id).value.trim();
   if(!diaSel||horaSel==null)return erro('Escolha o dia e o horário.');
   if(!v('cNome'))return erro('Informe seu nome.');
+  if(v('cTel').replace(/\D/g,'').length<10)return erro('Informe seu WhatsApp com DDD — é por ele que você recebe a confirmação.');
   if(!v('clNome'))return erro('Informe o nome do cliente.');
   if(v('clTel').replace(/\D/g,'').length<10)return erro('Informe o WhatsApp do cliente com DDD.');
-  const b=document.getElementById('btnReservar');b.disabled=true;b.textContent='Agendando...';
+  const b=document.getElementById('btnReservar');b.disabled=true;b.textContent='Enviando...';
   const {data,error}=await db.rpc('agenda_reservar',{
     p_data:diaSel,p_hora:horaSel,
     p_corretor_nome:v('cNome'),p_corretor_telefone:v('cTel'),
     p_cliente_nome:v('clNome'),p_cliente_telefone:v('clTel'),
     p_observacao:v('obs')||null
   });
-  b.disabled=false;b.textContent='Confirmar agendamento';
+  b.disabled=false;b.textContent='Solicitar agendamento';
   if(error){
     erro(error.message||'Não foi possível agendar. Tente de novo.');
     await carregarOcupados();renderMes();renderSlots();
