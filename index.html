@@ -581,6 +581,9 @@
     <div class="drawer-item" id="ditem-reports" onclick="navTo('reports')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Relatórios
     </div>
+    <div class="drawer-item" id="ditem-agenda" onclick="navTo('agenda')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Agenda NexGen
+    </div>
     <div class="drawer-item" id="ditem-indicacoes" onclick="navTo('indicacoes')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10l-1 8a4 4 0 0 1-8 0L7 4z"/><path d="M5 4H3v2a4 4 0 0 0 4 4M19 4h2v2a4 4 0 0 1-4 4"/></svg>Clube iCasas
     </div>
@@ -863,6 +866,25 @@
           <tbody id="indicacoesTable"><tr><td colspan="3" style="text-align:center;padding:32px;color:var(--text3);">Carregando...</td></tr></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-agenda">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;">Agenda NexGen</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:4px;">Atendimentos que os corretores da NexGen reservam pelo link. Cada reserva já entra como lead.</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="copiarLinkAgenda()">Copiar link dos corretores</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <button class="btn btn-ghost btn-sm" onclick="agMudarSemana(-1)">‹</button>
+      <button class="btn btn-ghost btn-sm" onclick="agMudarSemana(0)">Hoje</button>
+      <button class="btn btn-ghost btn-sm" onclick="agMudarSemana(1)">›</button>
+      <div id="agSemanaNome" style="font-size:13px;color:var(--text2);font-weight:600;margin-left:6px;"></div>
+    </div>
+    <div class="card" style="padding:0;overflow-x:auto;">
+      <div id="agGrade"><div class="loading">Carregando...</div></div>
     </div>
   </div>
 
@@ -4015,11 +4037,12 @@ function showPage(page){
   const clk=document.getElementById('brClock');
   if(clk)clk.style.display=page==='pipeline'?'inline-block':'none';
   const di=document.getElementById('ditem-'+page);if(di)di.classList.add('active');
-  const titles={dashboard:'Dashboard',leads:'Leads',pipeline:'Pipeline',sellers:'Vendedores',reports:'Relatórios',integrations:'Integrações',tags:'Etiquetas',indicacoes:'Clube iCasas'};
+  const titles={dashboard:'Dashboard',leads:'Leads',pipeline:'Pipeline',sellers:'Vendedores',reports:'Relatórios',integrations:'Integrações',tags:'Etiquetas',indicacoes:'Clube iCasas',agenda:'Agenda NexGen'};
   document.getElementById('pageTitle').textContent=titles[page]||page;
   if(page==='dashboard')renderDashboard();
   if(page==='pipeline')renderPipeline();
   if(page==='indicacoes')renderIndicacoes();
+  if(page==='agenda')renderAgenda();
   if(page==='reports'){
     populateSellerDropdowns();
     const wrapEmp=document.getElementById('r-empresa-wrap');
@@ -4040,6 +4063,91 @@ function showPage(page){
   if(page==='integrations')loadWebhooks();
   if(page==='tags')renderTagsPage();
 }
+// ===== AGENDA NEXGEN — reservas dos corretores parceiros =====
+const AG_HORAS=[8,10,12,14,16];
+let agSegunda=null, agReservas=[];
+function agIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function agSegundaDe(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());const dw=x.getDay()||7;x.setDate(x.getDate()-dw+1);return x;}
+function agEsc(t){return String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function agMudarSemana(n){
+  if(n===0||!agSegunda) agSegunda=agSegundaDe(new Date());
+  else agSegunda.setDate(agSegunda.getDate()+7*n);
+  renderAgenda();
+}
+async function renderAgenda(){
+  if(!agSegunda) agSegunda=agSegundaDe(new Date());
+  const dias=[0,1,2,3,4].map(i=>{const d=new Date(agSegunda);d.setDate(d.getDate()+i);return d;});
+  const ini=agIso(dias[0]), fim=agIso(dias[4]);
+  document.getElementById('agSemanaNome').textContent=dias[0].toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})+' – '+dias[4].toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  const {data,error}=await db.from('agenda_reservas').select('*').gte('data',ini).lte('data',fim).neq('status','cancelado');
+  if(error){document.getElementById('agGrade').innerHTML='<div class="loading">Erro ao carregar a agenda.</div>';console.error(error);return;}
+  agReservas=data||[];
+  const hojeIso=agIso(new Date());
+  let h='<table style="width:100%;border-collapse:collapse;min-width:720px;table-layout:fixed;"><tr><th style="width:84px;"></th>';
+  dias.forEach(d=>{const hj=agIso(d)===hojeIso;h+=`<th style="padding:12px 8px;font-size:12px;text-align:left;color:${hj?'var(--accent)':'var(--text2)'};border-bottom:1px solid var(--border);text-transform:capitalize;">${d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})}<br><a href="#" onclick="agTravarDia('${agIso(d)}');return false;" style="font-size:10.5px;font-weight:500;color:var(--text3);text-transform:none;">travar dia</a></th>`;});
+  h+='</tr>';
+  AG_HORAS.forEach(hr=>{
+    h+=`<tr><td style="padding:10px;font-size:12px;color:var(--text3);font-weight:600;vertical-align:top;border-bottom:1px solid var(--border);">${hr}h–${hr+2}h</td>`;
+    dias.forEach(d=>{
+      const di=agIso(d), r=agReservas.find(x=>x.data===di&&x.hora===hr);
+      h+='<td style="padding:6px;vertical-align:top;border-bottom:1px solid var(--border);border-left:1px solid var(--border);">';
+      if(!r){
+        h+=`<button class="btn btn-ghost btn-sm" style="width:100%;opacity:.55;font-size:11px;" onclick="agBloquear('${di}',${hr})">Livre · bloquear</button>`;
+      } else if(r.status==='bloqueado'){
+        h+=`<div style="background:var(--bg3);border-radius:8px;padding:8px;font-size:11.5px;color:var(--text3);">🔒 Bloqueado<br><a href="#" onclick="agStatus(${r.id},'cancelado');return false;" style="color:var(--accent);">liberar</a></div>`;
+      } else {
+        const feito=r.status==='realizado';
+        h+=`<div style="background:color-mix(in srgb,${feito?'var(--green)':'var(--purple)'} 14%,transparent);border:1px solid color-mix(in srgb,${feito?'var(--green)':'var(--purple)'} 35%,transparent);border-radius:8px;padding:8px;font-size:12px;line-height:1.45;">
+          <div style="font-weight:700;cursor:pointer;" onclick="agAbrirLead(${r.lead_id||0})">${agEsc(r.cliente_nome)}</div>
+          <div style="color:var(--text2);font-size:11px;">${agEsc(r.cliente_telefone||'')}</div>
+          <div style="color:var(--text3);font-size:11px;margin-top:3px;">Corretor: ${agEsc(r.corretor_nome||'—')}</div>
+          ${r.observacao?`<div style="color:var(--text3);font-size:11px;font-style:italic;">${agEsc(r.observacao)}</div>`:''}
+          <div style="display:flex;gap:8px;margin-top:6px;font-size:11px;">
+            ${feito?'<span style="color:var(--green);">✓ realizado</span>':`<a href="#" onclick="agStatus(${r.id},'realizado');return false;" style="color:var(--green);">realizado</a>`}
+            <a href="#" onclick="agCancelar(${r.id});return false;" style="color:var(--red);">cancelar</a>
+          </div></div>`;
+      }
+      h+='</td>';
+    });
+    h+='</tr>';
+  });
+  h+='</table>';
+  document.getElementById('agGrade').innerHTML=h;
+}
+async function agStatus(id,status){
+  const {error}=await db.from('agenda_reservas').update({status}).eq('id',id);
+  if(error){showToast('Erro: '+error.message,'error');return;}
+  showToast(status==='realizado'?'Atendimento marcado como realizado.':'Horário liberado.','success');
+  renderAgenda();
+}
+async function agCancelar(id){
+  if(!confirm('Cancelar este atendimento? O horário volta a ficar livre para os corretores. O lead continua no CRM.'))return;
+  agStatus(id,'cancelado');
+}
+async function agBloquear(data,hora){
+  if(!confirm('Bloquear '+data.split('-').reverse().join('/')+' das '+hora+'h às '+(hora+2)+'h? Os corretores não vão conseguir reservar.'))return;
+  const {error}=await db.from('agenda_reservas').insert({data,hora,status:'bloqueado',observacao:'Bloqueado pelo CRM'});
+  if(error){showToast(error.code==='23505'?'Esse horário acabou de ser reservado.':'Erro: '+error.message,'error');}
+  renderAgenda();
+}
+async function agTravarDia(data){
+  const livres=AG_HORAS.filter(h=>!agReservas.find(x=>x.data===data&&x.hora===h));
+  if(!livres.length){showToast('Esse dia não tem horário livre.','error');return;}
+  if(!confirm('Travar todos os horários livres de '+data.split('-').reverse().join('/')+'? Os já reservados continuam.'))return;
+  const {error}=await db.from('agenda_reservas').insert(livres.map(hora=>({data,hora,status:'bloqueado',observacao:'Bloqueado pelo CRM'})));
+  if(error)showToast('Erro: '+error.message,'error'); else showToast('Dia travado.','success');
+  renderAgenda();
+}
+function agAbrirLead(id){
+  if(!id)return;
+  if(allLeads.find(l=>l.id==id)) openDetail(id);
+  else showToast('Lead não está na lista atual (confira o filtro de empresa: Construtora).','error');
+}
+function copiarLinkAgenda(){
+  const url=location.href.replace(/[^/]*([?#].*)?$/,'')+'agenda-nexgen.html';
+  navigator.clipboard.writeText(url).then(()=>showToast('Link copiado: '+url,'success')).catch(()=>prompt('Copie o link:',url));
+}
+
 // ===== CLUBE ICASAS — indicadores e pontuação =====
 async function renderIndicacoes(){
   const {data: indicadores} = await db.from('indicadores').select('*').eq('empresa','construtora').order('nome');
