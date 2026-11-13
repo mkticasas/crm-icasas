@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
         });
         return json({ agenda: res });
       }
-      const { data: lead } = await db.from("leads").select("id,name,phone,origin,product,seller_id,empresa").eq("id", body.lead_id).single();
+      const { data: lead } = await db.from("leads").select("id,name,phone,origin,product,seller_id,empresa,formulario").eq("id", body.lead_id).single();
       if (!lead) return json({ erro: "lead não encontrado" }, 404);
       const detalhe = [lead.origin, lead.product].filter(Boolean).join(" · ");
       const base = { url: `${BASE_URL}?lead=${lead.id}`, leadId: lead.id, tag: `lead-${lead.id}` };
@@ -93,8 +93,8 @@ Deno.serve(async (req) => {
         const ids = (admins || []).map((a) => a.id).filter((id) => id !== lead.seller_id);
         r2 = await enviar(ids, {
           ...base,
-          title: "📥 Novo lead no CRM",
-          // admins: nome do lead · empresa → quem recebeu
+          // admins: campanha no título (dá pra ver de longe); corpo = nome · empresa → quem recebeu
+          title: `📥 Novo lead${lead.formulario ? " · " + lead.formulario : ""}`,
           body: `${lead.name || "Sem nome"} · ${EMPRESAS[lead.empresa] || lead.empresa || "sem empresa"} → ${dono ? (dono.nickname || dono.name) : "sem corretor"}`,
         });
       }
