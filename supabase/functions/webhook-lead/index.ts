@@ -75,13 +75,14 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'Nome não encontrado no payload. Verifique o mapeamento.' }), { status: 400, headers })
   }
 
-  // Formulário: campo "formulario"/"form" do Zapier > texto depois da "|" no nome (formato antigo) > nome do webhook
+  // Campanha = campo "formulario"/"form" do Zapier, senão o nome do webhook.
+  // Texto depois de "|" no nome NÃO é campanha (muita gente usa "Nome | Profissão" no Facebook):
+  // o nome fica limpo e o complemento vai para as respostas.
   let name = nameRaw
-  let formDoNome = ''
-  const mPipe = nameRaw.match(/^(.*?)\s*\|\s*([^|]*)$/)
-  if (mPipe) { name = mPipe[1].trim() || nameRaw; formDoNome = mPipe[2].trim() }
-  const formulario = String(body.formulario || body.form || body.form_name || '').trim() || formDoNome || wh.name || null
-  // Nome fica limpo (só o nome do lead); o formulário/webhook aparece no CRM como selo separado
+  let complementoNome = ''
+  const mPipe = nameRaw.match(/^([^|]*?)\s*\|\s*(.*)$/)
+  if (mPipe && mPipe[1].trim()) { name = mPipe[1].trim(); complementoNome = mPipe[2].replace(/\s*\|\s*/g, ' · ').trim() }
+  const formulario = String(body.formulario || body.form || body.form_name || '').trim() || wh.name || null
 
   // Respostas do formulário: todo campo extra que o Zapier mandar vira pergunta → resposta (na ordem enviada)
   const usados = new Set(['name', 'full_name', 'phone', 'phone_number', 'email', 'notes', 'campaign',
@@ -89,6 +90,7 @@ Deno.serve(async (req) => {
   const respostas = Object.entries(body)
     .filter(([k, v]) => !usados.has(k) && v !== null && v !== undefined && String(v).trim() !== '' && typeof v !== 'object')
     .map(([k, v]) => ({ p: k.replace(/_/g, ' ').trim(), r: String(v).trim() }))
+  if (complementoNome) respostas.unshift({ p: 'Complemento do nome no Facebook', r: complementoNome })
 
   // empresa do lead = empresa do webhook que o recebeu
   // (webhook sem empresa cadastrada cai em 'automacao', pra não quebrar os antigos)
