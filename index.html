@@ -55,7 +55,7 @@
   /* DRAWER */
   .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;backdrop-filter:blur(3px);}
   .drawer-overlay.open{display:block;}
-  .drawer{position:fixed;right:0;top:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border2);z-index:401;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column;}
+  .drawer{position:fixed;right:0;top:0;bottom:0;height:100vh;height:100dvh;width:300px;background:var(--bg2);border-left:1px solid var(--border2);z-index:401;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column;}
   .drawer.open{transform:translateX(0);}
   .drawer-header{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
   .drawer-profile{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
@@ -64,13 +64,13 @@
   .drawer-name{font-size:14px;font-weight:600;}
   .drawer-role{font-size:12px;color:var(--text3);margin-top:2px;}
   .drawer-edit-hint{font-size:11px;color:var(--accent);margin-top:3px;}
-  .drawer-nav{padding:10px 12px;flex:1;}
+  .drawer-nav{padding:10px 12px;flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
   .drawer-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:8px 8px 4px;margin-top:6px;}
   .drawer-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--text2);transition:all .15s;margin-bottom:2px;}
   .drawer-item:hover{background:rgba(255,255,255,.05);color:var(--text);}
   .drawer-item.active{background:rgba(61,126,255,.15);color:var(--accent);}
   .drawer-item svg{width:17px;height:17px;flex-shrink:0;}
-  .drawer-bottom{padding:14px 12px;border-top:1px solid var(--border);}
+  .drawer-bottom{padding:14px 12px calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border);flex-shrink:0;}
   .drawer-logout{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--red);transition:all .15s;}
   .drawer-logout:hover{background:rgba(239,68,68,.08);}
 
