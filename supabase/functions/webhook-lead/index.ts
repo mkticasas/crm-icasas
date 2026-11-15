@@ -16,6 +16,13 @@ function getNestedValue(obj: any, path: string): string {
   } catch { return '' }
 }
 
+// Registra falha/aviso na aba Logs (e dispara aviso no celular dos admins pelo gatilho do banco)
+async function registrar(status: 'erro' | 'aviso', motivo: string, extra: Record<string, unknown> = {}) {
+  try {
+    await supabase.from('webhook_logs').insert([{ status, motivo, ...extra }])
+  } catch (e) { console.error('falha ao registrar log', e) }
+}
+
 Deno.serve(async (req) => {
   const headers = {
     'Content-Type': 'application/json',
@@ -25,23 +32,36 @@ Deno.serve(async (req) => {
   }
 
   if (req.method === 'OPTIONS') return new Response('ok', { headers })
+  try {
 
   const url = new URL(req.url)
   const token = url.searchParams.get('token')
-  if (!token) return new Response(JSON.stringify({ error: 'Token ausente' }), { status: 400, headers })
+  if (!token) {
+    await registrar('erro', 'Envio sem token na URL — confira a URL do webhook no Zapier')
+    return new Response(JSON.stringify({ error: 'Token ausente' }), { status: 400, headers })
+  }
 
   // Parse body com segurança
   let body: any = {}
+  let texto = ''
   try {
-    const text = await req.text()
-    if (text && text.trim()) body = JSON.parse(text)
+    texto = await req.text()
+    if (texto && texto.trim()) body = JSON.parse(texto)
   } catch {
+    await registrar('erro', 'Dados chegaram em formato inválido (não é JSON) — no Zapier, use Payload Type = Json', { webhook_token: token, payload: { bruto: texto.slice(0, 2000) } })
     return new Response(JSON.stringify({ error: 'Payload JSON inválido' }), { status: 400, headers })
   }
 
-  const { data: wh, error: whErr } = await supabase
-    .from('webhooks').select('*').eq('token', token).eq('active', true).single()
-  if (whErr || !wh) return new Response(JSON.stringify({ error: 'Webhook não encontrado ou inativo' }), { status: 404, headers })
+  const { data: wh } = await supabase.from('webhooks').select('*').eq('token', token).maybeSingle()
+  if (!wh) {
+    await registrar('erro', 'URL de webhook que não existe (excluído ou token errado) — lead NÃO entrou', { webhook_token: token, payload: body })
+    return new Response(JSON.stringify({ error: 'Webhook não encontrado ou inativo' }), { status: 404, headers })
+  }
+  const ctx = { webhook_id: wh.id, webhook_token: token, webhook_nome: wh.name }
+  if (!wh.active) {
+    await registrar('erro', 'Webhook DESATIVADO recebeu um lead — lead NÃO entrou. Reative o webhook ou desligue o Zap', { ...ctx, payload: body })
+    return new Response(JSON.stringify({ error: 'Webhook não encontrado ou inativo' }), { status: 404, headers })
+  }
 
   const map = wh.field_map || {}
   const nameRaw  = String(getNestedValue(body, map.name || 'name') || getNestedValue(body, 'full_name') || '').trim()
@@ -50,7 +70,10 @@ Deno.serve(async (req) => {
   const notes    = map.notes    ? getNestedValue(body, map.notes)    : ''
   const campaign = map.campaign ? getNestedValue(body, map.campaign) : ''
 
-  if (!nameRaw) return new Response(JSON.stringify({ error: 'Nome não encontrado no payload. Verifique o mapeamento.' }), { status: 400, headers })
+  if (!nameRaw) {
+    await registrar('erro', 'Lead sem nome — no Zapier, confira o campo "name" do passo do webhook. Lead NÃO entrou', { ...ctx, payload: body })
+    return new Response(JSON.stringify({ error: 'Nome não encontrado no payload. Verifique o mapeamento.' }), { status: 400, headers })
+  }
 
   // Formulário: campo "formulario"/"form" do Zapier > texto depois da "|" no nome (formato antigo) > nome do webhook
   let name = nameRaw
@@ -121,10 +144,21 @@ Deno.serve(async (req) => {
       respostas
     }]).select().single()
 
-  if (leadErr) return new Response(JSON.stringify({ error: leadErr.message }), { status: 500, headers })
+  if (leadErr) {
+    await registrar('erro', 'Erro ao salvar o lead no CRM: ' + leadErr.message, { ...ctx, payload: body })
+    return new Response(JSON.stringify({ error: leadErr.message }), { status: 500, headers })
+  }
+  if (!String(phone || '').replace(/\D/g, '')) {
+    await registrar('aviso', 'Lead entrou SEM TELEFONE — no Zapier, confira o campo "phone"', { ...ctx, lead_id: lead.id, payload: body })
+  }
 
   await supabase.from('webhooks').update({ leads_count: (wh.leads_count || 0) + 1 }).eq('id', wh.id)
   if (seller_id) await supabase.from('sellers').update({ last_lead_at: new Date().toISOString() }).eq('id', seller_id)
 
   return new Response(JSON.stringify({ success: true, lead_id: lead.id, empresa: empresaLead, seller_id, distribuicao, formulario, respostas: respostas.length }), { status: 200, headers })
+  } catch (e) {
+    console.error(e)
+    await registrar('erro', 'Erro inesperado no CRM: ' + ((e as Error)?.message || String(e)))
+    return new Response(JSON.stringify({ error: 'Erro interno' }), { status: 500, headers })
+  }
 })

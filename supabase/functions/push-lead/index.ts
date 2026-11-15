@@ -71,6 +71,27 @@ Deno.serve(async (req) => {
         });
         return json({ agenda: res });
       }
+      // erro/aviso na entrada de leads (aba Integrações → Logs) → avisa os admins
+      if (body.log_id) {
+        const { data: lg } = await db.from("webhook_logs").select("*").eq("id", body.log_id).single();
+        if (!lg) return json({ erro: "log não encontrado" }, 404);
+        // trava anti-spam: mesmo webhook + mesmo motivo nos últimos 15 min já avisou → não repete
+        const desde = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+        let q = db.from("webhook_logs").select("id", { count: "exact", head: true })
+          .eq("motivo", lg.motivo).gte("created_at", desde).neq("id", lg.id);
+        q = lg.webhook_token ? q.eq("webhook_token", lg.webhook_token) : q.is("webhook_token", null);
+        const { count } = await q;
+        if ((count || 0) > 0) return json({ log: "repetido, sem aviso" });
+        const { data: admins } = await db.from("sellers").select("id").eq("role", "admin");
+        const nomeLead = lg.payload && (lg.payload.name || lg.payload.full_name);
+        const res = await enviar((admins || []).map((a) => a.id), {
+          title: `${lg.status === "erro" ? "⚠️ Erro na integração" : "⚠️ Aviso na integração"}${lg.webhook_nome ? " · " + lg.webhook_nome : ""}`,
+          body: `${nomeLead ? nomeLead + " — " : ""}${lg.motivo}`,
+          url: `${BASE_URL}?logs=1`,
+          tag: `log-${lg.id}`,
+        });
+        return json({ log: res });
+      }
       const { data: lead } = await db.from("leads").select("id,name,phone,origin,product,seller_id,empresa,formulario").eq("id", body.lead_id).single();
       if (!lead) return json({ erro: "lead não encontrado" }, 404);
       const detalhe = [lead.origin, lead.product].filter(Boolean).join(" · ");
