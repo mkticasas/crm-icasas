@@ -70,15 +70,18 @@ Deno.serve(async (req) => {
   const notes    = map.notes    ? getNestedValue(body, map.notes)    : ''
   const campaign = map.campaign ? getNestedValue(body, map.campaign) : ''
 
-  if (!nameRaw) {
-    await registrar('erro', 'Lead sem nome — no Zapier, confira o campo "name" do passo do webhook. Lead NÃO entrou', { ...ctx, payload: body })
-    return new Response(JSON.stringify({ error: 'Nome não encontrado no payload. Verifique o mapeamento.' }), { status: 400, headers })
+  // Sem telefone o vendedor não tem como atender → bloqueia. Sem nome → entra como "Lead sem nome".
+  const temTelefone = !!String(phone || '').replace(/\D/g, '')
+  if (!temTelefone) {
+    await registrar('erro', (nameRaw ? '' : 'Sem nome e ') + 'Sem telefone — lead NÃO entrou. No Zapier, confira o campo "phone" do passo do webhook', { ...ctx, payload: body })
+    return new Response(JSON.stringify({ error: 'Telefone não encontrado no payload. Verifique o mapeamento.' }), { status: 400, headers })
   }
+  const semNome = !nameRaw
 
   // Campanha = campo "formulario"/"form" do Zapier, senão o nome do webhook.
   // Texto depois de "|" no nome NÃO é campanha (muita gente usa "Nome | Profissão" no Facebook):
   // o nome fica limpo e o complemento vai para as respostas.
-  let name = nameRaw
+  let name = nameRaw || 'Lead sem nome'
   let complementoNome = ''
   const mPipe = nameRaw.match(/^([^|]*?)\s*\|\s*(.*)$/)
   if (mPipe && mPipe[1].trim()) { name = mPipe[1].trim(); complementoNome = mPipe[2].replace(/\s*\|\s*/g, ' · ').trim() }
@@ -150,8 +153,8 @@ Deno.serve(async (req) => {
     await registrar('erro', 'Erro ao salvar o lead no CRM: ' + leadErr.message, { ...ctx, payload: body })
     return new Response(JSON.stringify({ error: leadErr.message }), { status: 500, headers })
   }
-  if (!String(phone || '').replace(/\D/g, '')) {
-    await registrar('aviso', 'Lead entrou SEM TELEFONE — no Zapier, confira o campo "phone"', { ...ctx, lead_id: lead.id, payload: body })
+  if (semNome) {
+    await registrar('aviso', 'Lead entrou SEM NOME (salvo como "Lead sem nome") — no Zapier, confira o campo "name"', { ...ctx, lead_id: lead.id, payload: body })
   }
 
   await supabase.from('webhooks').update({ leads_count: (wh.leads_count || 0) + 1 }).eq('id', wh.id)
